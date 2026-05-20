@@ -1,0 +1,11 @@
+@media (min-width: 768px) {
+  .apk-list-row { padding: 16px 20px; }
+  .apk-nominee-row { grid-template-columns: 1fr auto; align-items: center; }
+  .apk-profile-id { padding: 20px; }
+  .apk-avatar { width: 60px; height: 60px; font-size: 20px; }
+  .apk-profile-name { font-size: 20px; }
+  .apk-faq-item { padding: 14px 0; }
+  .apk-legal-section { max-width: 720px; margin-left: auto; margin-right: auto; margin-bottom: 28px; }
+  .apk-legal-section h3 { font-size: 20px; }
+  .apk-legal-section p { font-size: 16px; }
+}

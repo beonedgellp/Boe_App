@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_ACTIONS = ['pause', 'resume', 'cancel', 'skip', 'step_up', 'change_amount'];
 

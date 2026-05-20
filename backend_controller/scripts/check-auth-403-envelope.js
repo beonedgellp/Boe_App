@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { authorizeRoute } from '../src/security/auth.js';
-import { sendError } from '../src/http/response.js';
+import { authorizeRoute } from '#security/auth.js';
+import { sendError } from '#http/response.js';
 
 function captureError(error) {
   let statusCode = null;

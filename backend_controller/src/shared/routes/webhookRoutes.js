@@ -1,6 +1,6 @@
 import { Routes } from './constants.js';
 import { processPaymentWebhook, processMandateWebhook } from '../services/webhookService.js';
-import { HttpError } from '../../http/errors.js';
+import { HttpError } from '#http/errors.js';
 
 const SUPPORTED_PROVIDERS = new Set(['mock', 'razorpay']);
 

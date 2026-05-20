@@ -1,11 +1,11 @@
 import { Routes } from './constants.js';
 import { getReceipts, getReceipt } from '../services/receiptService.js';
-import { HttpError } from '../../http/errors.js';
+import { HttpError } from '#http/errors.js';
 
 const CLIENT_ROLES = ['client', 'admin'];
 const ADMIN_ROLES = ['admin'];
 
-export function registerReceiptRoutes(router) {
+export function registerClientReceiptRoutes(router) {
   router.get(Routes.GET_V1_CLIENT_RECEIPTS, {
     group: 'client',
     roles: CLIENT_ROLES,
@@ -37,7 +37,9 @@ export function registerReceiptRoutes(router) {
     }
     return receipt;
   });
+}
 
+export function registerAdminReceiptRoutes(router) {
   router.get(Routes.GET_V1_ADMIN_RECEIPTS, {
     group: 'admin',
     roles: ADMIN_ROLES,

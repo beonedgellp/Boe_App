@@ -1,5 +1,5 @@
 // Disclosure content service — SEBI/AMFI mandated blocks
-import { jsonStoreEnabled, readJsonStore } from '../../db/jsonStore.js';
+import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 
 const RISKOMETER_CONFIG = {
   low: {

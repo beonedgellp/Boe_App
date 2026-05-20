@@ -21,7 +21,7 @@ import {
   insertJsonRecord,
   updateJsonRecord,
   deleteJsonRecord,
-} from '../db/jsonStore.js';
+} from '#db/jsonStore.js';
 
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const IN_FLIGHT_TIMEOUT_MS = 30_000;

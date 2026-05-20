@@ -1,5 +1,5 @@
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, findRecord } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, findRecord } from '#db/jsonStore.js';
 
 export async function getTicketWithMessages(config, actor, ticketId) {
   if (!jsonStoreEnabled(config)) {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { validateReceipt } from '../contracts/receipt.js';
 
 export async function emitReceipt(config, receiptData) {

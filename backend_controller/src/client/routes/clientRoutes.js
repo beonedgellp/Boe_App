@@ -1,10 +1,10 @@
-import { Routes } from '../../shared/routes/constants.js';
-import { emptyCollection, placeholder } from '../../shared/services/placeholderService.js';
-import { validateBody } from '../../http/validate.js';
-import { withIdempotency } from '../../http/idempotency.js';
+import { Routes } from '#shared/routes/constants.js';
+import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
+import { validateBody } from '#http/validate.js';
+import { withIdempotency } from '#http/idempotency.js';
 import {
   listResearchContextFromAppConfig,
-} from '../../shared/services/appConfigService.js';
+} from '#shared/services/appConfigService.js';
 import {
   listFunds,
   getFund,
@@ -70,6 +70,9 @@ import {
   listFaqs,
 } from '../services/supportService.js';
 import { getTicketWithMessages } from '../services/supportTicketDetailService.js';
+import { registerWebhookRoutes } from '#shared/routes/webhookRoutes.js';
+import { registerClientReceiptRoutes } from '#shared/routes/receiptRoutes.js';
+import { registerClientTimelineRoutes } from '#shared/routes/timelineRoutes.js';
 
 const CLIENT_ROLES = ['client', 'admin'];
 
@@ -83,6 +86,12 @@ function readIdempotencyHeader(headers) {
 }
 
 export function registerClientRoutes(router) {
+  // Provider webhooks (payments/mandates) + client-facing receipts/timeline belong to
+  // the client/payment surface so an admin-only server doesn't expose them.
+  registerWebhookRoutes(router);
+  registerClientReceiptRoutes(router);
+  registerClientTimelineRoutes(router);
+
   router.get(Routes.GET_V1_CLIENT_DASHBOARD, {
     group: 'client',
     roles: CLIENT_ROLES,

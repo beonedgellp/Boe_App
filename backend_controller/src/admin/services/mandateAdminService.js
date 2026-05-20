@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_MANDATE_STATUSES = new Set([
   'setup_required',

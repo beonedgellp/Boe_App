@@ -43,7 +43,7 @@ Prerequisites already used on this machine:
 
 - Android SDK: `/home/nethunter07/Android/Sdk`
 - Android Studio: `/opt/android-studio/bin/studio.sh`
-- Gradle: `/opt/gradle/gradle-9.5.1`
+- Gradle: use the checked-in Android wrapper at `frontend_stack/app/android/gradlew`
 - Emulator AVD: `boe_pixel_api36`
 
 Start the emulator:
@@ -64,7 +64,7 @@ Use a different backend port if needed:
 BACKEND_PORT=47500 emu/boe_update.sh
 ```
 
-The script detects a running emulator, waits for boot completion, runs `npm run android:sync`, builds the debug APK, establishes `adb reverse tcp:$BACKEND_PORT tcp:$BACKEND_PORT`, installs the APK, and launches `com.beonedge.app`.
+The script detects a running emulator, waits for boot completion, runs `npm --workspace app run android:sync`, builds the debug APK with `./gradlew`, establishes `adb reverse tcp:$BACKEND_PORT tcp:$BACKEND_PORT`, installs the APK, and launches `com.beonedge.app`.
 
 ## Environment
 

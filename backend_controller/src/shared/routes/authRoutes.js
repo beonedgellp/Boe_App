@@ -1,6 +1,6 @@
 import { Routes } from './constants.js';
 import { login, logout, refreshSession, session, signup } from '../services/authService.js';
-import { validateBody } from '../../http/validate.js';
+import { validateBody } from '#http/validate.js';
 
 const ACCESS_COOKIE_MAX_AGE_SECONDS = 24 * 60 * 60;
 const REFRESH_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;

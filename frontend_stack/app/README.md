@@ -5,7 +5,7 @@ Vite + React starter wired to the BeOnEdge design system.
 ## Run
 
 ```bash
-cd app
+cd frontend_stack
 npm install
 npm run dev
 ```
@@ -19,14 +19,14 @@ This app is wrapped with Capacitor for Android. Browser builds keep all routes; 
 Build and sync Android assets:
 
 ```bash
-npm run android:sync
+npm --workspace app run android:sync
 ```
 
 Build the debug APK:
 
 ```bash
 cd android
-gradle assembleDebug --console=plain
+./gradlew assembleDebug --console=plain
 ```
 
 The debug APK is written to:
@@ -53,9 +53,9 @@ The helper:
 
 - detects a running `emulator-*` device
 - waits for boot completion
-- runs `npm run android:sync`
-- runs `gradle assembleDebug --console=plain`
 - creates/verifies `adb reverse tcp:47502 tcp:47502`
+- runs `npm --workspace app run android:sync`
+- runs `./gradlew assembleDebug --console=plain`
 - installs `app-debug.apk`
 - launches `com.beonedge.app`
 
@@ -101,24 +101,19 @@ app/
   package.json
   src/
     main.jsx               — bootstraps React + Router
-    App.jsx                — top-level routes
-    styles/
-      tokens.css           — copy of /colors_and_type.css
-      kit.css              — copy of /ui_kits/shared/kit.css
-    routes/
-      Landing.jsx
-      Website.jsx
-      Apk.jsx
-      Admin.jsx
-    components/
-      website/             — ported from /ui_kits/website/Components.jsx
-      apk/                 — ported from /ui_kits/apk/Components.jsx
-      admin/               — ported from /ui_kits/admin/Components.jsx
-    assets/                — logo svgs (copied from /assets)
+    BrowserRoot.jsx        — browser routes for website, client, and admin
+    ClientRoot.jsx         — Android/client-only route tree
+packages/
+  admin/                   — admin console package
+  client/                  — client app package
+  design-tokens/           — tokens and shared kit CSS
+  shared/                  — shared assets, components, and utilities
+  ui-kits/                 — static UI kit references
+  website/                 — public website package
 ```
 
 ## Notes
 
 - Icons use `lucide-react` (npm package) instead of the CDN `<i data-lucide=...>` pattern from the static kits. Same icon set, idiomatic React API.
-- Components were ported by hand. If you change tokens in `/colors_and_type.css` upstream, mirror them into `app/src/styles/tokens.css`.
+- Shared formatting and app-wide tokens live under `packages/shared` and `packages/design-tokens`.
 - See `/SKILL.md` and `/README.md` at the repo root for the full design system brief.

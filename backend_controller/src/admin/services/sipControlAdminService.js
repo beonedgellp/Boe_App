@@ -1,5 +1,5 @@
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateSipControlRequest } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateSipControlRequest } from '#db/jsonStore.js';
 
 export async function reviewSipControlRequest(config, actor, requestId, body = {}) {
   const nextStatus = String(body.status || '').trim().toLowerCase();

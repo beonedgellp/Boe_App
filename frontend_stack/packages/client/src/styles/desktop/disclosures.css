@@ -1,0 +1,19 @@
+@media (min-width: 768px) {
+  .apk-charter-screen,
+  .apk-grievance-screen { gap: 18px; }
+
+  .apk-charter-header,
+  .apk-grievance-header { padding: 22px; }
+
+  .apk-charter-section { padding: 22px; }
+  .apk-charter-contact { padding: 22px; }
+  .apk-grievance-steps { padding: 22px; }
+  .apk-grievance-timelines { padding: 22px; }
+  .apk-grievance-contact { padding: 22px; }
+
+  .apk-charter-contact-grid,
+  .apk-grievance-contact-grid { grid-template-columns: 1fr 1fr; }
+}@media (min-width: 1040px) {
+  .apk-charter-header h1,
+  .apk-grievance-header h1 { font-size: 26px; }
+}

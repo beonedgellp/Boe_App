@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createBackendServer } from '../src/server.js';
-import { loadConfig } from '../src/config/env.js';
+import { loadConfig } from '#config/env.js';
 import { createConnection } from 'node:net';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -1,9 +1,9 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { createAccessToken } from '../../security/tokens.js';
-import { query, transaction } from '../../db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
-import { hashPassword, verifyPassword } from '../../security/passwords.js';
+import { HttpError } from '#http/errors.js';
+import { createAccessToken } from '#security/tokens.js';
+import { query, transaction } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { hashPassword, verifyPassword } from '#security/passwords.js';
 
 const DEV_USER = {
   id: '11111111-1111-4111-8111-111111111111',

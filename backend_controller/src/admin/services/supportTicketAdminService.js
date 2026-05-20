@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
 
 export async function replyToTicket(config, actor, ticketId, body) {
   if (!jsonStoreEnabled(config)) {

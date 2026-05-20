@@ -1,6 +1,6 @@
-import { assertRuntimeConfig } from '../../config/env.js';
-import { databaseStatus, hasDatabaseConfig } from '../../db/client.js';
-import { jsonDatabaseStatus, jsonStoreEnabled } from '../../db/jsonStore.js';
+import { assertRuntimeConfig } from '#config/env.js';
+import { databaseStatus, hasDatabaseConfig } from '#db/client.js';
+import { jsonDatabaseStatus, jsonStoreEnabled } from '#db/jsonStore.js';
 
 export async function health(config) {
   const database = jsonStoreEnabled(config)

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { query, transaction } from '../../db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { query, transaction } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 async function _reviewKyc(config, actor, userId, body) {
   const action = String(body?.action || '').trim().toLowerCase();

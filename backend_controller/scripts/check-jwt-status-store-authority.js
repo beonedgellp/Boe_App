@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { authenticateRequest, authorizeRoute } from '../src/security/auth.js';
-import { createAccessToken } from '../src/security/tokens.js';
+import { authenticateRequest, authorizeRoute } from '#security/auth.js';
+import { createAccessToken } from '#security/tokens.js';
 
 function decodePayload(token) {
   const [, payload] = token.split('.');

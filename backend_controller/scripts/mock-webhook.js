@@ -4,9 +4,9 @@
  * Usage: node scripts/mock-webhook.js --payment <payment_id> --status success|failed
  *        node scripts/mock-webhook.js --mandate <mandate_id> --status active|failed
  */
-import { loadConfig } from '../src/config/env.js';
-import { readJsonStore } from '../src/db/jsonStore.js';
-import { processPaymentWebhook, processMandateWebhook } from '../src/shared/services/webhookService.js';
+import { loadConfig } from '#config/env.js';
+import { readJsonStore } from '#db/jsonStore.js';
+import { processPaymentWebhook, processMandateWebhook } from '#shared/services/webhookService.js';
 
 function parseArgs() {
   const args = process.argv.slice(2);

@@ -1,5 +1,5 @@
-import { createRouter } from '../src/shared/routes/index.js';
-import { loadConfig } from '../src/config/env.js';
+import { createRouter } from '#router';
+import { loadConfig } from '#config/env.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

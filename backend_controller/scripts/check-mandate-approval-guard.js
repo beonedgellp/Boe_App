@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { authorizeMandate } from '../src/client/services/mandateService.js';
+import { authorizeMandate } from '#client/services/mandateService.js';
 
 const tmpDir = await mkdtemp(join(tmpdir(), 'boe-mandate-authz-'));
 const dbPath = join(tmpDir, 'dev-db.json');

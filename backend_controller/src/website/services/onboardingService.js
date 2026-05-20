@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
 
 function normalizeEmail(value) {
   if (!value || typeof value !== 'string') return '';

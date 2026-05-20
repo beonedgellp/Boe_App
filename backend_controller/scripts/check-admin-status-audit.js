@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { updateUserStatus } from '../src/admin/services/adminDataService.js';
-import { reviewKyc } from '../src/admin/services/kycReviewService.js';
+import { updateUserStatus } from '#admin/services/adminDataService.js';
+import { reviewKyc } from '#admin/services/kycReviewService.js';
 
 const tmpDir = await mkdtemp(join(tmpdir(), 'boe-admin-status-audit-'));
 const dbPath = join(tmpDir, 'dev-db.json');

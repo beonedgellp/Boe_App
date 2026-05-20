@@ -3,13 +3,13 @@
  * Round-trip smoke tests for BeOnEdge admin-to-client flows.
  * Runs directly against JSON store (no HTTP server needed).
  */
-import { loadConfig } from '../src/config/env.js';
-import { readJsonStore, updateJsonStore } from '../src/db/jsonStore.js';
-import { toClientFunds, toClientFund } from '../src/admin/services/fundsService.js';
-import { listAdminNotifications, sendNotification } from '../src/admin/services/notificationComposerService.js';
-import { replyToTicket } from '../src/admin/services/supportTicketAdminService.js';
-import { reviewKyc } from '../src/admin/services/kycReviewService.js';
-import { listAdminFaqs } from '../src/admin/services/faqAdminService.js';
+import { loadConfig } from '#config/env.js';
+import { readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { toClientFunds, toClientFund } from '#shared/services/fundCatalogService.js';
+import { listAdminNotifications, sendNotification } from '#admin/services/notificationComposerService.js';
+import { replyToTicket } from '#admin/services/supportTicketAdminService.js';
+import { reviewKyc } from '#admin/services/kycReviewService.js';
+import { listAdminFaqs } from '#admin/services/faqAdminService.js';
 import { randomUUID } from 'node:crypto';
 
 const config = loadConfig();
@@ -69,7 +69,9 @@ async function runTests() {
     assert(pausedFund, 'Paused fund exists in store');
     const clientPaused = toClientFund(pausedFund);
     assert(clientPaused, 'Paused fund is visible to clients');
-    assert(clientPaused.lifecycleStage === 'paused', 'Client sees paused lifecycleStage');
+    if (clientPaused) {
+      assert(clientPaused.lifecycleStage === 'paused', 'Client sees paused lifecycleStage');
+    }
   }
 
   /* RT-4: Admin updates disclosure → client shows live version */

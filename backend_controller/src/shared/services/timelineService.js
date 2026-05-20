@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { jsonStoreEnabled, readJsonStore } from '../../db/jsonStore.js';
+import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 import { isValidMoneyState } from '../contracts/moneyState.js';
 import { getCopy, getLatestVersion } from './copyRegistry.js';
 

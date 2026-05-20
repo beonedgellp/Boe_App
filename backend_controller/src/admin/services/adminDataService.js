@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { emptyCollection } from '../../shared/services/placeholderService.js';
-import { getPublishedAppConfig } from '../../shared/services/appConfigService.js';
-import { HttpError } from '../../http/errors.js';
-import { query, transaction } from '../../db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
+import { emptyCollection } from '#shared/services/placeholderService.js';
+import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
+import { HttpError } from '#http/errors.js';
+import { query, transaction } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { notifyUserApproved, notifyUserRejected } from './notificationComposerService.js';
 
 const PENDING_APPROVAL_STATUSES = new Set(['draft', 'pending_review', 'kyc_pending']);

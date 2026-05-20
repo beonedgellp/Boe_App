@@ -6,13 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:android": "VITE_BEO_APP_TARGET=client vite build --mode android",
+    "build:android": "VITE_BEO_APP_TARGET=client vite build --mode android && node scripts/check-android-dist.mjs",
     "preview": "vite preview",
     "android:sync": "npm run build:android && cap sync android",
     "android:open": "npm run android:sync && cap open android",
     "android:run": "npm run android:sync && cap run android"
   },
   "dependencies": {
+    "@beonedge/admin": "0.1.0",
+    "@beonedge/client": "0.1.0",
+    "@beonedge/design-tokens": "0.1.0",
+    "@beonedge/shared": "0.1.0",
+    "@beonedge/ui-kits": "0.1.0",
+    "@beonedge/website": "0.1.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.3.4",

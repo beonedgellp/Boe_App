@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { reconcilePayment } from '../src/admin/services/paymentReconcileService.js';
+import { reconcilePayment } from '#admin/services/paymentReconcileService.js';
 
 const tmpDir = await mkdtemp(join(tmpdir(), 'boe-payment-reconcile-'));
 const dbPath = join(tmpDir, 'dev-db.json');

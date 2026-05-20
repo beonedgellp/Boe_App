@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
-import { loadConfig } from '../src/config/env.js';
+import { loadConfig } from '#config/env.js';
 
 function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;

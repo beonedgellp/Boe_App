@@ -1,6 +1,6 @@
-import { loadConfig } from '../src/config/env.js';
-import { closePool, query } from '../src/db/client.js';
-import { hashPassword } from '../src/security/passwords.js';
+import { loadConfig } from '#config/env.js';
+import { closePool, query } from '#db/client.js';
+import { hashPassword } from '#security/passwords.js';
 
 function enabled(value) {
   if (value == null || value === '') return true;

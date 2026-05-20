@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 const FATCA_STATUSES = new Set(['not_started', 'pending', 'completed', 'exempt']);
 const REKYC_TRIGGERS = new Set(['annual_review', 'address_change', 'pan_update', 'nominee_change', 'other']);

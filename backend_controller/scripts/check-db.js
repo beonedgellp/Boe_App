@@ -1,6 +1,6 @@
-import { loadConfig } from '../src/config/env.js';
-import { closePool, databaseStatus, hasDatabaseConfig } from '../src/db/client.js';
-import { jsonDatabaseStatus } from '../src/db/jsonStore.js';
+import { loadConfig } from '#config/env.js';
+import { closePool, databaseStatus, hasDatabaseConfig } from '#db/client.js';
+import { jsonDatabaseStatus } from '#db/jsonStore.js';
 
 const config = loadConfig();
 

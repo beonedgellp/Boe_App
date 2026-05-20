@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, findRecord, updateMandate } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, findRecord, updateMandate } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 export async function getMandate(config, actor, mandateId) {
   if (!jsonStoreEnabled(config)) {

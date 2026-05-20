@@ -1,6 +1,6 @@
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
 import { withReceipt } from './withReceipt.js';
 import { getPaymentProvider } from './payments/providerFactory.js';
 

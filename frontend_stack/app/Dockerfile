@@ -1,26 +1,27 @@
 FROM node:22-alpine AS deps
 
-WORKDIR /app
+WORKDIR /workspace
 
 COPY package.json package-lock.json ./
+COPY app ./app
+COPY packages ./packages
 RUN npm ci
 
 FROM deps AS builder
 
-WORKDIR /app
+WORKDIR /workspace
 
 ARG VITE_BEO_API_MODE=http
 ARG VITE_BEO_API_BASE_URL=http://localhost:47502
 ENV VITE_BEO_API_MODE=${VITE_BEO_API_MODE}
 ENV VITE_BEO_API_BASE_URL=${VITE_BEO_API_BASE_URL}
 
-COPY . .
-RUN npm run build
+RUN npm --workspace app run build
 
 FROM nginx:1.27-alpine AS runtime
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /workspace/app/dist /usr/share/nginx/html
 
 EXPOSE 80
 

@@ -1,7 +1,7 @@
-import { HttpError } from '../http/errors.js';
+import { HttpError } from '#http/errors.js';
 import { verifyAccessToken } from './tokens.js';
-import { hasDatabaseConfig, query } from '../db/client.js';
-import { jsonStoreEnabled, readJsonStore } from '../db/jsonStore.js';
+import { hasDatabaseConfig, query } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 
 function bearerToken(req) {
   const header = req.headers.authorization || '';

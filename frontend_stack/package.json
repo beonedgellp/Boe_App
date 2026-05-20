@@ -3,11 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "app"
+    "app",
+    "packages/*"
   ],
   "scripts": {
     "dev": "npm --workspace app run dev",
     "build": "npm --workspace app run build",
+    "build:android": "npm --workspace app run build:android",
+    "android:sync": "npm --workspace app run android:sync",
+    "android:open": "npm --workspace app run android:open",
+    "android:run": "npm --workspace app run android:run",
     "preview": "npm --workspace app run preview"
   }
 }

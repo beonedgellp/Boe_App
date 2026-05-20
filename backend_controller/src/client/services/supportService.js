@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
 
 const VALID_CATEGORIES = ['general', 'technical', 'billing', 'kyc', 'sip', 'withdrawal', 'mandate'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];

@@ -1,14 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
-import './shared/styles/tokens.css';
-import './shared/styles/kit.css';
+import '@beonedge/design-tokens/tokens.css';
+import '@beonedge/design-tokens/kit.css';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
-);
+async function boot() {
+  const rootModule = import.meta.env.VITE_BEO_APP_TARGET === 'client'
+    ? await import('./ClientRoot.jsx')
+    : await import('./BrowserRoot.jsx');
+  const Root = rootModule.default;
+
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <Root />
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}
+
+boot();

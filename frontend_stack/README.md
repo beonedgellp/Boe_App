@@ -64,14 +64,17 @@ Reference URLs called out in the PRD (not fetched, retained as context for the h
 ```
 README.md                 — this file
 SKILL.md                  — agent skill manifest
-colors_and_type.css       — design tokens (color, type, spacing, radii, shadows)
+packages/design-tokens/   — design tokens and shared kit CSS
 fonts/                    — webfont files (Google Fonts substitutes — see Caveats)
 assets/                   — logo, marks, illustrations
 preview/                  — design system preview cards (rendered in Design System tab)
-ui_kits/
-  website/                — public onboarding website kit
-  apk/                    — client mobile APK kit
-  admin/                  — admin console kit
+app/                      — Vite/React shell and Capacitor Android project
+packages/
+  website/                — public onboarding website package
+  client/                 — client web/mobile app package
+  admin/                  — admin console package
+  shared/                 — shared assets, components, app config, utilities
+  ui-kits/                — static UI kit references
 ```
 
 ---

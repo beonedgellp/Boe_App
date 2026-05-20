@@ -1,6 +1,6 @@
-import { HttpError } from '../../http/errors.js';
-import { query } from '../../db/client.js';
-import { jsonStoreEnabled, readJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { query } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 
 function computeBlockingReasons(user, kycProfile) {
   const reasons = [];

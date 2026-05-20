@@ -1,0 +1,13 @@
+{
+  "name": "@beonedge/website",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./pages/*": "./src/pages/*"
+  },
+  "dependencies": {
+    "@beonedge/shared": "0.1.0"
+  }
+}

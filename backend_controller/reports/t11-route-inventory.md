@@ -1,15 +1,15 @@
 # T11 Route Inventory
 
-Generated: 2026-05-05T06:27:30.253Z
+Generated: 2026-05-20T20:05:06.091Z
 
-Total routes: 102
+Total routes: 108
 
 | Method | Path | Group | Auth Required | Roles Allowed | Description |
 |--------|------|-------|---------------|---------------|-------------|
 | DELETE | `/v1/admin/faqs/:faq_id` | admin | Yes | admin | Delete an FAQ. |
 | DELETE | `/v1/admin/funds/:fund_id` | admin | Yes | admin | Delete fund pool. |
 | GET | `/v1/admin/app-config` | admin | Yes | admin | Published mobile app component and content configuration. |
-| GET | `/v1/admin/approvals` | admin | Yes | admin | Admin user approval queue. |
+| GET | `/v1/admin/approvals` | admin | Yes | admin | Admin user approval queue with status filter. |
 | GET | `/v1/admin/audit-logs` | admin | Yes | admin | Admin audit log search. |
 | GET | `/v1/admin/capital-transactions` | admin | Yes | admin | List capital transactions. |
 | GET | `/v1/admin/faqs` | admin | Yes | admin | Admin FAQ list. |
@@ -22,10 +22,14 @@ Total routes: 102
 | GET | `/v1/admin/payments` | admin | Yes | admin | Payment reconciliation queue. |
 | GET | `/v1/admin/products` | admin | Yes | admin | Admin strategy catalogue. |
 | GET | `/v1/admin/receipts` | admin | Yes | admin | Admin receipt search with filters. |
+| GET | `/v1/admin/reconciliation-ledger` | admin | Yes | admin | List reconciliation ledger entries. |
 | GET | `/v1/admin/redemption-requests` | admin | Yes | admin | List user redemption requests. |
+| GET | `/v1/admin/risk-profiles` | admin | Yes | admin | Risk profiles list. |
 | GET | `/v1/admin/sip-control-requests` | admin | Yes | admin | SIP control request queue. |
+| GET | `/v1/admin/stats/pending` | admin | Yes | admin | Pending approval count for sidebar badge. |
 | GET | `/v1/admin/support/tickets` | admin | Yes | admin | Support ticket queue. |
-| GET | `/v1/admin/users` | admin | Yes | admin | Admin user list. |
+| GET | `/v1/admin/transactions` | admin | Yes | admin | Admin transaction list with fund pool filtering, search and pagination. |
+| GET | `/v1/admin/users` | admin | Yes | admin | Admin user list with search, filter and pagination. |
 | GET | `/v1/admin/users/:user_id/detail` | admin | Yes | admin | Get comprehensive user detail. |
 | GET | `/v1/admin/users/:userId/timeline` | admin | Yes | admin | Admin view of user timeline. |
 | PATCH | `/v1/admin/app-config` | admin | Yes | admin | Publish mobile app component and content configuration. |
@@ -44,11 +48,12 @@ Total routes: 102
 | POST | `/v1/admin/funds/:fund_id/outflow` | admin | Yes | admin | Withdraw funds from the pool (external outflow). |
 | POST | `/v1/admin/funds/:fund_id/unallocate` | admin | Yes | admin | Unallocate funds from an investment back to cash. |
 | POST | `/v1/admin/notifications` | admin | Yes | admin | Send notification to users. |
+| POST | `/v1/admin/payments/:payment_id/approve` | admin | Yes | admin | Approve a settled payment and post it into the fund pool. |
 | POST | `/v1/admin/payments/:payment_id/reconcile` | admin | Yes | admin | Reconcile payment with reason. |
+| POST | `/v1/admin/payments/:payment_id/reject` | admin | Yes | admin | Reject a payment after admin review. |
 | POST | `/v1/admin/products` | admin | Yes | admin | Create strategy draft. |
 | POST | `/v1/admin/products/:product_id/disclosures` | admin | Yes | admin | Publish strategy disclosure. |
 | POST | `/v1/admin/products/:product_id/holdings` | admin | Yes | admin | Upload strategy holdings. |
-| POST | `/v1/admin/products/:product_id/nav` | admin | Yes | admin | Upload strategy NAV. |
 | POST | `/v1/admin/support/tickets/:ticket_id/reply` | admin | Yes | admin | Reply to a support ticket. |
 | GET | `/v1/auth/session` | auth | No | — | Return current session status when a bearer token is present. |
 | POST | `/v1/auth/login` | auth | No | — | Create an access/refresh token pair after approved-user checks. |
@@ -89,6 +94,7 @@ Total routes: 102
 | POST | `/v1/client/lumpsum-orders` | client | Yes | client, admin | Create a one-time investment order. |
 | POST | `/v1/client/mandates/:mandate_id/authorize` | client | Yes | client, admin | Start or continue mandate user authorization. |
 | POST | `/v1/client/orders/:order_id/pay-pending-installment` | client | Yes | client, admin | Retry a pending SIP installment. |
+| POST | `/v1/client/payments/:payment_id/confirm-razorpay` | client | Yes | client, admin | Confirm Razorpay Checkout success response. |
 | POST | `/v1/client/payments/:payment_id/retry` | client | Yes | client, admin | Retry a failed or expired payment. |
 | POST | `/v1/client/redemptions` | client | Yes | client, admin | Create a redemption request. |
 | POST | `/v1/client/sip-control-requests` | client | Yes | client, admin | Request SIP pause, skip, step-up, change, or cancel. |

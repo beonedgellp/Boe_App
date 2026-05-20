@@ -1,14 +1,17 @@
-import { Routes } from '../../shared/routes/constants.js';
+import { Routes } from '#shared/routes/constants.js';
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { registerInternalRoutes } from '#shared/routes/internalRoutes.js';
+import { registerAdminReceiptRoutes } from '#shared/routes/receiptRoutes.js';
+import { registerAdminTimelineRoutes } from '#shared/routes/timelineRoutes.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { reviewKyc } from '../services/kycReviewService.js';
 import { getUserDetail } from '../services/userDetailService.js';
 import { replyToTicket } from '../services/supportTicketAdminService.js';
 import { reviewSipControlRequest } from '../services/sipControlAdminService.js';
 import { sendNotification, listAdminNotifications } from '../services/notificationComposerService.js';
 import { listAdminFaqs, createFaq, updateFaq, deleteFaq } from '../services/faqAdminService.js';
-import { getPublishedAppConfig, publishAppConfig } from '../../shared/services/appConfigService.js';
+import { getPublishedAppConfig, publishAppConfig } from '#shared/services/appConfigService.js';
 import {
   adminApprovals,
   adminAuditLogs,
@@ -44,6 +47,12 @@ import {
 const ADMIN_ROLES = ['admin'];
 
 export function registerAdminRoutes(router) {
+  // Admin-only receipts/timeline + internal route metadata belong to the admin surface
+  // so a client-only server doesn't expose them.
+  registerAdminReceiptRoutes(router);
+  registerAdminTimelineRoutes(router);
+  registerInternalRoutes(router);
+
   router.get(Routes.GET_V1_ADMIN_OVERVIEW, {
     group: 'admin',
     roles: ADMIN_ROLES,

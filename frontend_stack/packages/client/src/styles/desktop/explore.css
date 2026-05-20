@@ -1,0 +1,44 @@
+@media (min-width: 768px) {
+  .apk-search {
+    position: relative;
+    z-index: auto;
+  }
+}@media (min-width: 768px) {
+  .apk-strategy-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}@media (min-width: 768px) {
+  .apk-strategy-skel {
+    height: 220px;
+  }
+}@media (min-width: 768px) {
+  .apk-research-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}@media (min-width: 768px) {
+  .apk-research-row {
+    padding: 10px 0;
+  }
+}@media (min-width: 768px) {
+  .apk-research-row + .apk-research-row {
+    border-top: none;
+  }
+}@media (min-width: 768px) {
+  .apk-research-skel {
+    height: 72px;
+  }
+}@media (min-width: 768px) {
+  .apk-featured-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}@media (min-width: 768px) {
+  .apk-filter-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .apk-filter-group {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}

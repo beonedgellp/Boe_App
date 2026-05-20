@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
-import { getPaymentProvider } from '../../shared/services/payments/providerFactory.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
+import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
 async function _reconcilePayment(config, actor, paymentId, body, requestContext = {}) {
   if (!jsonStoreEnabled(config)) {

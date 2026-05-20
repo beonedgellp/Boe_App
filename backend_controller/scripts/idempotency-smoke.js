@@ -13,8 +13,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { createLumpsumOrder } from '../src/client/services/orderService.js';
-import { withIdempotency, _resetInFlight } from '../src/http/idempotency.js';
+import { createLumpsumOrder } from '#client/services/orderService.js';
+import { withIdempotency, _resetInFlight } from '#http/idempotency.js';
 
 const tmpDir = await mkdtemp(join(tmpdir(), 'boe-idempotency-smoke-'));
 const dbPath = join(tmpDir, 'dev-db.json');

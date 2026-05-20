@@ -1,5 +1,5 @@
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
 
 export async function markNotificationRead(config, actor, notificationId) {
   if (!jsonStoreEnabled(config)) {

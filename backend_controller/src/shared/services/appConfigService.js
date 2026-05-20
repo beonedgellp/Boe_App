@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { hasDatabaseConfig, query, transaction } from '../../db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
+import { HttpError } from '#http/errors.js';
+import { hasDatabaseConfig, query, transaction } from '#db/client.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 
 const CONFIG_KEY = 'mobile_app';
 const MAX_CONFIG_BYTES = 1024 * 1024;

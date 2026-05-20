@@ -1,5 +1,5 @@
-import { emptyCollection } from '../../shared/services/placeholderService.js';
-import { jsonStoreEnabled, readJsonStore } from '../../db/jsonStore.js';
+import { emptyCollection } from '#shared/services/placeholderService.js';
+import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 
 function userPortfolioKey(userId) {
   return `portfolio_${userId}`;

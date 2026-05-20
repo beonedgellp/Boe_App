@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { retryPayment } from '../src/client/services/paymentService.js';
+import { retryPayment } from '#client/services/paymentService.js';
 
 const tmpDir = await mkdtemp(join(tmpdir(), 'boe-payment-retry-authz-'));
 const dbPath = join(tmpDir, 'dev-db.json');

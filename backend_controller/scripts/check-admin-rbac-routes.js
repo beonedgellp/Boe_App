@@ -1,5 +1,5 @@
-import { loadConfig } from '../src/config/env.js';
-import { createRouter } from '../src/shared/routes/index.js';
+import { loadConfig } from '#config/env.js';
+import { createRouter } from '#router';
 
 const router = createRouter({ config: loadConfig(), logger: { info() {} } });
 const adminRoutes = router.describe().filter((route) => route.path.startsWith('/v1/admin'));

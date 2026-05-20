@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { loadConfig, assertProductionConfig, assertRuntimeConfig } from './config/env.js';
-import { createRouter } from './shared/routes/index.js';
+import { createRouter } from './router.js';
 import { createLogger } from './shared/logger.js';
 
 export function createBackendServer({ config = loadConfig(), logger = createLogger({ level: process.env.LOG_LEVEL || 'info' }) } = {}) {

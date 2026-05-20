@@ -7,6 +7,17 @@
   "engines": {
     "node": ">=20"
   },
+  "imports": {
+    "#router": "./src/router.js",
+    "#config/*": "./src/config/*",
+    "#db/*": "./src/db/*",
+    "#http/*": "./src/http/*",
+    "#security/*": "./src/security/*",
+    "#shared/*": "./src/shared/*",
+    "#client/*": "./src/client/*",
+    "#admin/*": "./src/admin/*",
+    "#website/*": "./src/website/*"
+  },
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",

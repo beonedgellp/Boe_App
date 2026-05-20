@@ -1,4 +1,4 @@
-import { notImplemented } from '../../http/errors.js';
+import { notImplemented } from '#http/errors.js';
 
 export function placeholder(context, nextStep) {
   throw notImplemented(`${context.route.method} ${context.route.path}`, nextStep);

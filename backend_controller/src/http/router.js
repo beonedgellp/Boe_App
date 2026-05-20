@@ -1,6 +1,6 @@
 import { HttpError } from './errors.js';
 import { readJsonBody, requestId, sendError, sendJson } from './response.js';
-import { authenticateRequest, authorizeRoute } from '../security/auth.js';
+import { authenticateRequest, authorizeRoute } from '#security/auth.js';
 
 const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH']);
 

@@ -1,13 +1,13 @@
 import { randomUUID, createHash } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
+import { HttpError } from '#http/errors.js';
 import {
   jsonStoreEnabled,
   readJsonStore,
   atomicCompositeWrite,
   updateJsonStore,
-} from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
-import { getPaymentProvider } from '../../shared/services/payments/providerFactory.js';
+} from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
+import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
 const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed']);
 

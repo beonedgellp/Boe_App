@@ -1,10 +1,10 @@
-import { Routes } from '../../shared/routes/constants.js';
-import { emptyCollection, placeholder } from '../../shared/services/placeholderService.js';
-import { getPublishedAppConfig } from '../../shared/services/appConfigService.js';
-import { listFunds, toClientFunds } from '../../client/services/fundsService.js';
+import { Routes } from '#shared/routes/constants.js';
+import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
+import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
+import { listFunds, toClientFunds } from '#shared/services/fundCatalogService.js';
 import { getDisclosures, getInvestorCharter, getGrievanceContent } from '../services/disclosureService.js';
 import { submitApplication, submitRiskProfile, submitKycDocuments } from '../services/onboardingService.js';
-import { validateBody } from '../../http/validate.js';
+import { validateBody } from '#http/validate.js';
 
 export function registerPublicRoutes(router) {
   router.post(Routes.POST_V1_ONBOARDING_APPLICATIONS, {

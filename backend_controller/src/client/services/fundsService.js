@@ -5,4 +5,4 @@ export {
   toClientFunds,
   createRedemptionRequest,
   listRedemptionRequests,
-} from '../../admin/services/fundsService.js';
+} from '#shared/services/fundCatalogService.js';

@@ -1,7 +1,7 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { HttpError } from '../../http/errors.js';
-import { jsonStoreEnabled, findRecord, updateJsonStore, updatePayment } from '../../db/jsonStore.js';
-import { withReceipt } from '../../shared/services/withReceipt.js';
+import { HttpError } from '#http/errors.js';
+import { jsonStoreEnabled, findRecord, updateJsonStore, updatePayment } from '#db/jsonStore.js';
+import { withReceipt } from '#shared/services/withReceipt.js';
 
 function verifyRazorpayCheckoutSignature(orderId, paymentId, signature, secret) {
   const expected = createHmac('sha256', secret)

@@ -1,0 +1,15 @@
+{
+  "name": "@beonedge/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./components/*": "./src/components/*",
+    "./assets/*": "./src/assets/*",
+    "./appConfig.js": "./src/appConfig.js",
+    "./appTarget.js": "./src/appTarget.js",
+    "./format.js": "./src/format.js",
+    "./riskMapping.js": "./src/riskMapping.js"
+  }
+}
