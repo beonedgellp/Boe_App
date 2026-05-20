@@ -9,7 +9,7 @@ export default function ApprovalRequired() {
   return (
     <>
       <AppBar title="Approval pending" />
-      <div className="apk-screen">
+      <div className="apk-screen apk-state-screen">
         <div className="be-card apk-approval-card">
           <div className="apk-approval-icon"><Lock size={22} strokeWidth={1.6} /></div>
           <div>

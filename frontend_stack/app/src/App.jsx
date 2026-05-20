@@ -10,6 +10,11 @@ import { AdminSessionProvider, useAdminSession } from './client/store/AdminSessi
 import { RouteErrorBoundary } from './shared/components/RouteErrorBoundary.jsx';
 import { isClientShell } from './shared/appTarget.js';
 
+function isMobileDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 function hasRole(user, role) {
   const expected = role.toLowerCase();
   return (
@@ -56,7 +61,7 @@ export default function App() {
     <SessionProvider>
       <AdminSessionProvider>
         <Routes>
-          <Route path="/" element={<RouteErrorBoundary><Landing /></RouteErrorBoundary>} />
+          <Route path="/" element={isMobileDevice() ? <Navigate to="/app/splash" replace /> : <RouteErrorBoundary><Landing /></RouteErrorBoundary>} />
           <Route path="/website" element={<RouteErrorBoundary><Website /></RouteErrorBoundary>} />
           <Route path="/login" element={<Navigate to="/app/login" replace />} />
           <Route path="/signup" element={<Navigate to="/app/login?mode=signup" replace />} />

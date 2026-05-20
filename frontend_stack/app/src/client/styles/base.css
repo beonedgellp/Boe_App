@@ -1,4 +1,8 @@
-/* Desktop client app + screen-specific classes */
+/* ==========================================================================
+   BeOnEdge Client — Mobile-first responsive base
+   Breakpoints: 768px (tablet/desktop), 1040px (wide desktop)
+   Base = 412px APK viewport. Desktop enhancements via min-width.
+   ========================================================================== */
 
 :root {
   --be-r-2: var(--be-radius-xs);
@@ -12,143 +16,74 @@
   --be-d-4: var(--be-dur-chart);
 }
 
-/* Desktop app frame */
+/* -------------------------------------------------------------------------- */
+/* Mobile-first shell (< 768px)                                               */
+/* -------------------------------------------------------------------------- */
+
 .app-shell {
-  display: grid;
-  grid-template-columns: 268px minmax(0, 1fr);
+  display: block;
   min-height: 100vh;
   background: var(--be-ivory);
   color: var(--be-ink);
 }
+
 .app-shell-single {
   display: block;
 }
+
+/* Sidebar hidden on mobile */
 .app-sidebar {
-  position: sticky;
-  top: 0;
-  align-self: start;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  padding: 22px 18px;
-  background: var(--be-ink);
-  color: var(--be-bone);
-  border-right: 1px solid var(--be-ink-3);
+  display: none;
 }
-.app-brand {
-  display: inline-flex;
-  align-items: center;
-  width: 178px;
-  min-height: 48px;
-  color: inherit;
-  text-decoration: none;
-}
-.app-brand img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.app-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.app-nav-link {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--be-r-8);
-  background: transparent;
-  color: rgba(255, 252, 246, 0.7);
-  font: 500 14px/1.2 var(--be-font-sans);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--be-d-2) var(--be-ease), color var(--be-d-2) var(--be-ease), border-color var(--be-d-2) var(--be-ease);
-}
-.app-nav-link:hover,
-.app-nav-link.is-active {
-  background: rgba(255, 252, 246, 0.08);
-  color: var(--be-bone);
-  border-color: rgba(255, 252, 246, 0.08);
-}
-.app-nav-link.is-active svg {
-  color: var(--be-gold);
-}
-.app-sidebar-foot {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 252, 246, 0.12);
-}
-.app-user {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 0 4px;
-}
-.app-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--be-gold);
-  color: var(--be-ink);
-  font-size: 12px;
-  font-weight: 700;
-}
-.app-user strong,
-.app-user span {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.app-user strong {
-  color: var(--be-bone);
-  font-size: 13px;
-  font-weight: 600;
-}
-.app-user span {
-  margin-top: 2px;
-  color: rgba(255, 252, 246, 0.58);
-  font-size: 12px;
-}
-.app-logout {
-  width: 100%;
-}
+
 .app-main {
   min-width: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--be-ivory) 0%, var(--be-ivory-2) 100%);
 }
 
-/* Screen base */
+/* Mobile screen base */
 .apk-screen {
   width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 44px 48px 56px;
+  gap: 14px;
+  padding: 18px 16px 80px; /* bottom padding reserves BottomNav space */
 }
-.apk-no-pad { padding: 0; }
-.apk-pad { padding: 44px 48px; }
-.apk-h { font-family: var(--be-font-serif); font-size: 36px; font-weight: 600; line-height: 1.15; letter-spacing: 0; margin: 0; color: var(--be-ink); }
-.apk-h-sm { font-family: var(--be-font-serif); font-size: 22px; font-weight: 600; margin: 0; }
 
-.apk-section-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-.apk-link { font-size: 13px; color: var(--be-ink); text-decoration: underline; text-underline-offset: 3px; }
+.apk-no-pad { padding: 0; }
+.apk-pad { padding: 18px 16px; }
+
+.apk-h {
+  font-family: var(--be-font-serif);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--be-ink);
+}
+
+.apk-h-sm {
+  font-family: var(--be-font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.apk-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.apk-link {
+  font-size: 13px;
+  color: var(--be-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* Splash */
 .apk-splash {
@@ -158,210 +93,257 @@
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; gap: 24px;
 }
+
 .apk-splash-spinner {
-  width: 120px; height: 1px; background: rgba(255, 252, 246, 0.1); position: relative; overflow: hidden;
+  width: 120px; height: 1px;
+  background: rgba(255, 252, 246, 0.1);
+  position: relative; overflow: hidden;
 }
+
 .apk-splash-spinner::after {
-  content: ''; position: absolute; left: -40%; top: 0; height: 1px; width: 40%;
+  content: '';
+  position: absolute;
+  left: -40%; top: 0;
+  height: 1px; width: 40%;
   background: var(--be-gold);
   animation: apk-slide 1.2s var(--be-ease) infinite;
 }
+
 @keyframes apk-slide { to { left: 100%; } }
-.apk-splash-disc { position: absolute; bottom: 32px; font-family: var(--be-font-mono); font-size: 11px; color: rgba(255, 252, 246, 0.45); }
 
-/* Desktop client app cleanup */
-#root {
-  min-height: 100vh;
+.apk-splash-disc {
+  position: absolute;
+  bottom: 32px;
+  font-family: var(--be-font-mono);
+  font-size: 11px;
+  color: rgba(255, 252, 246, 0.45);
 }
 
-.app-shell {
-  grid-template-columns: 264px minmax(0, 1fr);
-  background: var(--be-ivory-2);
-}
+/* Root cleanup */
+#root { min-height: 100vh; }
 
-.app-sidebar {
-  height: 100vh;
-  min-height: 100vh;
-  overflow-y: auto;
-  padding: 20px 16px;
-  gap: 18px;
-}
-
-.app-nav-link,
-.app-user,
-.app-brand {
-  min-width: 0;
-}
-
-.app-nav-link svg,
-.app-logout svg {
-  flex: 0 0 auto;
-}
-
-.app-nav-link span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-main {
-  min-width: 0;
-  overflow-x: hidden;
-  background:
-    linear-gradient(180deg, rgba(255,252,246,0.62) 0%, rgba(255,252,246,0) 220px),
-    var(--be-ivory-2);
-}
-
-.apk-screen,
-.app-start {
-  width: min(100%, 1180px);
-  max-width: 1180px;
-}
-
-.apk-screen {
-  padding: 36px 40px 52px;
-}
-
-.apk-screen.apk-no-pad {
-  padding: 0 40px 40px;
-}
-
-.apk-pad {
-  padding: 36px 40px;
-}
-
-.apk-h {
-  font-size: 34px;
-}
-
-.apk-h-sm {
-  font-size: 23px;
-}
-
-.apk-section-head {
-  min-height: 30px;
-  gap: 16px;
-}
-
-.apk-section-head .be-eyebrow,
-.be-eyebrow {
-  line-height: 1.35;
-}
-
+/* Touch highlight removal */
 .apk-link,
 button,
 .app-nav-link {
   -webkit-tap-highlight-color: transparent;
 }
 
-.apk-link {
-  cursor: pointer;
-}
+.apk-link { cursor: pointer; }
 
-@media (min-width: 1180px) {
-  .apk-screen {
-    padding-left: 48px;
-    padding-right: 48px;
-  }
+/* -------------------------------------------------------------------------- */
+/* Tablet / Desktop (≥ 768px)                                                 */
+/* -------------------------------------------------------------------------- */
 
-  .apk-screen.apk-no-pad {
-    padding-left: 48px;
-    padding-right: 48px;
-  }
-}
-
-@media (max-width: 1040px) {
+@media (min-width: 768px) {
   .app-shell {
-    grid-template-columns: 232px minmax(0, 1fr);
+    display: grid;
+    grid-template-columns: 264px minmax(0, 1fr);
+    background: var(--be-ivory-2);
   }
 
   .app-sidebar {
-    padding: 18px 12px;
+    display: flex;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    min-height: 100vh;
+    overflow-y: auto;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 16px;
+    background: var(--be-ink);
+    color: var(--be-bone);
+    border-right: 1px solid var(--be-ink-3);
   }
 
   .app-brand {
-    width: 164px;
+    display: inline-flex;
+    align-items: center;
+    width: 178px;
+    min-height: 48px;
+    color: inherit;
+    text-decoration: none;
   }
 
-  .apk-screen,
-  .app-start {
-    width: 100%;
-  }
-
-  .apk-screen {
-    padding: 32px 28px 44px;
-  }
-
-  .apk-screen.apk-no-pad {
-    padding: 0 28px 36px;
-  }
-}
-
-@media (max-width: 760px) {
-  .app-shell {
+  .app-brand img {
     display: block;
-  }
-
-  .app-sidebar {
-    position: static;
+    width: 100%;
     height: auto;
-    min-height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--be-ink-3);
   }
 
   .app-nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .app-nav-link {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: var(--be-r-8);
+    background: transparent;
+    color: rgba(255, 252, 246, 0.7);
+    font: 500 14px/1.2 var(--be-font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--be-d-2) var(--be-ease), color var(--be-d-2) var(--be-ease), border-color var(--be-d-2) var(--be-ease);
+    min-width: 0;
+  }
+
+  .app-nav-link:hover,
+  .app-nav-link.is-active {
+    background: rgba(255, 252, 246, 0.08);
+    color: var(--be-bone);
+    border-color: rgba(255, 252, 246, 0.08);
+  }
+
+  .app-nav-link.is-active svg {
+    color: var(--be-gold);
+  }
+
+  .app-nav-link svg,
+  .app-logout svg {
+    flex: 0 0 auto;
+  }
+
+  .app-nav-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .app-sidebar-foot {
-    margin-top: 0;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 252, 246, 0.12);
+  }
+
+  .app-user {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 0 4px;
+    min-width: 0;
+  }
+
+  .app-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--be-gold);
+    color: var(--be-ink);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .app-user strong,
+  .app-user span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-user strong {
+    color: var(--be-bone);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .app-user span {
+    margin-top: 2px;
+    color: rgba(255, 252, 246, 0.58);
+    font-size: 12px;
+  }
+
+  .app-logout {
+    width: 100%;
+  }
+
+  .app-main {
+    min-width: 0;
+    overflow-x: hidden;
+    background:
+      linear-gradient(180deg, rgba(255,252,246,0.62) 0%, rgba(255,252,246,0) 220px),
+      var(--be-ivory-2);
   }
 
   .apk-screen,
   .app-start {
-    padding-left: 20px;
-    padding-right: 20px;
+    width: min(100%, 1180px);
+    max-width: 1180px;
+    margin: 0 auto;
   }
 
   .apk-screen {
-    padding-top: 28px;
-    padding-bottom: 36px;
+    padding: 36px 40px 52px;
+    gap: 18px;
   }
 
   .apk-screen.apk-no-pad {
-    padding: 0 20px 32px;
+    padding: 0 40px 40px;
+  }
+
+  .apk-pad {
+    padding: 36px 40px;
   }
 
   .apk-h {
-    font-size: 30px;
+    font-size: 34px;
+    letter-spacing: 0;
+  }
+
+  .apk-h-sm {
+    font-size: 23px;
+  }
+
+  .apk-section-head {
+    min-height: 30px;
+    gap: 16px;
+  }
+
+  .apk-section-head .be-eyebrow,
+  .be-eyebrow {
+    line-height: 1.35;
   }
 }
 
-@media (max-width: 560px) {
-  .app-nav {
-    grid-template-columns: 1fr;
+/* -------------------------------------------------------------------------- */
+/* Wide desktop (≥ 1040px)                                                    */
+/* -------------------------------------------------------------------------- */
+
+@media (min-width: 1040px) {
+  .app-shell {
+    grid-template-columns: 268px minmax(0, 1fr);
   }
 
   .app-sidebar {
-    padding: 16px;
+    padding: 22px 18px;
+    gap: 22px;
   }
 
-  .app-brand {
-    width: 156px;
-    min-height: 38px;
-  }
-
-  .apk-screen,
-  .app-start {
-    padding-left: 16px;
-    padding-right: 16px;
+  .apk-screen {
+    padding-left: 48px;
+    padding-right: 48px;
   }
 
   .apk-screen.apk-no-pad {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 48px;
+    padding-right: 48px;
   }
 }
 

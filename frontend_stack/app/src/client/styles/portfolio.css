@@ -12,15 +12,16 @@
 .apk-holding-gain span:first-child { color: var(--be-slate); font-size: 12px; }
 .apk-holding-gain span:last-child { font-weight: 600; text-align: right; }
 
-/* Portfolio screen */
+/* Portfolio screen — mobile-first */
 .apk-portfolio-screen {
   gap: 18px;
 }
 .apk-portfolio-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
 }
 .apk-portfolio-header .apk-h {
@@ -31,12 +32,12 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-width: 132px;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--be-border);
   border-radius: var(--be-r-8);
   background: rgba(255, 252, 246, 0.68);
-  text-align: right;
+  text-align: left;
   box-shadow: var(--be-shadow-card-bevel);
 }
 .apk-portfolio-asof span {
@@ -90,19 +91,19 @@
   font-weight: 500;
 }
 .apk-portfolio-summary-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
   padding-top: 16px;
   margin-top: 2px;
 }
 .apk-portfolio-summary-grid > div {
   min-width: 0;
-  padding: 2px 14px;
-  border-left: 1px solid var(--be-border);
+  padding: 10px 0 0;
+  border-top: 1px solid var(--be-border);
 }
 .apk-portfolio-summary-grid > div:first-child {
-  padding-left: 0;
-  border-left: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 .apk-portfolio-section-head {
   align-items: flex-end;
@@ -115,7 +116,7 @@
   line-height: 1.35;
 }
 .apk-portfolio-tabs {
-  width: max-content;
+  width: 100%;
   max-width: 100%;
   gap: 4px;
   padding: 4px;
@@ -130,6 +131,8 @@
   min-height: 36px;
   display: inline-flex;
   align-items: center;
+  flex: 1 0 auto;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 0;
   padding: 0 12px;
@@ -194,9 +197,9 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
-  text-align: right;
+  text-align: left;
 }
 .apk-holding-value {
   color: var(--be-ink);
@@ -206,7 +209,7 @@
   overflow-wrap: anywhere;
 }
 .apk-holding-metrics.apk-metric-grid-4 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   padding-top: 12px;
   margin-top: 0;
 }
@@ -217,6 +220,12 @@
   border: 1px solid var(--be-border);
   border-radius: var(--be-r-8);
   background: var(--be-ivory);
+  align-items: stretch;
+}
+.apk-portfolio-screen .apk-holding-gain .apk-holding-gain-v {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
 }
 .apk-holding-gain-l {
   font-weight: 500;
@@ -285,7 +294,7 @@
 }
 .apk-portfolio-summary-grid-skeleton {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
   padding-top: 16px;
   margin-top: 2px;
@@ -302,25 +311,66 @@
 }
 .apk-holding-metrics-skeleton {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   padding-top: 12px;
 }
 
-@media (max-width: 1040px) {
+/* Tablet */
+@media (min-width: 768px) {
+  .apk-portfolio-header {
+    align-items: flex-end;
+    flex-direction: row;
+    gap: 18px;
+  }
+
+  .apk-portfolio-asof {
+    width: auto;
+    min-width: 132px;
+    text-align: right;
+  }
+
   .apk-portfolio-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .apk-portfolio-summary-grid > div {
-    padding: 10px 0 0;
+    padding: 2px 14px;
+    border-left: 1px solid var(--be-border);
+    border-top: 0;
+  }
+
+  .apk-portfolio-summary-grid > div:first-child {
+    padding-left: 0;
     border-left: 0;
-    border-top: 1px solid var(--be-border);
   }
 
   .apk-portfolio-summary-grid > div:nth-child(-n + 2) {
-    padding-top: 0;
-    border-top: 0;
+    padding-top: 2px;
+  }
+
+  .apk-portfolio-tabs {
+    width: max-content;
+  }
+
+  .apk-portfolio-tabs button {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+
+  .apk-holding-side {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .apk-portfolio-screen .apk-holding-gain {
+    align-items: center;
+  }
+
+  .apk-portfolio-screen .apk-holding-gain .apk-holding-gain-v {
+    width: auto;
+    justify-content: flex-end;
+    text-align: right;
   }
 
   .apk-holding-metrics.apk-metric-grid-4 {
@@ -330,74 +380,14 @@
   .apk-portfolio-summary-grid-skeleton {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .apk-holding-metrics-skeleton {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 560px) {
-  .apk-portfolio-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .apk-portfolio-asof {
-    width: 100%;
-    text-align: left;
-  }
-
-  .apk-portfolio-tabs {
-    width: 100%;
-  }
-
-  .apk-portfolio-tabs button {
-    flex: 1 0 auto;
-    justify-content: center;
-    min-width: max-content;
-  }
-
-  .apk-portfolio-summary-grid,
-  .apk-holding-metrics.apk-metric-grid-4 {
-    grid-template-columns: 1fr;
-  }
-
-  .apk-portfolio-summary-grid > div,
-  .apk-portfolio-summary-grid > div:nth-child(-n + 2) {
-    padding: 10px 0 0;
-    border-top: 1px solid var(--be-border);
-  }
-
-  .apk-portfolio-summary-grid > div:first-child {
-    padding-top: 0;
-    border-top: 0;
-  }
-
-  .apk-holding-side {
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  .apk-portfolio-screen .apk-holding-gain {
-    align-items: stretch;
-  }
-
-  .apk-portfolio-screen .apk-holding-gain .apk-holding-gain-v {
-    width: 100%;
-    justify-content: space-between;
-    text-align: left;
-  }
-
-  .apk-portfolio-summary-grid-skeleton {
-    grid-template-columns: 1fr;
-  }
-  .apk-holding-metrics-skeleton {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Desktop enhancements */
-@media (min-width: 960px) {
+@media (min-width: 1040px) {
   .apk-portfolio-summary {
     border-left: 3px solid var(--be-gold);
   }
@@ -410,7 +400,7 @@
   }
 
   .apk-portfolio-summary-grid {
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .apk-portfolio-summary-grid > div {

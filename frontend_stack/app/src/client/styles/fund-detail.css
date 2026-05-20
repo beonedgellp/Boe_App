@@ -650,15 +650,52 @@
 .apk-fund-disclaimer-card p { margin: 0; }
 .apk-fund-disclaimer-card strong { color: var(--be-ink); }
 
+/* Mobile-first base overrides */
+.apk-alloc {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.apk-sector-chart-wrap {
+  width: 100%;
+  justify-content: center;
+}
+
+.apk-sector-legend {
+  width: 100%;
+}
+
+.apk-perf-head {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.apk-fund-action {
+  width: calc(100% - 32px);
+  bottom: 16px;
+}
+
+.apk-detail-hero-title {
+  font-size: 26px;
+}
+
+.apk-invest-cta-actions {
+  grid-template-columns: 1fr;
+}
+
+.apk-invest-cta-card {
+  padding: 22px 18px;
+}
+
 /* Desktop */
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-detail-hero .apk-h { font-size: 42px; }
   .apk-back-link { display: inline-flex; }
 
   .apk-detail-stack {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
     align-items: start;
   }
 
@@ -674,9 +711,22 @@
   .apk-perf { padding: 22px; }
   .apk-perf-cagr-value { font-size: 32px; }
 
+  .apk-alloc {
+    flex-direction: row;
+    align-items: center;
+    padding: 22px;
+    gap: 24px;
+  }
   .apk-alloc-ring svg { width: 128px; height: 128px; }
-  .apk-alloc { padding: 22px; gap: 24px; align-items: flex-start; }
+  .apk-sector-chart-wrap {
+    width: auto;
+    min-width: 180px;
+  }
   .apk-sector-chart svg { width: 180px; height: 180px; }
+  .apk-sector-legend {
+    width: auto;
+    flex: 1;
+  }
   .apk-investment-breakdown { padding: 22px; }
 
   .apk-fund-obj { padding: 22px; }
@@ -689,61 +739,41 @@
   .apk-fund-mins > div { padding: 14px; }
 
   .apk-fund-action {
+    width: calc(100% - 40px);
+    bottom: 24px;
+    flex-direction: row;
+  }
+
+  .apk-sector-chart-wrap svg { width: 200px; height: calc(200px + 18px); }
+  .apk-invest-cta-card { padding: 28px 22px; }
+  .apk-detail-hero { padding: 22px; }
+
+  .apk-perf-head {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .apk-detail-hero-title {
+    font-size: 32px;
+  }
+
+  .apk-invest-cta-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1040px) {
+  .apk-detail-stack {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+  }
+
+  .apk-fund-action {
     width: min(calc(100% - 80px), 1100px);
     margin: 0 auto;
   }
 
-  .apk-sector-chart-wrap svg { width: 200px; height: calc(200px + 18px); }
-  .apk-invest-cta-card { padding: 36px 28px; }
-  .apk-detail-hero { padding: 22px; }
-}
-
-@media (max-width: 1040px) {
-  .apk-detail-stack {
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 18px;
-  }
-}
-
-@media (max-width: 760px) {
-  .apk-fund-action {
-    width: calc(100% - 40px);
-    bottom: 16px;
-  }
-  .apk-invest-cta-card { padding: 22px 18px; }
-}
-
-@media (max-width: 560px) {
-  .apk-alloc {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .apk-sector-chart-wrap {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .apk-sector-legend {
-    width: 100%;
-  }
-
-  .apk-perf-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .apk-fund-action {
-    width: calc(100% - 32px);
-    flex-direction: column;
-  }
-
-  .apk-key-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .apk-detail-hero-title { font-size: 26px; }
-  .apk-invest-cta-actions {
-    grid-template-columns: 1fr;
+  .apk-invest-cta-card {
+    padding: 36px 28px;
   }
 }

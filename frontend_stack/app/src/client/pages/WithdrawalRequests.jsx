@@ -54,7 +54,7 @@ export default function WithdrawalRequests() {
         const cfg = statusConfig[req.status] || statusConfig.pending;
         const Icon = cfg.icon;
         return (
-          <div key={req.id} className="be-card" style={{ marginBottom: 12, padding: 16 }}>
+          <div key={req.id} className="be-card" style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div>
                 <div style={{ fontFamily: 'var(--be-font-serif)', fontSize: 16, fontWeight: 600 }}>{req.fundName || 'Fund'}</div>

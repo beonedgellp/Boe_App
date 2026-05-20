@@ -1,4 +1,4 @@
-/* Investor Charter & Grievance Redressal pages */
+/* Investor Charter & Grievance Redressal pages — mobile-first */
 
 .apk-charter-screen,
 .apk-grievance-screen {
@@ -191,15 +191,26 @@
   padding: 8px 0 16px;
 }
 
-/* Desktop */
-@media (min-width: 960px) {
+/* Desktop (≥768px) */
+@media (min-width: 768px) {
+  .apk-charter-screen,
+  .apk-grievance-screen { gap: 18px; }
+
   .apk-charter-header,
   .apk-grievance-header { padding: 22px; }
+
   .apk-charter-section { padding: 22px; }
   .apk-charter-contact { padding: 22px; }
   .apk-grievance-steps { padding: 22px; }
   .apk-grievance-timelines { padding: 22px; }
   .apk-grievance-contact { padding: 22px; }
+
   .apk-charter-contact-grid,
   .apk-grievance-contact-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Wide desktop (≥1040px) */
+@media (min-width: 1040px) {
+  .apk-charter-header h1,
+  .apk-grievance-header h1 { font-size: 26px; }
 }

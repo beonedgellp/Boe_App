@@ -262,7 +262,7 @@ export default function KycDetail() {
           {nominees.length > 0 && (
             <div style={{ padding: '0 16px' }}>
               {nominees.map((n, i) => (
-                <div key={i} className="apk-list-row" style={{ gridTemplateColumns: '1fr auto auto', gap: 8 }}>
+                <div key={i} className="apk-list-row apk-nominee-row">
                   <div>
                     <div className="apk-list-l">{n.name}</div>
                     <div className="apk-list-meta">

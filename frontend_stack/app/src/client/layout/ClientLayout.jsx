@@ -3,6 +3,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-route
 import { Bell, Compass, FileText, Home, LogOut, PieChart, Receipt, User } from 'lucide-react';
 import { useSession } from '../store/SessionContext.jsx';
 import Blocked from '../pages/Blocked.jsx';
+import BottomNav from './BottomNav.jsx';
 import logoOnDark from '../../assets/logo-on-dark.svg';
 import { isTerminalAccount } from '../utils/approval.js';
 
@@ -16,6 +17,14 @@ const NAV_ITEMS = [
   { to: '/app/profile', label: 'Profile', icon: User },
 ];
 
+const PRIMARY_TAB_PATHS = [
+  '/app/dashboard',
+  '/app/explore',
+  '/app/portfolio',
+  '/app/transactions',
+  '/app/profile',
+];
+
 function hasRole(user, role) {
   const expected = role.toLowerCase();
   return (
@@ -23,6 +32,10 @@ function hasRole(user, role) {
     String(user?.accountType || '').toLowerCase() === expected ||
     user?.roles?.some((value) => String(value).toLowerCase() === expected)
   );
+}
+
+function isPrimaryTabPath(path) {
+  return PRIMARY_TAB_PATHS.some((p) => path === p || path.startsWith(p + '/'));
 }
 
 export default function ClientLayout() {
@@ -66,8 +79,11 @@ export default function ClientLayout() {
     navigate('/app/login', { replace: true });
   }
 
+  const showBottomNav = isPrimaryTabPath(path);
+
   return (
     <div className="app-shell">
+      {/* Desktop sidebar — hidden on mobile via CSS */}
       <aside className="app-sidebar">
         <NavLink to="/" className="app-brand"><img src={logoOnDark} alt="BeOnEdge" /></NavLink>
         <nav className="app-nav" aria-label="Client app">
@@ -92,9 +108,13 @@ export default function ClientLayout() {
           </button>
         </div>
       </aside>
+
       <main className="app-main">
         <Outlet />
       </main>
+
+      {/* Mobile bottom nav — hidden on desktop via CSS */}
+      {showBottomNav && <BottomNav />}
     </div>
   );
 }

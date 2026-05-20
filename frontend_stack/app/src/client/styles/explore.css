@@ -1,5 +1,15 @@
 /* Search */
-.apk-search { position: relative; }
+.apk-search {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+@media (min-width: 768px) {
+  .apk-search {
+    position: relative;
+    z-index: auto;
+  }
+}
 .apk-search input {
   padding-left: 44px;
   padding-right: 40px;
@@ -48,7 +58,7 @@
   grid-template-columns: 1fr;
   gap: 16px;
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-strategy-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -58,9 +68,13 @@
 .apk-strategy-skel {
   height: 220px;
 }
-@media (max-width: 559px) {
+.apk-strategy-skel {
+  height: 190px;
+}
+
+@media (min-width: 768px) {
   .apk-strategy-skel {
-    height: 190px;
+    height: 220px;
   }
 }
 
@@ -246,7 +260,7 @@
   grid-template-columns: 1fr;
   gap: 0;
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-research-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
@@ -258,7 +272,7 @@
   gap: 10px;
   padding: 14px 0;
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-research-row {
     padding: 10px 0;
   }
@@ -266,7 +280,7 @@
 .apk-research-row + .apk-research-row {
   border-top: 1px solid var(--be-border);
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-research-row + .apk-research-row {
     border-top: none;
   }
@@ -312,7 +326,7 @@
   height: 60px;
   margin: 8px 0;
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-research-skel {
     height: 72px;
   }
@@ -347,7 +361,7 @@
   grid-template-columns: 1fr;
   gap: 12px;
 }
-@media (min-width: 960px) {
+@media (min-width: 768px) {
   .apk-featured-row {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -405,15 +419,31 @@
 /* Filter Bar */
 .apk-filter-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 8px;
 }
 .apk-filter-group {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.apk-filter-group::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 768px) {
+  .apk-filter-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .apk-filter-group {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 .apk-filter-chip {
   padding: 6px 14px;
