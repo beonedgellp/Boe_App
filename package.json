@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "ngrok": "^5.0.0-beta.2",
+    "playwright": "^1.59.1"
+  }
+}

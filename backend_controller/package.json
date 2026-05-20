@@ -1,0 +1,31 @@
+{
+  "name": "beonedge-backend-controller",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "BeOnEdge HTTP API scaffold and PostgreSQL migration runner.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:check": "node scripts/check-db.js",
+    "routes": "node scripts/print-routes.js",
+    "authz:mandate": "node scripts/check-mandate-approval-guard.js",
+    "authz:payment": "node scripts/check-payment-retry-approval-guard.js",
+    "authz:jwt-status": "node scripts/check-jwt-status-store-authority.js",
+    "authz:admin-rbac": "node scripts/check-admin-rbac-routes.js",
+    "authz:admin-audit": "node scripts/check-admin-status-audit.js",
+    "authz:403": "node scripts/check-auth-403-envelope.js",
+    "payment:reconcile": "node scripts/check-admin-payment-reconcile.js",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:status": "node scripts/migrate.js status",
+    "seed:auth": "node scripts/seed-auth.js",
+    "idempotency:smoke": "node scripts/idempotency-smoke.js"
+  },
+  "dependencies": {
+    "pg": "^8.20.0",
+    "razorpay": "^2.9.6"
+  }
+}

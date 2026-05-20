@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.vite/
+coverage/
+*.log
+npm-debug.log*
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+!.env.production.example
+local.properties
+android/local.properties
+
+# Data, credentials, and local secrets
+data/*.json
+data/*.tmp
+backend_controller/data/*.json
+backend_controller/data/*.bak
+backend_controller/data/*.backup*
+backend_controller/data/*.tmp
+resources/credentials/
+resources/testing/**/raw/
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# Android generated output
+frontend_stack/app/android/.gradle/
+frontend_stack/app/android/app/build/
+frontend_stack/app/android/build/
+frontend_stack/app/android/capacitor-cordova-android-plugins/build/
+*.apk
+*.aab
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Agent-related files
+.claude/
+.codex
+.codex/
+.agents/
+AGENTS.md
+CLAUDE.md
+*_SKILL.md
+SKILL.md
+frontend_stack/.codex
+frontend_stack/.codex/
+resources/agent/
+extra/coding-sessions/

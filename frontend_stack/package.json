@@ -1,0 +1,13 @@
+{
+  "name": "beonedge-design-system",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "app"
+  ],
+  "scripts": {
+    "dev": "npm --workspace app run dev",
+    "build": "npm --workspace app run build",
+    "preview": "npm --workspace app run preview"
+  }
+}

@@ -1,0 +1,39 @@
+import React from 'react';
+import { Clock, XCircle, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useSession } from '../store/SessionContext.jsx';
+
+const COPY = {
+  pending_review: { Icon: Clock, color: 'var(--be-slate)', headline: 'Your account is being reviewed.', body: "We'll notify you once your BeOnEdge account is ready." },
+  rejected: { Icon: XCircle, color: 'var(--be-red)', headline: 'This account needs support.', body: 'Contact support so we can help with this account.' },
+  suspended: { Icon: Lock, color: 'var(--be-slate)', headline: 'Your account is currently suspended.', body: 'Investing is paused on this account. Contact support so we can help you restore access.' },
+  closed: { Icon: Lock, color: 'var(--be-slate)', headline: 'This account is closed.', body: 'Reach out to support if this is unexpected.' },
+};
+
+export default function Blocked() {
+  const navigate = useNavigate();
+  const { user, logout } = useSession();
+  const cfg = COPY[user?.status] || COPY.pending_review;
+  const Icon = cfg.Icon;
+
+  return (
+    <div className="apk-blocked">
+      <div className="be-card apk-blocked-card">
+        <div className="apk-blocked-icon" style={{ color: cfg.color }}>
+          <Icon size={28} strokeWidth={1.5} />
+        </div>
+        <h2 className="apk-h-sm" style={{ marginBottom: 8 }}>{cfg.headline}</h2>
+        <p style={{ color: 'var(--be-slate)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>{cfg.body}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 20 }}>
+          {user?.status === 'rejected' && (
+            <button className="be-btn be-btn-primary be-btn-block" onClick={() => navigate('/app/profile/support')}>Contact support</button>
+          )}
+          {(user?.status === 'suspended' || user?.status === 'closed') && (
+            <button className="be-btn be-btn-primary be-btn-block" onClick={() => navigate('/app/profile/support')}>Contact support</button>
+          )}
+          <button className="be-btn be-btn-ghost be-btn-block" onClick={async () => { await logout(); navigate('/app/login'); }}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,226 @@
+import { randomUUID } from 'node:crypto';
+import { HttpError } from '../../http/errors.js';
+import { hasDatabaseConfig, query, transaction } from '../../db/client.js';
+import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '../../db/jsonStore.js';
+
+const CONFIG_KEY = 'mobile_app';
+const MAX_CONFIG_BYTES = 1024 * 1024;
+
+function requireDatabase(config) {
+  if (!hasDatabaseConfig(config)) {
+    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL is required for app configuration.');
+  }
+}
+
+function plainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateAppConfig(config) {
+  if (!plainObject(config)) {
+    throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must be a JSON object.');
+  }
+
+  if (!plainObject(config.mobile)) {
+    throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include a mobile object.');
+  }
+
+  if (!Array.isArray(config.mobile.products)) {
+    throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include strategies.');
+  }
+
+  if (!plainObject(config.mobile.screens)) {
+    throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include mobile.screens.');
+  }
+
+  const encoded = JSON.stringify(config);
+  if (encoded.length > MAX_CONFIG_BYTES) {
+    throw new HttpError(413, 'APP_CONFIG_TOO_LARGE', 'App configuration is larger than the supported limit.');
+  }
+
+  return JSON.parse(encoded);
+}
+
+function rowToPayload(row) {
+  if (!row) {
+    return {
+      config: null,
+      source: 'postgres',
+      published: false,
+    };
+  }
+
+  return {
+    id: row.id,
+    version: row.version,
+    config: row.config_json,
+    publishedAt: row.published_at,
+    publishedBy: row.published_by,
+    source: 'postgres',
+    published: true,
+  };
+}
+
+function jsonConfigToPayload(row) {
+  if (!row) {
+    return {
+      config: null,
+      source: 'json',
+      published: false,
+    };
+  }
+
+  return {
+    id: row.id,
+    version: row.version,
+    config: row.config,
+    publishedAt: row.publishedAt,
+    publishedBy: row.publishedBy,
+    source: 'json',
+    published: true,
+  };
+}
+
+export async function getPublishedAppConfig(config) {
+  if (jsonStoreEnabled(config)) {
+    const store = await readJsonStore(config);
+    const row = store.appConfigVersions
+      .filter((item) => item.configKey === CONFIG_KEY && item.status === 'published')
+      .sort((a, b) => b.version - a.version)[0];
+    return jsonConfigToPayload(row);
+  }
+
+  requireDatabase(config);
+
+  const result = await query(config, `
+    SELECT id, version, config_json, published_at, published_by
+    FROM app_config_versions
+    WHERE config_key = $1 AND status = 'published'
+    ORDER BY version DESC
+    LIMIT 1
+  `, [CONFIG_KEY]);
+
+  return rowToPayload(result.rows[0]);
+}
+
+export async function publishAppConfig(config, actor, body, requestContext = {}) {
+  const incoming = validateAppConfig(body?.config ?? body);
+
+  if (jsonStoreEnabled(config)) {
+    const inserted = await updateJsonStore(config, (store) => {
+      const previous = store.appConfigVersions
+        .filter((item) => item.configKey === CONFIG_KEY && item.status === 'published')
+        .sort((a, b) => b.version - a.version)[0] || null;
+      const now = new Date().toISOString();
+      const next = {
+        id: randomUUID(),
+        configKey: CONFIG_KEY,
+        version: (previous?.version || 0) + 1,
+        config: incoming,
+        status: 'published',
+        publishedAt: now,
+        publishedBy: actor?.userId || null,
+      };
+      store.appConfigVersions.push(next);
+      store.adminAuditLogs.push({
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'app_config.publish',
+        entityType: 'app_config',
+        entityId: next.id,
+        before: previous?.config || null,
+        after: incoming,
+        reason: body?.reason || 'Admin published app configuration.',
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
+        createdAt: now,
+      });
+      return next;
+    });
+
+    return jsonConfigToPayload(inserted);
+  }
+
+  requireDatabase(config);
+
+  return transaction(config, async (client) => {
+    const previous = await client.query(`
+      SELECT id, version, config_json
+      FROM app_config_versions
+      WHERE config_key = $1 AND status = 'published'
+      ORDER BY version DESC
+      LIMIT 1
+    `, [CONFIG_KEY]);
+
+    const previousRow = previous.rows[0] || null;
+    const nextVersion = (previousRow?.version || 0) + 1;
+
+    const inserted = await client.query(`
+      INSERT INTO app_config_versions (
+        config_key,
+        version,
+        config_json,
+        status,
+        published_by
+      )
+      VALUES ($1, $2, $3::jsonb, 'published', $4)
+      RETURNING id, version, config_json, published_at, published_by
+    `, [CONFIG_KEY, nextVersion, JSON.stringify(incoming), actor?.id || null]);
+
+    await client.query(`
+      INSERT INTO admin_audit_logs (
+        admin_id,
+        action,
+        entity_type,
+        entity_id,
+        before_json,
+        after_json,
+        reason,
+        ip_address,
+        user_agent
+      )
+      VALUES ($1, 'app_config.publish', 'app_config', $2, $3::jsonb, $4::jsonb, $5, $6, $7)
+    `, [
+      actor?.id || null,
+      inserted.rows[0].id,
+      previousRow ? JSON.stringify(previousRow.config_json) : null,
+      JSON.stringify(incoming),
+      body?.reason || 'Admin published app configuration.',
+      requestContext.ipAddress || null,
+      requestContext.userAgent || null,
+    ]);
+
+    return rowToPayload(inserted.rows[0]);
+  });
+}
+
+export async function listPublishedStrategiesFromAppConfig(config) {
+  const payload = await getPublishedAppConfig(config);
+  return {
+    items: payload.config?.mobile?.products || [],
+    source: payload.published ? 'app_config_versions' : 'postgres_empty',
+    publishedAt: payload.publishedAt || null,
+    version: payload.version || null,
+  };
+}
+
+export async function getPublishedStrategyFromAppConfig(config, productId) {
+  const payload = await getPublishedAppConfig(config);
+  const strategy = payload.config?.mobile?.products?.find((item) => item.id === productId);
+
+  if (!strategy) {
+    throw new HttpError(404, 'STRATEGY_NOT_FOUND', `Strategy ${productId} is not published in app configuration.`);
+  }
+
+  return strategy;
+}
+
+export async function listResearchContextFromAppConfig(config) {
+  const payload = await getPublishedAppConfig(config);
+  return {
+    items: payload.config?.mobile?.researchContext || [],
+    source: payload.published ? 'app_config_versions' : 'postgres_empty',
+    publishedAt: payload.publishedAt || null,
+    version: payload.version || null,
+  };
+}
