@@ -9,6 +9,8 @@ import { fmtMoney } from '../utils/format.js';
 import { openRazorpayCheckout } from '../utils/razorpay.js';
 import { useSession } from '../store/SessionContext.jsx';
 
+const RISK_DISCLOSURE = 'Investments are subject to market risk. Please read all scheme-related documents carefully before investing.';
+
 export default function LumpsumSheet() {
   const { fundId } = useParams();
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function LumpsumSheet() {
   const settings = appConfig.mobile.screens.invest.oneTime;
   const [fund, setFund] = useState(null);
   const [amount, setAmount] = useState(settings.defaultAmount ?? '');
+  const [riskConsent, setRiskConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
 
@@ -27,6 +30,11 @@ export default function LumpsumSheet() {
   const amountNumber = Number(amount) || 0;
   const minLumpsum = Number(fund.minLumpsum) || 0;
   const valid = amount !== '' && amountNumber >= minLumpsum;
+
+  function onAmountChange(e) {
+    const next = e.target.value;
+    setAmount(next === '' ? '' : Math.max(0, Math.floor(Number(next))));
+  }
 
   async function onContinue() {
     setErr('');
@@ -77,7 +85,7 @@ export default function LumpsumSheet() {
           <label>Amount</label>
           <div className="apk-amount-row">
             <span className="apk-amount-prefix">₹</span>
-            <input className="apk-amount-input be-money" type="number" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))} />
+            <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={minLumpsum || 0} step="500" value={amount} onChange={onAmountChange} placeholder="0" />
           </div>
           <div className="apk-chip-row" style={{ marginTop: 8 }}>
             {settings.amountPresets.map((v) => (
@@ -90,11 +98,17 @@ export default function LumpsumSheet() {
         <div className="apk-sheet-summary">
           <div className="apk-sheet-summary-row"><span>One-time investment</span><strong className="be-money">{fmtMoney(amountNumber)}</strong></div>
           <div className="be-disclosure" style={{ marginTop: 6 }}>{settings.paymentDisclosure}</div>
+          <div className="be-disclosure" style={{ marginTop: 6 }}>{RISK_DISCLOSURE}</div>
         </div>
+
+        <label className="apk-consent-row">
+          <input type="checkbox" checked={riskConsent} onChange={(e) => setRiskConsent(e.target.checked)} />
+          <span>I understand that investments are subject to market risks and have read the scheme-related documents.</span>
+        </label>
 
         {err && <div className="apk-banner apk-banner-red">{err}</div>}
 
-        <button className="be-btn be-btn-primary be-btn-block be-btn-lg" disabled={!valid || submitting} onClick={onContinue}>
+        <button className="be-btn be-btn-primary be-btn-block be-btn-lg" disabled={!valid || !riskConsent || submitting} onClick={onContinue}>
           {submitting ? 'Setting up investment...' : (
             <>
               <CreditCard size={18} strokeWidth={2} style={{ marginRight: 8 }} /> Pay ₹{fmtMoney(amountNumber)}

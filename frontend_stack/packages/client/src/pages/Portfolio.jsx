@@ -271,7 +271,7 @@ export default function Portfolio() {
       )}
       {portfolio && (
         <p className="be-disclosure apk-portfolio-disclosure">
-          Holdings as of {fmtDate(portfolio.asOf, { withTime: true })}. Published by BeOnEdge.
+          Holdings as of {fmtDate(portfolio.asOf, { withTime: true })}. Investment values are subject to market risk. Published by BeOnEdge.
         </p>
       )}
 

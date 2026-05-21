@@ -687,4 +687,6 @@
   padding: 22px 18px;
 }
 
+.apk-holding-row { display: grid; grid-template-columns: 1fr auto; padding: 8px 0; align-items: center; gap: 8px; }
+
 /* Desktop */

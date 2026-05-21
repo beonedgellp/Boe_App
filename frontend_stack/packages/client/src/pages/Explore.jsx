@@ -384,6 +384,9 @@ export default function Explore() {
       {isComponentEnabled(appConfig, 'explore', 'allocation_disclosure') && (
         <div className="be-disclosure">{copy.allocationDisclosure}</div>
       )}
+      <div className="be-disclosure">
+        Investments are subject to market risk. Please read all scheme-related documents carefully before investing.
+      </div>
       {notifyToast && (
         <div className="apk-toast" role="status">{notifyToast}</div>
       )}

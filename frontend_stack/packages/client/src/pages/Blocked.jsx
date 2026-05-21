@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '../store/SessionContext.jsx';
 
 const COPY = {
-  pending_review: { Icon: Clock, color: 'var(--be-slate)', headline: 'Your account is being reviewed.', body: "We'll notify you once your BeOnEdge account is ready." },
+  pending_review: { Icon: Clock, color: 'var(--be-slate)', headline: 'Your account is being reviewed.', body: "We'll notify you once your account is ready." },
   rejected: { Icon: XCircle, color: 'var(--be-red)', headline: 'This account needs support.', body: 'Contact support so we can help with this account.' },
   suspended: { Icon: Lock, color: 'var(--be-slate)', headline: 'Your account is currently suspended.', body: 'Investing is paused on this account. Contact support so we can help you restore access.' },
   closed: { Icon: Lock, color: 'var(--be-slate)', headline: 'This account is closed.', body: 'Reach out to support if this is unexpected.' },

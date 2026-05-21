@@ -221,7 +221,7 @@ export default function Transactions() {
         )
       )}
 
-      <div className="be-disclosure">{tab === 'pending' ? 'Pending installments are AutoPay attempts that didn\'t complete. Retrying does not double-charge.' : 'Showing last 90 days · Older history available in Statements.'}</div>
+      <div className="be-disclosure">{tab === 'pending' ? 'Pending installments are AutoPay attempts that did not complete. Retrying does not double-charge.' : 'Showing last 90 days. Older history is available in Statements. Investment values reflect market pricing.'}</div>
 
       {open && (
         <div className={`apk-sheet-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(null)} role="dialog" aria-modal="true" aria-label="Transaction details">

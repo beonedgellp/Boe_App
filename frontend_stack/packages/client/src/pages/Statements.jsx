@@ -49,16 +49,16 @@ export default function Statements() {
             Download or preview your account statements. {totalCount > 0 ? `${totalCount} on file.` : 'Statements appear here as cycles close.'}
           </p>
         </div>
-        <div className="apk-statements-summary" aria-label="Statement summary">
+        <dl className="apk-statements-summary" aria-label="Statement summary">
           <div>
-            <span className="be-num">{totalCount}</span>
-            <span>On file</span>
+            <dt className="be-num">{totalCount}</dt>
+            <dd>On file</dd>
           </div>
           <div>
-            <span className="be-num">{filteredCount}</span>
-            <span>{currentPeriodLabel}</span>
+            <dt className="be-num">{filteredCount}</dt>
+            <dd>{currentPeriodLabel}</dd>
           </div>
-        </div>
+        </dl>
       </header>
 
       <div className="apk-tabs apk-statements-tabs" role="tablist" aria-label="Statement period">
@@ -137,7 +137,7 @@ export default function Statements() {
       )}
 
       <p className="be-disclosure apk-statements-disclosure">
-        Statements reflect BeOnEdge-published NAV and reconciled ledger entries.
+        Statements reflect published NAV and reconciled ledger entries. Past performance does not guarantee future returns.
       </p>
 
       {open && (

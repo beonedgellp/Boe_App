@@ -173,7 +173,7 @@ export default function Dashboard() {
           )}
 
           {/* Research context */}
-          {isComponentEnabled(appConfig, 'dashboard', 'research_context') && (
+          {isComponentEnabled(appConfig, 'dashboard', 'research_context') && research.length > 0 && (
             <div className="apk-grid-research">
               <div className="apk-section-head">
                 <div className="be-eyebrow">{copy.researchTitle}</div>

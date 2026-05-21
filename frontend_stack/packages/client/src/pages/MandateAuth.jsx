@@ -49,13 +49,15 @@ export default function MandateAuth() {
           </div>
         ) : (
           <div className="be-card" style={{ padding: 16 }}>
-            {['Open UPI app', `Authorize BeOnEdge mandate up to ${fmtMoney(mandate.maxAmount)}`, 'Return to app'].map((step, i) => (
-              <div key={i} className="apk-timeline-row" style={{ paddingLeft: 0 }}>
-                <div className="apk-timeline-dot is-active" />
-                <div>{i + 1}. {step}</div>
-                <div />
-              </div>
-            ))}
+            <ol aria-label="AutoPay authorization steps" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+              {['Open UPI app', `Authorize mandate up to ${fmtMoney(mandate.maxAmount)}`, 'Return to app'].map((step, i) => (
+                <li key={i} className="apk-timeline-row" style={{ paddingLeft: 0 }}>
+                  <div className="apk-timeline-dot is-active" />
+                  <div>{i + 1}. {step}</div>
+                  <div />
+                </li>
+              ))}
+            </ol>
           </div>
         )}
 
@@ -74,9 +76,13 @@ export default function MandateAuth() {
 
         <div className="be-disclosure">
           {mandate.validTo
-            ? `BeOnEdge can debit only up to ${fmtMoney(mandate.maxAmount)} per cycle until ${fmtDate(mandate.validTo)}. You can pause or cancel from support.`
-            : `BeOnEdge can debit only up to ${fmtMoney(mandate.maxAmount)} per cycle. You can pause or cancel from support.`}
+            ? `We can debit only up to ${fmtMoney(mandate.maxAmount)} per cycle until ${fmtDate(mandate.validTo)}. You can pause or cancel from support.`
+            : `We can debit only up to ${fmtMoney(mandate.maxAmount)} per cycle. You can pause or cancel from support.`}
         </div>
+
+        {mandate.status === 'active' && (
+          <div className="be-disclosure">Your UPI AutoPay mandate is active.</div>
+        )}
 
         {!isRazorpayPending && (
           <div className="apk-action-bar">

@@ -15,7 +15,7 @@ export default function ApprovalRequired() {
           <div>
             <div className="be-eyebrow">Execution locked</div>
             <h1 className="apk-h-sm">Admin approval is required.</h1>
-            <p>Explore the dashboard and strategies while BeOnEdge reviews the account.</p>
+            <p>Explore the dashboard and strategies while we review the account.</p>
           </div>
         </div>
         <div className="app-start-note">

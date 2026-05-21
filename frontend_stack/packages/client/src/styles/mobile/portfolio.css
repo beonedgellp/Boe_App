@@ -96,6 +96,9 @@
   padding-top: 16px;
   margin-top: 2px;
 }
+.apk-portfolio-grid.apk-portfolio-summary-grid {
+  grid-template-columns: 1fr;
+}
 .apk-portfolio-summary-grid > div {
   min-width: 0;
   padding: 10px 0 0;

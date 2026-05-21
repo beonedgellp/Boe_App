@@ -50,7 +50,7 @@ export default function PaymentStatus() {
       orderId: payment.providerOrderId || payment.providerPaymentId,
       amount: payment.amount,
       currency: payment.currency,
-      name: order?.fundName || 'BeOnEdge Investment',
+      name: order?.fundName || (order?.type === 'sip' ? 'Monthly SIP' : 'One-time Investment'),
       description: order?.type === 'sip' ? 'SIP Setup' : 'Lumpsum Investment',
       userEmail: payment.userEmail || '',
       userContact: payment.userPhone || '',
@@ -107,7 +107,11 @@ export default function PaymentStatus() {
           ))}
         </div>
 
-        <div className="be-disclosure">{!isSuccess && !isFailed ? "We'll auto-retry status checks for 90 seconds." : 'BeOnEdge does not store your UPI PIN.'}</div>
+        <div className="be-disclosure">{!isSuccess && !isFailed ? "We'll auto-retry status checks for 90 seconds." : 'We do not store your UPI PIN.'}</div>
+
+        {isSuccess && (
+          <div className="be-disclosure">Investments are subject to market risk. Monitor your portfolio from the dashboard.</div>
+        )}
 
         <div className="apk-action-bar">
           {showPayButton && (

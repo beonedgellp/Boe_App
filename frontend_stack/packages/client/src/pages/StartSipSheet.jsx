@@ -66,7 +66,7 @@ export default function StartSipSheet() {
   const debitDayText = day ? `${day}${getOrdinal(day)} of every month` : 'Configured debit day';
 
   const riskDisclosure = disclosures.reviewRiskText
-    || 'Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing. Past performance does not guarantee future returns. Unit values may go up or down depending on the factors and forces affecting the securities market.';
+    || 'Investments are subject to market risk. Please read all scheme-related documents carefully before investing.';
 
   function normalizeOptions(values, fallback) {
     const source = Array.isArray(values) && values.length ? values : fallback;

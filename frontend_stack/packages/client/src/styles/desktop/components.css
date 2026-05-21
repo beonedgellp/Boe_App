@@ -97,52 +97,22 @@
     padding-right: 48px;
   }
 }@media (max-width: 767px) {
-  .apk-portfolio-grid,
-  .apk-fund-foot,
   .apk-perf-stats,
-  .apk-fund-mins,
-  .apk-quick,
-  .apk-metric-grid-4,
-  .apk-mandate-actions {
+  .apk-metric-grid-4 {
     grid-template-columns: 1fr;
   }
 
   .apk-fund-head,
   .apk-sip-head,
   .apk-perf-head,
-  .apk-holding-head,
-  .apk-holding-gain,
-  .apk-row-head,
-  .apk-payment-action,
-  .apk-stepup-toggle,
-  .apk-fund-fees-row,
-  .apk-sheet-summary-row {
+  .apk-holding-gain {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .apk-research-row,
-  .apk-pulse-row,
-  .apk-holding-row,
-  .apk-list-row,
-  .apk-statements-row {
+  .apk-pulse-row {
     grid-template-columns: 1fr;
-  }
-
-  .apk-payment-action {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .apk-payment-action .be-btn {
-    width: 100%;
-  }
-
-  .apk-action-bar {
-    flex-direction: column;
-    width: calc(100% - 32px);
-    margin: 0 auto 16px;
   }
 
   .be-card,

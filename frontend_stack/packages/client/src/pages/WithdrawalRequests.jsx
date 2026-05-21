@@ -27,6 +27,7 @@ export default function WithdrawalRequests() {
         <ArrowLeft size={16} strokeWidth={1.5} />
         <span>Back</span>
       </button>
+      <span className="be-eyebrow">Manage funds</span>
       <h1 className="apk-h">Withdrawal Requests</h1>
       <p style={{ fontSize: 13, color: 'var(--be-slate)', marginBottom: 16 }}>
         Track your redemption requests. Funds are returned after admin approval.
@@ -95,6 +96,9 @@ export default function WithdrawalRequests() {
           </div>
         );
       })}
+      <p className="be-disclosure">
+        Redemption requests require approval. Final values may vary with market movement until units are processed.
+      </p>
     </div>
   );
 }

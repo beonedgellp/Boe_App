@@ -7,7 +7,7 @@
 .apk-portfolio-eye { font-size: 11px; color: var(--be-slate); letter-spacing: 0; text-transform: uppercase; }
 .apk-portfolio-num { font-family: var(--be-font-sans); font-size: 44px; font-weight: 600; letter-spacing: 0; line-height: 1; }
 .apk-portfolio-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.apk-portfolio-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid var(--be-border); }
+.apk-portfolio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid var(--be-border); }
 .apk-portfolio-grid > div > .apk-portfolio-mini-l { font-size: 11px; color: var(--be-slate); letter-spacing: 0; text-transform: uppercase; }
 .apk-portfolio-grid > div > .apk-portfolio-mini-v { font-size: 15px; font-weight: 500; margin-top: 3px; }
 .apk-muted { color: var(--be-slate); }

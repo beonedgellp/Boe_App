@@ -93,7 +93,7 @@ export default function MandateDetail() {
           </div>
         )}
 
-        <div className="be-disclosure">Requests are auditable and reviewed by BeOnEdge support. You'll be notified once processed.</div>
+        <div className="be-disclosure">Requests are auditable and reviewed by our team. You'll be notified once processed.</div>
       </div>
 
       {confirm && (
@@ -102,20 +102,32 @@ export default function MandateDetail() {
             <div className="apk-sheet-handle" />
             <h2 className="apk-h-sm">Confirm {confirm.type.replace('_', ' ')} request</h2>
             <p style={{ color: 'var(--be-slate)', fontSize: 14, marginTop: 6 }}>
-              This creates a pending request for BeOnEdge to action. You'll be notified when it's processed.
+              {confirm.type === 'pause' && 'Pausing stops future debits. Your current investments remain active. You can resume later from this screen.'}
+              {confirm.type === 'cancel' && 'Cancelling stops all future debits and terminates the mandate. This cannot be undone.'}
+              {confirm.type === 'change_amount' && 'This updates your monthly SIP amount. The change takes effect after review.'}
             </p>
             {confirm.type === 'change_amount' && (
               <div className="be-field" style={{ marginTop: 12 }}>
                 <label>New monthly amount</label>
                 <div className="apk-amount-row">
                   <span className="apk-amount-prefix">₹</span>
-                  <input className="apk-amount-input be-money" type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} />
+                  <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={order?.amount ? Math.round(order.amount * 0.5) : 0} step="500" value={newAmount} onChange={(e) => setNewAmount(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} placeholder="0" />
                 </div>
+                {newAmount !== '' && Number(newAmount) < (order?.amount ? Math.round(order.amount * 0.5) : 0) && (
+                  <div className="be-field-error" style={{ marginTop: 4 }}>Minimum is {fmtMoney(order?.amount ? Math.round(order.amount * 0.5) : 0)}.</div>
+                )}
               </div>
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button className="be-btn be-btn-secondary" style={{ flex: 1 }} onClick={() => setConfirm(null)} disabled={submitting}>Cancel</button>
-              <button className="be-btn be-btn-primary" style={{ flex: 1 }} onClick={submitRequest} disabled={submitting}>{submitting ? 'Submitting…' : 'Submit request'}</button>
+              <button
+                className="be-btn be-btn-primary"
+                style={{ flex: 1 }}
+                onClick={submitRequest}
+                disabled={submitting || (confirm.type === 'change_amount' && (newAmount === '' || Number(newAmount) < (order?.amount ? Math.round(order.amount * 0.5) : 0)))}
+              >
+                {submitting ? 'Submitting…' : 'Submit request'}
+              </button>
             </div>
           </div>
         </div>

@@ -147,7 +147,7 @@ export default function FundDetail() {
                 <span className="apk-trust-sep">·</span>
                 <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> Audited Holdings</span>
               </div>
-              <p className="apk-detail-hero-quote">Past performance is not indicative of future returns</p>
+              <p className="apk-detail-hero-quote">Investments are subject to market risks. Past performance is not indicative of future returns.</p>
             </div>
             <div className="apk-detail-status">
               {isActive ? (
