@@ -146,7 +146,7 @@ async function _processPaymentWebhook(config, provider, rawBody, headers) {
     const transaction = (store.transactions || []).find((t) => t.id === payment.transactionId);
     if (transaction) {
       if (normalizedStatus === 'success') {
-        transaction.status = 'payment_confirmed';
+        transaction.status = 'awaiting_approval';
         transaction.paymentConfirmedAt = now;
       } else {
         transaction.status = 'payment_failed';
@@ -160,12 +160,7 @@ async function _processPaymentWebhook(config, provider, rawBody, headers) {
       : null;
     if (plan) {
       if (normalizedStatus === 'success') {
-        if (plan.status === 'pending_first_payment') {
-          plan.status = 'active';
-          plan.startDate = now;
-        } else {
-          plan.status = 'installment_success';
-        }
+        plan.status = 'pending_admin_approval';
       } else {
         if (plan.status === 'pending_first_payment') {
           plan.status = 'first_payment_failed';

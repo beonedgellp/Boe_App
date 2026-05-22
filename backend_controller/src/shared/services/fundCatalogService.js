@@ -61,7 +61,8 @@ export function computeFundAnalytics(fund) {
 }
 
 function enrichFundWithAnalytics(fund) {
-  return { ...fund, analytics: computeFundAnalytics(fund) };
+  const trackingId = fund.trackingId || fund.fundCode || `FP-${String(fund.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`;
+  return { ...fund, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(fund) };
 }
 
 export async function listFunds(config) {
@@ -127,6 +128,8 @@ export function toClientFund(fund) {
 
   return {
     ...rest,
+    trackingId: rest.trackingId || rest.fundCode || `FP-${String(rest.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`,
+    fundCode: rest.fundCode || rest.trackingId || `FP-${String(rest.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`,
     sectors,
     investments,
     allocation,

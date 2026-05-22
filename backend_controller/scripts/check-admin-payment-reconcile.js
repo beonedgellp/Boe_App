@@ -75,8 +75,8 @@ try {
 
   const store = JSON.parse(await readFile(dbPath, 'utf8'));
   assert.equal(store.payments[0].status, 'reconciled');
-  assert.equal(store.transactions[0].status, 'payment_confirmed');
-  assert.equal(store.investmentPlans[0].status, 'active');
+  assert.equal(store.transactions[0].status, 'awaiting_approval');
+  assert.equal(store.investmentPlans[0].status, 'pending_admin_approval');
   assert.equal(store.reconciliationLedger.length, 1);
   assert.equal(store.reconciliationLedger[0].settlementReference, 'setl_test_123');
   assert.equal(store.adminAuditLogs.length, 1);

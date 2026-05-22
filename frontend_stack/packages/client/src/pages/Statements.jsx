@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Download, Eye, FileText, FolderOpen } from 'lucide-react';
+import AppBar from '../layout/AppBar.jsx';
 import * as statementsApi from '../services/statementsApi.js';
 import { fmtDate } from '../utils/format.js';
 
@@ -40,8 +41,10 @@ export default function Statements() {
   const currentPeriodLabel = PERIOD_LABEL[tab];
 
   return (
-    <div className="apk-screen apk-statements-screen">
-      <header className="apk-statements-head">
+    <>
+      <AppBar title="Statements" />
+      <div className="apk-screen apk-statements-screen">
+        <header className="apk-statements-head">
         <div className="apk-statements-head-copy">
           <span className="be-eyebrow">Documents</span>
           <h1 className="apk-h">Statements</h1>
@@ -177,5 +180,6 @@ export default function Statements() {
         </div>
       )}
     </div>
+    </>
   );
 }

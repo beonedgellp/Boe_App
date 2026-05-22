@@ -18,6 +18,10 @@ function plainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function fundTrackingId(id) {
+  return `FP-${String(id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
+}
+
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
 export function computeFundAge(launchDate) {
@@ -72,7 +76,8 @@ export function computeFundAnalytics(fund) {
 }
 
 function enrichFundWithAnalytics(fund) {
-  return { ...fund, analytics: computeFundAnalytics(fund) };
+  const trackingId = fund.trackingId || fund.fundCode || fundTrackingId(fund.id);
+  return { ...fund, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(fund) };
 }
 
 export async function listFunds(config) {
@@ -98,8 +103,12 @@ export async function createFund(config, actor, body, requestContext = {}) {
 
   const incomingChartConfig = plainObject(payload.chartConfig) ? payload.chartConfig : {};
 
+  const fundId = randomUUID();
+  const trackingId = fundTrackingId(fundId);
   const fund = {
-    id: randomUUID(),
+    id: fundId,
+    trackingId,
+    fundCode: trackingId,
     name,
     tagline: toTrimmedString(payload.tagline),
     status,

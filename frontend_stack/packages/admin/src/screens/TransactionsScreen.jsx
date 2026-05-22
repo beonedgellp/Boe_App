@@ -11,14 +11,19 @@ import { fmtInt } from '../helpers/formatters.js';
 import { fmtMoney } from '@beonedge/shared/format.js';
 
 const TXN_TYPES = {
+  sip: 'SIP',
   sip_installment: 'SIP',
   lumpsum: 'Lumpsum',
+  one_time: 'Lumpsum',
 };
 
 const TXN_STATUS_BADGES = {
   submitted: <span className="be-badge be-badge-paused"><span className="be-badge-dot"/>Submitted</span>,
   payment_confirmed: <span className="be-badge be-badge-active"><span className="be-badge-dot"/>Confirmed</span>,
+  awaiting_approval: <span className="be-badge be-badge-paused"><span className="be-badge-dot"/>Awaiting approval</span>,
+  approved: <span className="be-badge be-badge-active"><span className="be-badge-dot"/>Approved</span>,
   payment_failed: <span className="be-badge be-badge-failed"><span className="be-badge-dot"/>Failed</span>,
+  approval_rejected: <span className="be-badge be-badge-failed"><span className="be-badge-dot"/>Approval rejected</span>,
 };
 
 function TransactionsScreen({ funds = [] }) {
@@ -69,8 +74,8 @@ function TransactionsScreen({ funds = [] }) {
 
   const stats = useMemo(() => {
     const totalAmount = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const confirmed = rows.filter((r) => r.status === 'payment_confirmed').length;
-    const failed = rows.filter((r) => r.status === 'payment_failed').length;
+    const confirmed = rows.filter((r) => r.status === 'payment_confirmed' || r.status === 'approved').length;
+    const failed = rows.filter((r) => r.status === 'payment_failed' || r.status === 'approval_rejected').length;
     return { totalAmount, confirmed, failed };
   }, [rows]);
 
@@ -110,12 +115,15 @@ function TransactionsScreen({ funds = [] }) {
             <select className="be-select be-select-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">All statuses</option>
               <option value="submitted">Submitted</option>
+              <option value="awaiting_approval">Awaiting approval</option>
               <option value="payment_confirmed">Confirmed</option>
+              <option value="approved">Approved</option>
               <option value="payment_failed">Failed</option>
+              <option value="approval_rejected">Approval rejected</option>
             </select>
             <select className="be-select be-select-sm" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
               <option value="all">All types</option>
-              <option value="sip_installment">SIP</option>
+              <option value="sip">SIP</option>
               <option value="lumpsum">Lumpsum</option>
             </select>
           </div>

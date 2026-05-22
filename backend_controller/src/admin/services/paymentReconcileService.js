@@ -73,20 +73,91 @@ function resolvePaymentFund(store, payment, transaction, plan) {
 
 function updateInvestmentState(transaction, plan, now) {
   if (transaction) {
-    transaction.status = 'payment_confirmed';
+    transaction.status = 'awaiting_approval';
     transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
     transaction.updatedAt = now;
   }
 
   if (plan) {
-    if (plan.status === 'pending_first_payment' || plan.status === 'pending_payment') {
-      plan.status = 'active';
-      plan.startDate = plan.startDate || now;
-    } else if (plan.status !== 'active') {
-      plan.status = 'installment_success';
-    }
+    plan.status = 'pending_admin_approval';
     plan.updatedAt = now;
   }
+}
+
+function approveInvestmentState(transaction, plan, now) {
+  if (transaction) {
+    transaction.status = 'approved';
+    transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
+    transaction.allottedAt = transaction.allottedAt || now;
+    transaction.updatedAt = now;
+  }
+
+  if (plan) {
+    plan.status = 'active';
+    plan.startDate = plan.startDate || now;
+    plan.updatedAt = now;
+  }
+}
+
+function portfolioKey(userId) {
+  return `portfolio_${userId}`;
+}
+
+function postApprovedPaymentToPortfolio(store, { payment, transaction, plan, fund, fundId, amount, now }) {
+  const userId = payment.userId || transaction?.userId || plan?.userId;
+  if (!userId) return null;
+
+  const key = portfolioKey(userId);
+  const portfolio = store[key] || {
+    invested: 0,
+    currentValue: 0,
+    allTimeGain: 0,
+    allTimeGainPct: 0,
+    todayChange: 0,
+    xirrPct: 0,
+    asOf: now,
+    holdings: [],
+  };
+
+  if (!Array.isArray(portfolio.holdings)) portfolio.holdings = [];
+  const holding = portfolio.holdings.find((item) => item.fundId === fundId);
+  const nav = Number(transaction?.nav || fund?.nav || 1) || 1;
+  const units = Number(transaction?.units || 0) || amount / nav;
+
+  if (holding) {
+    const beforeInvested = Number(holding.invested || 0);
+    const beforeUnits = Number(holding.units || 0);
+    holding.invested = beforeInvested + amount;
+    holding.units = beforeUnits + units;
+    holding.avgCost = holding.units > 0 ? holding.invested / holding.units : holding.avgCost || nav;
+    holding.currentValue = Number(holding.currentValue || beforeInvested) + amount;
+    holding.status = 'units_allotted';
+    holding.asOf = now;
+    holding.updatedAt = now;
+  } else {
+    portfolio.holdings.push({
+      id: fundId,
+      fundId,
+      fundName: fund?.name || fund?.title || fundId,
+      units,
+      avgCost: nav,
+      invested: amount,
+      currentValue: amount,
+      status: 'units_allotted',
+      asOf: now,
+      updatedAt: now,
+      source: 'payment_approval',
+    });
+  }
+
+  portfolio.invested = portfolio.holdings.reduce((sum, item) => sum + (Number(item.invested) || 0), 0);
+  portfolio.currentValue = portfolio.holdings.reduce((sum, item) => sum + (Number(item.currentValue ?? item.invested) || 0), 0);
+  portfolio.allTimeGain = portfolio.currentValue - portfolio.invested;
+  portfolio.allTimeGainPct = portfolio.invested > 0 ? (portfolio.allTimeGain / portfolio.invested) * 100 : 0;
+  portfolio.asOf = now;
+  portfolio.source = 'payment_approval';
+  store[key] = portfolio;
+  return portfolio;
 }
 
 async function _reconcilePayment(config, actor, paymentId, body = {}, requestContext = {}) {
@@ -129,9 +200,6 @@ async function _reconcilePayment(config, actor, paymentId, body = {}, requestCon
     let transactionBefore = beforeTransaction;
     if (transaction) {
       transactionBefore = { ...transaction };
-      transaction.status = 'payment_confirmed';
-      transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
-      transaction.updatedAt = now;
     }
 
     const plan = transaction
@@ -140,14 +208,9 @@ async function _reconcilePayment(config, actor, paymentId, body = {}, requestCon
     let planBefore = beforePlan;
     if (plan) {
       planBefore = { ...plan };
-      if (plan.status === 'pending_first_payment') {
-        plan.status = 'active';
-        plan.startDate = plan.startDate || now;
-      } else if (plan.status !== 'active') {
-        plan.status = 'installment_success';
-      }
-      plan.updatedAt = now;
     }
+
+    updateInvestmentState(transaction, plan, now);
 
     const ledgerEntry = {
       id: randomUUID(),
@@ -265,10 +328,19 @@ export async function approvePayment(config, actor, paymentId, body = {}, reques
     if (settlementReference) payment.settlementReference = settlementReference;
     payment.updatedAt = now;
 
-    updateInvestmentState(transaction, plan, now);
+    approveInvestmentState(transaction, plan, now);
 
     fund.totalPoolSize = Number(fund.totalPoolSize || 0) + amount;
     fund.updatedAt = now;
+    const portfolio = postApprovedPaymentToPortfolio(store, {
+      payment,
+      transaction,
+      plan,
+      fund,
+      fundId,
+      amount,
+      now,
+    });
 
     if (!Array.isArray(store.capitalTransactions)) store.capitalTransactions = [];
     const capitalTransaction = {
@@ -305,6 +377,7 @@ export async function approvePayment(config, actor, paymentId, body = {}, reques
         transaction: transaction ? { ...transaction } : null,
         investmentPlan: plan ? { ...plan } : null,
         fund: { ...fund },
+        portfolio,
         capitalTransaction,
       },
       reason,
@@ -318,6 +391,7 @@ export async function approvePayment(config, actor, paymentId, body = {}, reques
       transaction: transaction ? { ...transaction } : null,
       investmentPlan: plan ? { ...plan } : null,
       fund: { ...fund },
+      portfolio,
       capitalTransaction,
     };
   });
@@ -364,6 +438,19 @@ export async function rejectPayment(config, actor, paymentId, body = {}, request
     payment.rejectionReason = reason;
     payment.updatedAt = now;
 
+    const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId);
+    if (transaction) {
+      transaction.status = 'approval_rejected';
+      transaction.failureReason = reason;
+      transaction.updatedAt = now;
+    }
+
+    const plan = findPaymentPlan(store, payment, transaction);
+    if (plan) {
+      plan.status = 'approval_rejected';
+      plan.updatedAt = now;
+    }
+
     if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
     store.adminAuditLogs.push({
       id: randomUUID(),
@@ -372,7 +459,11 @@ export async function rejectPayment(config, actor, paymentId, body = {}, request
       entityType: 'payment',
       entityId: payment.id,
       before: { payment: beforePayment },
-      after: { payment: { ...payment } },
+      after: {
+        payment: { ...payment },
+        transaction: transaction ? { ...transaction } : null,
+        investmentPlan: plan ? { ...plan } : null,
+      },
       reason,
       ipAddress: requestContext.ipAddress || null,
       userAgent: requestContext.userAgent || null,

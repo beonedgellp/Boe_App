@@ -123,23 +123,34 @@ export async function listOrders({ filter = 'all' } = {}) {
 }
 
 export async function listPendingPayments() {
-  if (useHttpApi()) return listFromPayload(await apiRequest('/v1/client/payments?status=pending'));
-
-  await delay();
-  return clone(pendingPayments);
-}
-
-export async function payPendingInstallment(orderId) {
   if (useHttpApi()) {
-    return apiRequest(`/v1/client/orders/${encodeURIComponent(orderId)}/pay-pending-installment`, {
-      method: 'POST',
-    });
+    return listFromPayload(await apiRequest('/v1/client/payments?status=created,gateway_initiated,pending'));
   }
 
-  await delay(1800);
-  pendingPayments = pendingPayments.filter((p) => p.orderId !== orderId);
-  const order = orders.find((o) => o.id === orderId);
-  return { id: 'pay_retry_' + orderId, orderId, amount: order?.amount ?? null, status: 'success', method: 'upi', createdAt: new Date().toISOString(), confirmedAt: new Date().toISOString() };
+  await delay();
+  const pendingStatuses = new Set(['created', 'gateway_initiated', 'pending']);
+  const fromPayments = Array.from(payments.values()).filter((payment) => pendingStatuses.has(payment.status));
+  return clone([...pendingPayments, ...fromPayments]);
+}
+
+export async function listFailedPayments() {
+  if (useHttpApi()) {
+    return listFromPayload(await apiRequest('/v1/client/payments?status=failed,expired,rejected'));
+  }
+
+  await delay();
+  const failedStatuses = new Set(['failed', 'expired', 'rejected']);
+  return clone(Array.from(payments.values()).filter((payment) => failedStatuses.has(payment.status)));
+}
+
+export async function listApprovalPayments() {
+  if (useHttpApi()) {
+    return listFromPayload(await apiRequest('/v1/client/payments?status=success,confirmed,reconciled'));
+  }
+
+  await delay();
+  const approvalStatuses = new Set(['success', 'confirmed', 'reconciled']);
+  return clone(Array.from(payments.values()).filter((payment) => approvalStatuses.has(payment.status)));
 }
 
 export async function requestSipControl({ orderId, requestType, requestedValue, effectiveDate, reason }) {
@@ -240,5 +251,3 @@ export async function authorizeMandate(mandateId) {
   }
   return clone(m);
 }
-
-

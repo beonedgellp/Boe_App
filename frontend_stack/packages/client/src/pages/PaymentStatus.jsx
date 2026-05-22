@@ -10,7 +10,8 @@ const TIMELINE = [
   { key: 'created', label: 'Created' },
   { key: 'gateway_initiated', label: 'Gateway initiated' },
   { key: 'pending', label: 'Awaiting confirmation' },
-  { key: 'success', label: 'Confirmed' },
+  { key: 'success', label: 'Payment received' },
+  { key: 'approved', label: 'Admin approved' },
 ];
 
 export default function PaymentStatus() {
@@ -38,7 +39,9 @@ export default function PaymentStatus() {
       const p = await ordersApi.pollPaymentStatus(paymentId);
       if (!mounted) return;
       setPayment(p);
-      if (p.status === 'success' || p.status === 'failed') clearInterval(polling.current);
+      if (['success', 'reconciled', 'approved', 'failed', 'expired', 'rejected'].includes(p.status)) {
+        clearInterval(polling.current);
+      }
     }, 2000);
     return () => { mounted = false; if (polling.current) clearInterval(polling.current); };
   }, [paymentId, loadPayment]);
@@ -68,12 +71,20 @@ export default function PaymentStatus() {
 
   if (!payment) return (<><AppBar title="Payment" leftIcon={X} /><div className="apk-screen"><div className="apk-skel" style={{ height: 200 }} /></div></>);
 
-  const isSuccess = payment.status === 'success' || payment.status === 'reconciled';
-  const isFailed = payment.status === 'failed' || payment.status === 'expired';
+  const isSuccess = payment.status === 'success' || payment.status === 'reconciled' || payment.status === 'approved';
+  const isAwaitingApproval = payment.status === 'success' || payment.status === 'reconciled';
+  const isFailed = payment.status === 'failed' || payment.status === 'expired' || payment.status === 'rejected';
   const isCreated = payment.status === 'created';
   const Icon = isSuccess ? CheckCircle : isFailed ? XCircle : Loader2;
-  const stateLine = isSuccess ? 'Payment received' : isFailed ? "Payment couldn't be confirmed" : 'Awaiting payment…';
-  const tlIdx = TIMELINE.findIndex((t) => t.key === payment.status);
+  const stateLine = isAwaitingApproval
+    ? 'Payment received, awaiting admin approval'
+    : isSuccess
+      ? 'Payment approved'
+      : isFailed
+        ? "Payment couldn't be confirmed"
+        : 'Awaiting payment…';
+  const timelineStatus = payment.status === 'reconciled' ? 'success' : payment.status;
+  const tlIdx = TIMELINE.findIndex((t) => t.key === timelineStatus);
 
   function onContinue() {
     if (order?.type === 'sip' && order.mandateId && payment?.provider === 'mock') navigate(`/app/mandates/${order.mandateId}/authorize`);
@@ -107,10 +118,14 @@ export default function PaymentStatus() {
           ))}
         </div>
 
-        <div className="be-disclosure">{!isSuccess && !isFailed ? "We'll auto-retry status checks for 90 seconds." : 'We do not store your UPI PIN.'}</div>
+        <div className="be-disclosure">{!isSuccess && !isFailed ? "We'll keep checking the gateway status for 90 seconds." : 'We do not store your UPI PIN.'}</div>
 
-        {isSuccess && (
-          <div className="be-disclosure">Investments are subject to market risk. Monitor your portfolio from the dashboard.</div>
+        {isAwaitingApproval && (
+          <div className="be-disclosure">Your payment is now with the admin portal for approval. Portfolio and fund pool values update after approval.</div>
+        )}
+
+        {payment.status === 'approved' && (
+          <div className="be-disclosure">The approved amount has been posted to your selected fund pool and portfolio.</div>
         )}
 
         <div className="apk-action-bar">
@@ -126,15 +141,17 @@ export default function PaymentStatus() {
           )}
           {isSuccess && (
             <>
-              <button className="be-btn be-btn-secondary be-btn-lg" onClick={() => navigate('/app/transactions')}>View transaction</button>
+              <button
+                className="be-btn be-btn-secondary be-btn-lg"
+                onClick={() => navigate(isAwaitingApproval ? '/app/transactions?tab=approval' : '/app/transactions')}
+              >
+                View transaction
+              </button>
               <button className="be-btn be-btn-primary be-btn-lg" onClick={onContinue}>Continue</button>
             </>
           )}
           {isFailed && (
-            <>
-              <button className="be-btn be-btn-secondary be-btn-lg" onClick={() => window.location.reload()}>Use another UPI handle</button>
-              <button className="be-btn be-btn-primary be-btn-lg" onClick={() => window.location.reload()}>Retry payment</button>
-            </>
+            <button className="be-btn be-btn-secondary be-btn-block be-btn-lg" onClick={() => navigate('/app/transactions')}>View transactions</button>
           )}
           {!isSuccess && !isFailed && !showPayButton && (
             <button className="be-btn be-btn-ghost be-btn-block be-btn-lg" onClick={() => navigate('/app/dashboard')}>Cancel payment</button>

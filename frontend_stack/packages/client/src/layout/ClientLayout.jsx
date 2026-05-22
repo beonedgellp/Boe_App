@@ -4,6 +4,7 @@ import { Bell, Compass, FileText, Home, LogOut, PieChart, Receipt, User } from '
 import { useSession } from '../store/SessionContext.jsx';
 import Blocked from '../pages/Blocked.jsx';
 import BottomNav from './BottomNav.jsx';
+import AppLockGate from '../components/AppLockGate.jsx';
 import logoOnDark from '@beonedge/shared/assets/logo-on-dark.svg';
 import { isTerminalAccount } from '../utils/approval.js';
 
@@ -82,6 +83,7 @@ export default function ClientLayout() {
   const showBottomNav = isPrimaryTabPath(path);
 
   return (
+    <AppLockGate user={user} logout={logout}>
     <div className="app-shell">
       {/* Desktop sidebar — hidden on mobile via CSS */}
       <aside className="app-sidebar">
@@ -116,5 +118,6 @@ export default function ClientLayout() {
       {/* Mobile bottom nav — hidden on desktop via CSS */}
       {showBottomNav && <BottomNav />}
     </div>
+    </AppLockGate>
   );
 }

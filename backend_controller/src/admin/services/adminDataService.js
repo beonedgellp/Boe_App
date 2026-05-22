@@ -8,6 +8,19 @@ import { notifyUserApproved, notifyUserRejected } from './notificationComposerSe
 
 const PENDING_APPROVAL_STATUSES = new Set(['draft', 'pending_review', 'kyc_pending']);
 
+function visibleTransactionType(type) {
+  const value = String(type || '').toLowerCase();
+  if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
+  if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
+  return value;
+}
+
+function transactionTypeMatches(actual, expected) {
+  const normalizedExpected = visibleTransactionType(expected);
+  if (!normalizedExpected || normalizedExpected === 'all') return true;
+  return visibleTransactionType(actual) === normalizedExpected;
+}
+
 function displayName(user) {
   return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Client';
 }
@@ -242,7 +255,14 @@ export async function adminTransactions(config, { fundId, status, type, userId, 
       params.push(status);
       whereSql += ` AND status = $${params.length}`;
     }
-    if (type) {
+    const normalizedType = visibleTransactionType(type);
+    if (normalizedType === 'sip') {
+      params.push(['sip', 'sip_installment', 'installment']);
+      whereSql += ` AND type = ANY($${params.length})`;
+    } else if (normalizedType === 'lumpsum') {
+      params.push(['lumpsum', 'one_time']);
+      whereSql += ` AND type = ANY($${params.length})`;
+    } else if (type) {
       params.push(type);
       whereSql += ` AND type = $${params.length}`;
     }
@@ -320,7 +340,7 @@ export async function adminTransactions(config, { fundId, status, type, userId, 
       transactions = transactions.filter((tx) => tx.status === status);
     }
     if (type) {
-      transactions = transactions.filter((tx) => tx.type === type);
+      transactions = transactions.filter((tx) => transactionTypeMatches(tx.type, type));
     }
     if (userId) {
       transactions = transactions.filter((tx) => tx.userId === userId);

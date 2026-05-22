@@ -16,17 +16,124 @@ function verifyRazorpayCheckoutSignature(orderId, paymentId, signature, secret) 
   }
 }
 
+function visibleTransactionType(type) {
+  const value = String(type || '').toLowerCase();
+  if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
+  if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
+  return value;
+}
+
+function fundTrackingId(fund) {
+  if (!fund?.id) return '';
+  return fund.trackingId || fund.fundCode || `FP-${String(fund.id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
+}
+
+function fundSnapshot(fund, fundId) {
+  if (!fund) {
+    return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
+  }
+  const trackingId = fundTrackingId(fund);
+  return {
+    id: fund.id,
+    name: fund.name || fund.title || fund.id,
+    title: fund.title || fund.name || fund.id,
+    trackingId,
+    fundCode: trackingId,
+    status: fund.status || '',
+    lifecycleStage: fund.lifecycleStage || '',
+    riskLabel: fund.riskLabel || '',
+    minSip: fund.minSip ?? null,
+    minLumpsum: fund.minLumpsum ?? null,
+    totalPoolSize: fund.totalPoolSize ?? null,
+  };
+}
+
+function paymentTypeFrom(mode, type) {
+  const value = String(mode || '').toLowerCase();
+  if (value.includes('autopay') || value.includes('mandate')) return 'autopay';
+  if (visibleTransactionType(type) === 'sip' && !value) return 'autopay';
+  return 'manual';
+}
+
+function paymentResponse(payment, store, config) {
+  const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId) || null;
+  const plans = store.investmentPlans || store.orders || [];
+  const plan = transaction
+    ? plans.find((item) => item.id === transaction.investmentPlanId)
+    : plans.find((item) => item.paymentId === payment.id || item.id === payment.orderId) || null;
+  const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
+  const fund = fundId ? (store.funds || []).find((item) => item.id === fundId) : null;
+  const type = visibleTransactionType(transaction?.type || plan?.type);
+  const mode = payment.mode || transaction?.mode || '';
+  return {
+    ...payment,
+    orderId: plan?.id || payment.orderId || '',
+    planId: plan?.id || null,
+    fundId,
+    fund: fundSnapshot(fund, fundId),
+    fundName: fund?.name || fund?.title || fundId || '',
+    type,
+    paymentType: paymentTypeFrom(mode, type),
+    transaction: transaction ? {
+      id: transaction.id,
+      type,
+      rawType: transaction.type || '',
+      status: transaction.status || '',
+      amount: transaction.amount ?? null,
+      date: transaction.date || transaction.createdAt || '',
+    } : null,
+    plan: plan ? {
+      id: plan.id,
+      type: visibleTransactionType(plan.type),
+      status: plan.status || '',
+      amount: plan.amount ?? null,
+      durationMonths: plan.durationMonths ?? null,
+      debitDay: plan.debitDay ?? null,
+      mandateId: plan.mandateId || null,
+    } : null,
+    providerKeyId: payment.provider === 'razorpay' ? (config.razorpayKeyId || null) : null,
+  };
+}
+
 export async function getPayment(config, actor, paymentId) {
   if (!jsonStoreEnabled(config)) {
     throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for payments is not yet implemented.');
   }
-  const { item: payment } = await findRecord(config, 'payments', (p) => p.id === paymentId);
+  let { item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId);
   if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   if (payment.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
-  return {
-    ...payment,
-    providerKeyId: payment.provider === 'razorpay' ? (config.razorpayKeyId || null) : null,
-  };
+
+  if (payment.provider === 'mock' && payment.status === 'created') {
+    payment = await updatePayment(config, paymentId, (current, store) => {
+      if (current.userId !== actor?.userId) {
+        throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
+      }
+      const now = new Date().toISOString();
+      current.status = 'success';
+      current.confirmedAt = current.confirmedAt || now;
+      current.updatedAt = now;
+
+      const transaction = (store.transactions || []).find((t) => t.id === current.transactionId);
+      if (transaction) {
+        transaction.status = 'awaiting_approval';
+        transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
+        transaction.updatedAt = now;
+      }
+
+      const plan = transaction
+        ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
+        : (store.investmentPlans || []).find((p) => p.paymentId === current.id);
+      if (plan) {
+        plan.status = 'pending_admin_approval';
+        plan.updatedAt = now;
+      }
+
+      return current;
+    });
+    ({ item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId));
+  }
+
+  return paymentResponse(payment, store, config);
 }
 
 export async function confirmRazorpayPayment(config, actor, paymentId, body) {
@@ -66,7 +173,7 @@ export async function confirmRazorpayPayment(config, actor, paymentId, body) {
 
     const transaction = (store.transactions || []).find((t) => t.id === payment.transactionId);
     if (transaction) {
-      transaction.status = 'payment_confirmed';
+      transaction.status = 'awaiting_approval';
       transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
       transaction.updatedAt = now;
     }
@@ -75,13 +182,7 @@ export async function confirmRazorpayPayment(config, actor, paymentId, body) {
       ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
       : null;
     if (plan) {
-      if (plan.status === 'pending_first_payment') {
-        plan.status = 'active';
-        plan.startDate = plan.startDate || now;
-      } else if (plan.status === 'pending_payment') {
-        plan.status = 'active';
-        plan.startDate = plan.startDate || now;
-      }
+      plan.status = 'pending_admin_approval';
       plan.updatedAt = now;
     }
 
@@ -124,7 +225,7 @@ async function _retryPayment(config, actor, paymentId, options = {}) {
     if (payment.userId !== actor?.userId) {
       throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
     }
-    const owner = store.users.find((user) => user.id === payment.userId);
+    const owner = (store.users || []).find((user) => user.id === payment.userId);
     if (!owner || owner.status !== 'approved') {
       throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to retry a payment.', {
         status: owner?.status || 'missing',
@@ -139,15 +240,33 @@ async function _retryPayment(config, actor, paymentId, options = {}) {
     if (payment.status === 'created') {
       return payment;
     }
-    if (payment.status !== 'failed') {
-      throw new HttpError(400, 'PAYMENT_NOT_RETRYABLE', 'Only failed payments can be retried.');
+    if (!['failed', 'expired'].includes(payment.status)) {
+      throw new HttpError(400, 'PAYMENT_NOT_RETRYABLE', 'Only failed or expired payments can be retried.');
     }
     const now = new Date().toISOString();
     const before = { ...payment };
     payment.status = 'created';
     payment.attemptCount = (payment.attemptCount || 0) + 1;
     payment.lastFailureReason = null;
+    payment.failureReason = null;
     payment.updatedAt = now;
+
+    const transaction = (store.transactions || []).find((t) => t.id === payment.transactionId);
+    if (transaction) {
+      transaction.status = 'payment_pending';
+      transaction.failureReason = null;
+      transaction.updatedAt = now;
+    }
+
+    const plan = transaction
+      ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
+      : (store.investmentPlans || []).find((p) => p.paymentId === payment.id);
+    if (plan) {
+      plan.status = plan.type === 'sip' ? 'pending_first_payment' : 'pending_payment';
+      plan.updatedAt = now;
+    }
+
+    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
     store.adminAuditLogs.push({
       id: randomUUID(),
       adminId: actor?.userId || null,
@@ -155,7 +274,11 @@ async function _retryPayment(config, actor, paymentId, options = {}) {
       entityType: 'payment',
       entityId: payment.id,
       before,
-      after: { ...payment },
+      after: {
+        payment: { ...payment },
+        transaction: transaction ? { ...transaction } : null,
+        investmentPlan: plan ? { ...plan } : null,
+      },
       reason: 'Client requested retry.',
       ipAddress: null,
       userAgent: null,

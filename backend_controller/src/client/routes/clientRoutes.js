@@ -209,7 +209,9 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client payment list filtered by status.',
-  }, ({ config, actor }) => clientPayments(config, actor.userId));
+  }, ({ config, actor, query }) => clientPayments(config, actor.userId, {
+    status: query?.status || '',
+  }));
 
   router.get(Routes.GET_V1_CLIENT_PAYMENTS_PAYMENT_ID, {
     group: 'client',
@@ -291,7 +293,17 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client transaction ledger.',
-  }, ({ config, actor }) => clientTransactions(config, actor.userId));
+  }, async ({ config, actor, query }) => {
+    const filter = String(query?.filter || 'all').trim();
+    const result = await clientTransactions(config, actor.userId);
+    let items = result.items || [];
+    if (filter === 'sip') items = items.filter((transaction) => transaction.type === 'sip');
+    if (filter === 'lumpsum') items = items.filter((transaction) => transaction.type === 'lumpsum');
+    if (filter === 'pending') items = items.filter((transaction) => transaction.status === 'payment_pending');
+    if (filter === 'failed') items = items.filter((transaction) => transaction.status === 'payment_failed' || transaction.status === 'approval_rejected');
+    if (filter === 'approval') items = items.filter((transaction) => transaction.status === 'awaiting_approval');
+    return { ...result, items, count: items.length };
+  });
 
   router.get(Routes.GET_V1_CLIENT_TRANSACTIONS_TRANSACTION_ID, {
     group: 'client',

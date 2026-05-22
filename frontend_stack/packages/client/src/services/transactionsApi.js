@@ -1,20 +1,40 @@
 import { fixtureTransactions } from '../data/fixtureTransactions.js';
 import { apiRequest, clone, delay, listFromPayload, useHttpApi } from './_util.js';
 
+function transactionType(transaction) {
+  const type = String(transaction?.type || transaction?.rawType || transaction?.planType || '').toLowerCase();
+  if (type === 'sip' || type === 'sip_installment' || type === 'installment') return 'sip';
+  if (type === 'lumpsum' || type === 'one_time' || type === 'one-time') return 'lumpsum';
+  return type;
+}
+
+function applyFilter(items, filter) {
+  if (filter === 'sip') return items.filter((transaction) => transactionType(transaction) === 'sip');
+  if (filter === 'lumpsum') return items.filter((transaction) => transactionType(transaction) === 'lumpsum');
+  if (filter === 'pending') {
+    return items.filter((transaction) => transaction.status === 'payment_pending' || transaction.status === 'pending');
+  }
+  if (filter === 'failed') {
+    return items.filter((transaction) => (
+      transaction.status === 'payment_failed' ||
+      transaction.status === 'approval_rejected' ||
+      transaction.status === 'failed'
+    ));
+  }
+  if (filter === 'approval') return items.filter((transaction) => transaction.status === 'awaiting_approval');
+  return items;
+}
+
 export async function listTransactions({ filter = 'all', from, to } = {}) {
   if (useHttpApi()) {
     const params = new URLSearchParams({ filter });
     if (from) params.set('from', from);
     if (to) params.set('to', to);
-    return listFromPayload(await apiRequest(`/v1/client/transactions?${params.toString()}`));
+    const items = listFromPayload(await apiRequest(`/v1/client/transactions?${params.toString()}`));
+    return applyFilter(items, filter);
   }
 
   await delay();
-  let out = fixtureTransactions;
-  if (filter === 'sip') out = out.filter((t) => t.type === 'sip');
-  if (filter === 'lumpsum') out = out.filter((t) => t.type === 'lumpsum');
-  if (filter === 'pending') out = out.filter((t) => t.status === 'pending');
+  const out = applyFilter(fixtureTransactions, filter);
   return clone(out);
 }
-
-

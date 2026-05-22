@@ -332,7 +332,7 @@ export default function Explore() {
 
       <hr className="be-rule" />
 
-      {isComponentEnabled(appConfig, 'explore', 'research_context') && (
+      {isComponentEnabled(appConfig, 'explore', 'research_context') && (research === null || research.length > 0) && (
         <>
           <div className="be-eyebrow">{copy.researchEyebrow}</div>
           <div className="be-card apk-research-card">
