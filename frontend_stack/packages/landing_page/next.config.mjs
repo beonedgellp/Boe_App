@@ -19,6 +19,10 @@ const nextConfig = {
         source: '/api/onboarding/:path*',
         destination: `${BACKEND}/v1/onboarding/:path*`,
       },
+      {
+        source: '/v1/:path*',
+        destination: `${BACKEND}/v1/:path*`,
+      },
     ];
   },
 };

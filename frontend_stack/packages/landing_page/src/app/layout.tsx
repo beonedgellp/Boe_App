@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './components.css';
 import { site } from '../content/site';
+import { AuthProvider } from '../components/AuthProvider';
 
 export const metadata: Metadata = {
   title: `${site.name} — ${site.descriptor}`,
@@ -27,7 +28,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-IN">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

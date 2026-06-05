@@ -87,9 +87,6 @@ export default function AdminLogin() {
             <button type="submit" className="be-btn be-btn-primary be-btn-block be-btn-lg" disabled={submitting}>
               {submitting ? 'Signing in...' : 'Sign in'}
             </button>
-            <div className="auth-foot">
-              <Link to="/app/login">Client sign in</Link>
-            </div>
           </form>
         </section>
       </div>

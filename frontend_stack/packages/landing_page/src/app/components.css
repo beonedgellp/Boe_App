@@ -66,6 +66,24 @@
   font-weight: 600;
   color: var(--ink);
 }
+.nav__user {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.nav__logout {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nav__error {
+  margin-block: 0 0.75rem;
+}
 .nav__toggle {
   display: none;
   background: none;
@@ -507,7 +525,8 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .field--error input,
-.field--error select {
+.field--error select,
+.field--error textarea {
   border-color: #b4452f;
 }
 .field__error {
@@ -523,6 +542,38 @@
 }
 .form__status--success {
   color: var(--accent-strong);
+}
+
+/* Auth pages */
+.auth-page {
+  min-height: 70vh;
+  display: grid;
+  align-items: center;
+  padding-block: clamp(3rem, 8vw, 5rem);
+}
+.auth-page__inner {
+  display: grid;
+  justify-items: center;
+}
+.auth-card {
+  width: min(100%, 520px);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: clamp(1.5rem, 4vw, 2.4rem);
+  box-shadow: var(--shadow-md);
+}
+.auth-card form {
+  margin-top: 1.6rem;
+}
+.auth-switch {
+  margin-top: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+.auth-switch a {
+  color: var(--accent-strong);
+  font-weight: 700;
 }
 
 /* Footer */

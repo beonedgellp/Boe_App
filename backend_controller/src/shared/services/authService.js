@@ -20,6 +20,7 @@ const DEV_USER = {
 const ENV_ADMIN_REFRESH_PREFIX = 'env_admin_refresh_';
 const REFRESH_TOKEN_TTL_DAYS = 365;
 const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
@@ -47,15 +48,21 @@ function normalizePhone(value) {
   return `+${canonicalDigits}`;
 }
 
+function normalizeUsername(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
 function normalizeIdentifier(body) {
   const raw = String(body.identifier || body.email || body.phone || '').trim();
   const email = normalizeEmail(raw);
   const phone = raw.includes('@') ? '' : normalizePhone(raw);
+  const username = raw.includes('@') ? '' : normalizeUsername(raw);
 
   return {
     raw,
     email,
     phone,
+    username,
   };
 }
 
@@ -63,6 +70,25 @@ function safeEqualText(left, right) {
   const a = Buffer.from(String(left || ''));
   const b = Buffer.from(String(right || ''));
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function assertSignupAllowed(config, headers = {}) {
+  const secret = String(config.signupProxySecret || '');
+  if (secret) {
+    const provided = String(headers['x-signup-key'] || '');
+    if (!safeEqualText(provided, secret)) {
+      throw new HttpError(403, 'SIGNUP_NOT_ALLOWED', 'Account creation is not permitted from this client.');
+    }
+    return;
+  }
+
+  const allowedOrigin = String(config.signupAllowedOrigin || '');
+  if (allowedOrigin) {
+    const origin = String(headers.origin || '');
+    if (origin !== allowedOrigin) {
+      throw new HttpError(403, 'SIGNUP_NOT_ALLOWED', 'Account creation is not permitted from this origin.');
+    }
+  }
 }
 
 function envAdminUser(config) {
@@ -78,6 +104,7 @@ function envAdminUser(config) {
     lastName: config.adminLastName || 'Admin',
     email,
     phone: config.adminPhone || phone,
+    username: email ? '' : loginId,
     role: 'admin',
     status: 'approved',
     riskProfileStatus: 'approved',
@@ -120,6 +147,7 @@ function toApiUser(row) {
     lastName: row.last_name,
     email: row.email,
     phone: row.phone,
+    username: row.username || null,
     role: row.role,
     status: row.status,
     approvalRef: row.approval_ref,
@@ -136,6 +164,7 @@ function jsonUserToRow(user) {
     last_name: user.lastName,
     email: user.email,
     phone: user.phone,
+    username: user.username,
     password_hash: user.passwordHash,
     role: user.role,
     status: user.status,
@@ -152,6 +181,7 @@ function rowToJsonUser(row) {
     lastName: row.last_name,
     email: row.email,
     phone: row.phone,
+    username: row.username,
     passwordHash: row.password_hash,
     role: row.role,
     status: row.status,
@@ -180,18 +210,19 @@ async function findUserByIdentifier(config, identifier) {
     const store = await readJsonStore(config);
     const user = store.users.find((item) => (
       (identifier.email && item.email === identifier.email) ||
-      (identifier.phone && item.phone === identifier.phone)
+      (identifier.phone && item.phone === identifier.phone) ||
+      (identifier.username && item.username === identifier.username)
     ));
     return jsonUserToRow(user);
   }
 
   const result = await query(config, `
     SELECT id, first_name, last_name, email, phone, password_hash, role::text, status::text,
-           risk_profile_status::text, kyc_status::text
+           username, risk_profile_status::text, kyc_status::text
     FROM users
-    WHERE email = $1 OR phone = $2
+    WHERE email = $1 OR phone = $2 OR lower(username) = $3
     LIMIT 1
-  `, [identifier.email, identifier.phone]);
+  `, [identifier.email, identifier.phone, identifier.username]);
 
   return result.rows[0] || null;
 }
@@ -322,7 +353,7 @@ async function rotateRefreshToken(config, refreshToken) {
   const result = await transaction(config, async (client) => {
     const found = await client.query(`
       SELECT ds.id AS device_session_id,
-             u.id, u.first_name, u.last_name, u.email, u.phone,
+             u.id, u.first_name, u.last_name, u.email, u.phone, u.username,
              u.role::text, u.status::text, u.risk_profile_status::text, u.kyc_status::text
       FROM device_sessions ds
       JOIN users u ON u.id = ds.user_id
@@ -488,8 +519,11 @@ export async function login(body, config, requestContext = {}) {
 }
 
 export async function signup(body, config, requestContext = {}) {
+  assertSignupAllowed(config, requestContext.headers || {});
+
   const email = normalizeEmail(body.email || body.identifier);
   const phone = normalizePhone(body.phone);
+  const username = normalizeUsername(body.username);
   const password = String(body.password || '');
 
   if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
@@ -497,6 +531,9 @@ export async function signup(body, config, requestContext = {}) {
   }
   if (!phone) {
     throw new HttpError(400, 'PHONE_REQUIRED', 'Enter a valid phone number.');
+  }
+  if (!USERNAME_PATTERN.test(username)) {
+    throw new HttpError(400, 'USERNAME_INVALID', 'Username must be 3-30 chars: lowercase letters, numbers, underscore.');
   }
   if (password.length < 8) {
     throw new HttpError(400, 'PASSWORD_TOO_SHORT', 'Password must be at least 8 characters.');
@@ -509,9 +546,13 @@ export async function signup(body, config, requestContext = {}) {
   if (jsonStoreEnabled(config)) {
     const now = new Date().toISOString();
     user = await updateJsonStore(config, (store) => {
-      const exists = store.users.some((item) => item.email === email || item.phone === phone);
+      const exists = store.users.some((item) => (
+        item.email === email ||
+        item.phone === phone ||
+        item.username === username
+      ));
       if (exists) {
-        throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email or phone.');
+        throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
       }
 
       const next = {
@@ -520,6 +561,7 @@ export async function signup(body, config, requestContext = {}) {
         lastName,
         email,
         phone,
+        username,
         passwordHash,
         role: 'client',
         status: 'pending_review',
@@ -534,31 +576,32 @@ export async function signup(body, config, requestContext = {}) {
       return jsonUserToRow(next);
     });
   } else {
-  try {
-    const inserted = await query(config, `
-      INSERT INTO users (
-        first_name,
-        last_name,
-        email,
-        phone,
-        password_hash,
-        role,
-        status,
-        risk_profile_status,
-        kyc_status,
-        updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, 'client', 'pending_review', 'pending', 'pending', now())
-      RETURNING id, first_name, last_name, email, phone, role::text, status::text,
-                risk_profile_status::text, kyc_status::text
-    `, [firstName, lastName, email, phone, passwordHash]);
-    user = inserted.rows[0];
-  } catch (error) {
-    if (error.code === '23505') {
-      throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email or phone.');
+    try {
+      const inserted = await query(config, `
+        INSERT INTO users (
+          first_name,
+          last_name,
+          email,
+          phone,
+          username,
+          password_hash,
+          role,
+          status,
+          risk_profile_status,
+          kyc_status,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, 'client', 'pending_review', 'pending', 'pending', now())
+        RETURNING id, first_name, last_name, email, phone, username, role::text, status::text,
+                  risk_profile_status::text, kyc_status::text
+      `, [firstName, lastName, email, phone, username, passwordHash]);
+      user = inserted.rows[0];
+    } catch (error) {
+      if (error.code === '23505') {
+        throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
+      }
+      throw error;
     }
-    throw error;
-  }
   }
 
   const apiUser = toApiUser(user);

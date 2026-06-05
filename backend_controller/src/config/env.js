@@ -92,6 +92,8 @@ export function loadConfig(env = process.env) {
     adminLastName: env.ADMIN_LAST_NAME || env.SEED_ADMIN_LAST_NAME || 'Admin',
     adminPhone: env.ADMIN_PHONE || env.SEED_ADMIN_PHONE || '',
     adminUserId: env.ADMIN_USER_ID || '00000000-0000-4000-8000-000000000001',
+    signupAllowedOrigin: env.SIGNUP_ALLOWED_ORIGIN || '',
+    signupProxySecret: env.SIGNUP_PROXY_SECRET || '',
     mockWebhookEnabled: readBoolean(env.MOCK_WEBHOOK_ENABLED, false),
     razorpayKeyId: env.RAZORPAY_KEY_ID || '',
     razorpayKeySecret: env.RAZORPAY_KEY_SECRET || '',
@@ -148,6 +150,9 @@ export function assertProductionConfig(config) {
   }
   if (!config.adminPassword || config.adminPassword.length < 12) {
     errors.push('ADMIN_PASSWORD must be at least 12 characters in production/live mode.');
+  }
+  if (!config.signupProxySecret && !config.signupAllowedOrigin) {
+    errors.push('SIGNUP_PROXY_SECRET or SIGNUP_ALLOWED_ORIGIN must be set in production/live mode.');
   }
   const hasLocalhostCors = config.corsOrigins.some((o) => o.includes('localhost') || o.includes('127.0.0.1'));
   if (hasLocalhostCors) {

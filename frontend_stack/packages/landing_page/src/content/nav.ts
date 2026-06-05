@@ -11,18 +11,9 @@ export const navLinks: readonly NavLink[] = [
   { label: 'About', href: '#about' },
 ];
 
-// Base host of the existing client app (the Vite + React surface that owns the
-// learner-account auth flow). Configurable per environment; defaults to the
-// dev host. "Sign in" hands off to the unchanged client login; "Sign up" stays
-// on the landing page and scrolls to the learner-account capture form (#lead),
-// which posts to the same backend onboarding endpoint.
-const APP_BASE = (
-  process.env.NEXT_PUBLIC_BEO_APP_BASE || 'http://127.0.0.1:5173'
-).replace(/\/$/, '');
-
 export const authLinks = {
-  signIn: { label: 'Sign in', href: `${APP_BASE}/app/login` },
-  signUp: { label: 'Sign up', href: '#lead' },
+  signIn: { label: 'Sign in', href: '/login' },
+  signUp: { label: 'Sign up', href: '/signup' },
 } as const;
 
 export const primaryCta = { label: 'Start learning', href: '#courses' } as const;

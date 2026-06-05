@@ -32,10 +32,11 @@ export function registerAuthRoutes(router) {
     description: 'Create a simple client account from website signup.',
   }, async ({ body, config, headers }) => {
     validateBody(body, {
+      name: { required: true, type: 'string', minLength: 1 },
+      username: { required: true, type: 'string', minLength: 3 },
       email: { required: true, type: 'string', pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+      phone: { required: true, type: 'string', minLength: 6 },
       password: { required: true, type: 'string', minLength: 8 },
-      firstName: { required: true, type: 'string', minLength: 1 },
-      lastName: { required: true, type: 'string', minLength: 1 },
     });
     const result = await signup(body, config, { headers });
     return {

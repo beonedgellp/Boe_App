@@ -2,7 +2,7 @@
 
 The public, **education-only** marketing surface for BeOnEdge. It sells finance
 **courses** and premium money insights (curated news, explainers, templates,
-live sessions). It is deliberately separate from the gated investing client app.
+live sessions). It is deliberately separate from the APK-only investing client app.
 
 > **Education-only by company policy.** This surface must never carry investing,
 > SIP, portfolio, fund, or account-opening language. Sign in / Sign up create a
@@ -33,28 +33,28 @@ npm test           # vitest unit tests (lead validation)
 
 ```
 src/
-  app/        layout.tsx · page.tsx · globals.css · components.css
+  app/        layout.tsx · page.tsx · login · signup · api/auth · globals.css
   components/ Nav, Hero, CourseCatalog, PremiumBenefits, LearningMethod,
-              FinancialNews, SocialProof, Plans, LeadForm, Footer, Reveal
+              FinancialNews, SocialProof, Plans, LeadForm, LoginForm,
+              SignupForm, AuthProvider, Footer, Reveal
   content/    config-driven copy (courses, benefits, news, plans, …)
-  lib/        validation.ts (mirrors backend rules) · onboarding.ts (submit)
+  lib/        validation.ts · onboarding.ts · auth.ts
 ```
 
 ## How it connects (whole-site flow)
 
-This page is the **public entry point**; the gated client app and admin portal
-stay on the existing Vite + React surface. The two are wired together:
+This page is the **public entry point**; the user app and admin app are APK
+surfaces. The Vite web admin remains local-dev-only.
 
 | Action | From → To | Mechanism | Env var |
 |---|---|---|---|
 | Lead / learner-account form | landing `/api/onboarding/applications` → backend `/v1/onboarding/applications` | Next.js **rewrite** (server-side proxy — no CORS, backend host stays private) | `BEO_API_BASE` |
-| **Sign in** | landing → client app `/app/login` | external link to existing login | `NEXT_PUBLIC_BEO_APP_BASE` |
-| **Sign up** | landing → `#lead` (learner-account capture) | in-page anchor, same backend endpoint | — |
-| Client app **Sign up** | client `openOnboarding()` → landing `#lead` | `VITE_BEO_WEB_ONBOARDING_URL` (client app) |
-| Website root **`/`** (desktop) | Vite `/` → this landing page | `BrowserRoot.jsx` redirect | `VITE_BEO_LANDING_URL` (app) |
+| **Sign in** | landing `/login` → backend `/v1/auth/login` | Next.js route handler relays httpOnly cookies | `BEO_API_BASE` |
+| **Sign up** | landing `/signup` → backend `/v1/auth/signup` | Next.js route handler injects `x-signup-key` server-side | `BEO_API_BASE`, `SIGNUP_PROXY_SECRET` |
+| Client app **Sign up** | client `openOnboarding()` → landing `/signup` | `VITE_BEO_WEB_ONBOARDING_URL` (client app) |
 
-The backend and the account-creation mechanism are **unchanged** — the form
-hits the same `/v1/onboarding/applications` endpoint the website surface used.
+Signup creates the real credentialed client account. The browser never sees
+`SIGNUP_PROXY_SECRET`; it is read only by the landing server.
 
 ### Lead form → backend
 
@@ -68,8 +68,25 @@ body: { name, email, phone, interest?, message? }
 so the form fails fast before submit. `BEO_API_BASE` is **server-side only**
 (never shipped to the browser); see `.env.example`.
 
+### Auth proxy → backend
+
+```
+POST /api/auth/signup
+  → {BEO_API_BASE}/v1/auth/signup
+headers: x-signup-key: {SIGNUP_PROXY_SECRET}
+body: { name, username, email, phone, password }
+
+POST /api/auth/login
+  → {BEO_API_BASE}/v1/auth/login
+body: { identifier, password }
+```
+
+The backend response sets httpOnly `access_token` and `refresh_token` cookies.
+The landing stores only the returned `user` object in `localStorage` to drive
+the nav state.
+
 ### Production topology
 
-Put a reverse proxy in front so `/` serves this Next.js app and `/app` + `/admin`
-serve the Vite build, both sharing the backend at `/v1`. In dev, run the landing
-page (`:3100`), the Vite app (`:5173`), and the backend (`:47502`) side by side.
+Put a reverse proxy in front so `/` serves this Next.js app and `/v1` reaches
+the backend bound to `127.0.0.1`. In dev, run the landing page (`:3100` by
+default), the Vite local admin (`:5173`), and the backend (`:47502`) side by side.
