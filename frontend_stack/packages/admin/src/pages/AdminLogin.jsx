@@ -3,7 +3,6 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminSession } from '@beonedge/client/store/AdminSessionContext.jsx';
 import logo from '@beonedge/shared/assets/logo.svg';
 import '@beonedge/client/styles/mobile/index.css';
-import '@beonedge/client/styles/desktop/index.css';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
 

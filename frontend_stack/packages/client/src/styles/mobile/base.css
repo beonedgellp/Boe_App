@@ -1,7 +1,6 @@
 /* ==========================================================================
-   BeOnEdge Client — Mobile-first responsive base
-   Breakpoints: 768px (tablet/desktop), 1040px (wide desktop)
-   Base = 412px APK viewport. Desktop enhancements via min-width.
+   BeOnEdge Client — Mobile base
+   Base = 412px APK viewport.
    ========================================================================== */
 
 :root {
@@ -29,11 +28,6 @@
 
 .app-shell-single {
   display: block;
-}
-
-/* Sidebar hidden on mobile */
-.app-sidebar {
-  display: none;
 }
 
 .app-main {
@@ -124,24 +118,11 @@
 
 /* Touch highlight removal */
 .apk-link,
-button,
-.app-nav-link {
+button {
   -webkit-tap-highlight-color: transparent;
 }
 
 .apk-link { cursor: pointer; }
-
-/* -------------------------------------------------------------------------- */
-/* Tablet / Desktop (≥ 768px)                                                 */
-/* -------------------------------------------------------------------------- */
-
-
-
-/* -------------------------------------------------------------------------- */
-/* Wide desktop (≥ 1040px)                                                    */
-/* -------------------------------------------------------------------------- */
-
-
 
 /* -------------------------------------------------------------------------- */
 /* Apk compatibility page                                                     */

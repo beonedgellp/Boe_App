@@ -301,8 +301,6 @@
   margin: 8px 0;
 }
 
-
-/* Desktop client app cleanup */
 .apk-fund {
   transition: background var(--be-d-2) var(--be-ease), border-color var(--be-d-2) var(--be-ease), transform var(--be-d-1) var(--be-ease);
 }

@@ -29,7 +29,6 @@ import { useSession } from './store/SessionContext.jsx';
 import { isApprovedUser } from './utils/approval.js';
 import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.jsx';
 import './styles/mobile/index.css';
-import './styles/desktop/index.css';
 
 function RequireApproved({ children }) {
   const { user, isLoading } = useSession();

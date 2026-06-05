@@ -3,9 +3,7 @@ function detectOS() {
   const ua = navigator.userAgent || '';
   if (/Android/i.test(ua)) return 'android';
   if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
-  if (/Windows|Win32|Win64/i.test(ua)) return 'desktop';
-  if (/Macintosh|Mac OS X/i.test(ua)) return 'desktop';
-  if (/Linux/i.test(ua)) return 'desktop';
+  if (/Windows|Win32|Win64|Macintosh|Mac OS X|Linux/i.test(ua)) return 'web';
   return 'unknown';
 }
 
@@ -19,11 +17,13 @@ function detectBrowser() {
   return 'This browser';
 }
 
+const os = detectOS();
+
 export const platformInfo = {
   target: 'web',
   runtime: 'browser',
-  os: detectOS(),
+  os,
   isNative: false,
-  isAndroid: detectOS() === 'android',
+  isAndroid: os === 'android',
   displayName: detectBrowser(),
 };

@@ -62,106 +62,8 @@
 }
 
 /* Skeleton */
-.apk-tx-skeleton--desktop { display: none; }
 .apk-tx-skeleton--mobile { display: block; }
-.apk-skel-table-head { display: none; }
-.apk-skel-table-row {
-  display: grid;
-  grid-template-columns: 24px 1fr 100px 120px 90px;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 4px;
-}
-.apk-skel-table-row + .apk-skel-table-row { border-top: 1px solid var(--be-border); }
-.apk-skel-dot { width: 7px; height: 7px; border-radius: 50%; }
-.apk-skel-line { height: 14px; border-radius: var(--be-r-4); }
-.apk-skel-pill { height: 20px; width: 60px; border-radius: var(--be-r-pill); justify-self: end; }
-
-/* Desktop table — hidden on mobile */
-.apk-tx-table { display: none; }
 .apk-tx-list-mobile { display: block; }
-
-.apk-tx-table-head {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1.6fr) 110px 110px 86px;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--be-slate);
-  border-bottom: 1px solid var(--be-border);
-}
-.apk-tx-table-head .apk-tx-col-amt { text-align: right; }
-.apk-tx-table-head .apk-tx-col-status { text-align: right; }
-
-.apk-tx-month-group {}
-.apk-tx-month-header {
-  position: sticky;
-  top: 72px; /* app-bar height */
-  z-index: 2;
-  padding: 10px 4px 6px;
-  margin-top: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--be-slate);
-  background: var(--be-bone);
-  border-bottom: 1px solid var(--be-border);
-}
-.apk-tx-table-row {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1.6fr) 110px 110px 86px;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 4px;
-  cursor: pointer;
-  border-radius: var(--be-r-4);
-  transition: background var(--be-d-1) var(--be-ease);
-}
-.apk-tx-table-row + .apk-tx-table-row { border-top: 1px solid var(--be-border); border-radius: 0; }
-.apk-tx-table-row:hover { background: var(--be-ivory-2); }
-.apk-tx-table-row.is-alt { background: rgba(246, 241, 231, 0.35); }
-.apk-tx-table-row.is-alt:hover { background: var(--be-ivory-2); }
-.apk-tx-table-row:focus-visible { outline: 2px solid var(--be-ink); outline-offset: 2px; }
-
-.apk-tx-table-type {
-  font-size: 11px;
-  color: var(--be-slate);
-  letter-spacing: 0;
-  text-transform: uppercase;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.apk-tx-table-fund {
-  font-size: 14px;
-  color: var(--be-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.apk-tx-table-date {
-  font-size: 13px;
-  color: var(--be-slate);
-}
-.apk-tx-table-amt {
-  font-size: 14px;
-  font-weight: 700;
-  text-align: right;
-  white-space: nowrap;
-}
-.apk-tx-table-status {
-  text-align: right;
-}
-.apk-tx-table-status .be-badge {
-  font-size: 11px;
-  padding: 3px 8px;
-}
 
 /* Notification row */
 .apk-notif { padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: flex-start; cursor: pointer; }
@@ -398,12 +300,7 @@
   margin-top: 16px;
 }
 
-/* Tablet / Desktop (≥ 768px) */
-
-
 @keyframes apk-slide-in-right {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
 }
-
-/* Wide desktop (≥ 1040px) */

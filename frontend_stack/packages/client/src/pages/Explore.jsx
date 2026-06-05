@@ -241,7 +241,7 @@ export default function Explore() {
     return { totalFunds, totalAum, activeFunds };
   }, [funds]);
 
-  const skeletonCount = typeof window !== 'undefined' && window.innerWidth >= 960 ? 4 : 3;
+  const skeletonCount = 3;
 
   return (
     <div className="apk-screen">

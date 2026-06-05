@@ -61,7 +61,7 @@ export default function AppStart() {
         <button className="app-start-card" onClick={() => { markSeen(); navigate('/app/dashboard'); }}>
           <Monitor size={28} strokeWidth={1.5} />
           <strong>Continue on web</strong>
-          <span>Open the desktop dashboard, Explore, portfolio, transactions, statements, and profile pages.</span>
+          <span>Open the mobile dashboard, Explore, portfolio, transactions, statements, and profile pages.</span>
         </button>
         <button className="app-start-card" onClick={downloadApp}>
           <Smartphone size={28} strokeWidth={1.5} />

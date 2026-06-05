@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Clock3, Download, Receipt, Repeat, ShieldCheck } from 'lucide-react';
 import * as transactionsApi from '../services/transactionsApi.js';
@@ -25,17 +25,6 @@ const EMPTY_STATE = {
   failed:  { icon: AlertTriangle, text: 'No failed payments.' },
   approval:{ icon: ShieldCheck,  text: 'No payments waiting for admin approval.' },
 };
-
-function monthKey(iso) {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function monthLabel(iso) {
-  const d = new Date(iso);
-  const mon = ['January','February','March','April','May','June','July','August','September','October','November','December'][d.getMonth()];
-  return `${mon} ${d.getFullYear()}`;
-}
 
 function fundDisplayName(item) {
   return item?.fund?.name || item?.fundName || item?.fund?.title || item?.fundId || 'Unmapped fund pool';
@@ -71,17 +60,6 @@ export default function Transactions() {
       transactionsApi.listTransactions({ filter: tab }).then(setItems).catch(() => setItems([]));
     }
   }, [tab]);
-
-  const grouped = useMemo(() => {
-    if (!items || PAYMENT_TABS.has(tab)) return [];
-    const map = new Map();
-    for (const t of items) {
-      const k = monthKey(t.date);
-      if (!map.has(k)) map.set(k, { label: monthLabel(t.date), items: [] });
-      map.get(k).items.push(t);
-    }
-    return Array.from(map.values());
-  }, [items, tab]);
 
   function statusBadgeClass(status) {
     if (['success', 'confirmed', 'reconciled', 'approved'].includes(status)) return 'be-badge-active';
@@ -203,36 +181,13 @@ export default function Transactions() {
 
       {!PAYMENT_TABS.has(tab) && (
         items === null ? (
-          <>
-            {/* Mobile skeleton */}
-            <div className="be-card apk-list-card apk-tx-skeleton--mobile">
-              {[0,1,2,3,4].map(i => <div key={i} className="apk-skel apk-row-skel" />)}
-            </div>
-            {/* Desktop skeleton */}
-            <div className="be-card apk-list-card apk-tx-skeleton--desktop">
-              <div className="apk-tx-table-head apk-skel-table-head">
-                <span>Type</span>
-                <span>Fund</span>
-                <span>Date</span>
-                <span className="apk-tx-col-amt">Amount</span>
-                <span className="apk-tx-col-status">Status</span>
-              </div>
-              {[0,1,2,3,4,5].map(i => (
-                <div key={i} className="apk-tx-table-row apk-skel-table-row">
-                  <div className="apk-skel apk-skel-dot" />
-                  <div className="apk-skel apk-skel-line" />
-                  <div className="apk-skel apk-skel-line" />
-                  <div className="apk-skel apk-skel-line" />
-                  <div className="apk-skel apk-skel-pill" />
-                </div>
-              ))}
-            </div>
-          </>
+          <div className="be-card apk-list-card apk-tx-skeleton--mobile">
+            {[0,1,2,3,4].map(i => <div key={i} className="apk-skel apk-row-skel" />)}
+          </div>
         ) : items.length === 0 ? (
           <EmptyState tabKey={tab} />
         ) : (
           <div className="be-card apk-tx-list apk-list-card">
-            {/* Mobile list */}
             <div className="apk-tx-list-mobile">
               {items.map((t) => (
                 <div
@@ -257,45 +212,6 @@ export default function Transactions() {
                       <span className="be-badge-dot" />{statusLabel(t.status)}
                     </span>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop table */}
-            <div className="apk-tx-table">
-              <div className="apk-tx-table-head">
-                <span>Type</span>
-                <span>Fund</span>
-                <span>Date</span>
-                <span className="apk-tx-col-amt">Amount</span>
-                <span className="apk-tx-col-status">Status</span>
-              </div>
-              {grouped.map((group) => (
-                <div key={group.label} className="apk-tx-month-group">
-                  <div className="apk-tx-month-header">{group.label}</div>
-                  {group.items.map((t, idx) => (
-                    <div
-                      key={t.id}
-                      className={`apk-tx-table-row ${idx % 2 === 1 ? 'is-alt' : ''}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setOpen(t)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(t); } }}
-                    >
-                      <span className="apk-tx-table-type">
-                        <span className={`apk-tx-dot ${typeDotClass(t.type)}`} />
-                        {t.type === 'sip' ? 'SIP' : t.type === 'lumpsum' ? 'Lumpsum' : t.type}
-                      </span>
-                      <span className="apk-tx-table-fund" title={fundDisplayName(t)}>{fundDisplayName(t)}</span>
-                      <span className="apk-tx-table-date">{fmtDate(t.date)}</span>
-                      <span className="apk-tx-table-amt be-money">{fmtMoney(t.amount)}</span>
-                      <span className="apk-tx-table-status">
-                        <span className={`be-badge ${statusBadgeClass(t.status)}`}>
-                          <span className="be-badge-dot" />{statusLabel(t.status)}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
                 </div>
               ))}
             </div>
