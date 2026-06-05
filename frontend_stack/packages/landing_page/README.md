@@ -51,7 +51,7 @@ surfaces. The Vite web admin remains local-dev-only.
 | Lead / learner-account form | landing `/api/onboarding/applications` → backend `/v1/onboarding/applications` | Next.js **rewrite** (server-side proxy — no CORS, backend host stays private) | `BEO_API_BASE` |
 | **Sign in** | landing `/login` → backend `/v1/auth/login` | Next.js route handler relays httpOnly cookies | `BEO_API_BASE` |
 | **Sign up** | landing `/signup` → backend `/v1/auth/signup` | Next.js route handler injects `x-signup-key` server-side | `BEO_API_BASE`, `SIGNUP_PROXY_SECRET` |
-| Client app **Sign up** | client `openOnboarding()` → landing `/signup` | `VITE_BEO_WEB_ONBOARDING_URL` (client app) |
+| Client app **Sign up** | client `openOnboarding()` → landing `/signup` | `VITE_BEO_ONBOARDING_URL` (client app) |
 
 Signup creates the real credentialed client account. The browser never sees
 `SIGNUP_PROXY_SECRET`; it is read only by the landing server.
