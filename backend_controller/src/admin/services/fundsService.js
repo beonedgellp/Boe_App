@@ -2,6 +2,24 @@ import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
+import {
+  computeFundAge,
+  computeFundAnalytics,
+  toClientFund,
+  toClientFunds,
+  normalizePerformanceSeries,
+  sanitizePerformancePeriods,
+  sanitizePerformanceSummary,
+  sanitizeAssetAllocation,
+  sanitizeAdvancedRatios,
+  sanitizeNav,
+  sanitizeRating,
+} from '#shared/services/fundClientView.js';
+
+// Client-view + analytics live in a single source (fundClientView.js) so the
+// admin and catalog surfaces can never drift. Re-exported to preserve the
+// existing public contract of this module.
+export { computeFundAge, computeFundAnalytics, toClientFund, toClientFunds };
 
 function toNumber(value, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -18,62 +36,55 @@ function plainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+// Build the extended chartConfig (existing 3 visibility gates + 3 new ones).
+// Every gate defaults to visible; client UI hides sections when data is absent.
+function buildChartConfig(incoming = {}, existing = {}) {
+  const base = { ...existing, ...incoming };
+  return {
+    showSectorDistribution: base.showSectorDistribution !== false,
+    showInvestmentBreakdown: base.showInvestmentBreakdown !== false,
+    showCompanyNames: base.showCompanyNames !== false,
+    showBenchmarkComparison: base.showBenchmarkComparison !== false,
+    showAssetAllocation: base.showAssetAllocation !== false,
+    showAdvancedRatios: base.showAdvancedRatios !== false,
+  };
+}
+
+// Sanitize the optional Groww-style display fields. Patch semantics: a key is
+// only replaced when present in the payload, otherwise the existing value wins.
+// All fields are optional so legacy fund records remain valid.
+function buildFundDisplayFields(payload, existing = {}) {
+  const has = (key) => payload[key] !== undefined;
+  return {
+    category: has('category') ? toTrimmedString(payload.category) : (existing.category ?? ''),
+    subCategory: has('subCategory') ? toTrimmedString(payload.subCategory) : (existing.subCategory ?? ''),
+    riskText: has('riskText') ? toTrimmedString(payload.riskText) : (existing.riskText ?? ''),
+    holdingsAsOf: has('holdingsAsOf') ? toTrimmedString(payload.holdingsAsOf) : (existing.holdingsAsOf ?? ''),
+    nav: has('nav') ? sanitizeNav(payload.nav) : (existing.nav ?? null),
+    rating: has('rating') ? sanitizeRating(payload.rating) : (existing.rating ?? null),
+    performanceSummary: has('performanceSummary')
+      ? sanitizePerformanceSummary(payload.performanceSummary)
+      : (existing.performanceSummary ?? null),
+    performanceSeries: has('performanceSeries')
+      ? normalizePerformanceSeries(payload.performanceSeries)
+      : (existing.performanceSeries ?? []),
+    performancePeriods: has('performancePeriods')
+      ? sanitizePerformancePeriods(payload.performancePeriods)
+      : (existing.performancePeriods ?? []),
+    assetAllocation: has('assetAllocation')
+      ? sanitizeAssetAllocation(payload.assetAllocation)
+      : (existing.assetAllocation ?? []),
+    advancedRatios: has('advancedRatios')
+      ? sanitizeAdvancedRatios(payload.advancedRatios)
+      : (existing.advancedRatios ?? {}),
+  };
+}
+
 function fundTrackingId(id) {
   return `FP-${String(id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
 }
 
 const DUAL_APPROVAL_THRESHOLD = 500000;
-
-export function computeFundAge(launchDate) {
-  if (!launchDate) return null;
-  const start = new Date(launchDate);
-  const now = new Date();
-  if (Number.isNaN(start.getTime())) return null;
-
-  const diffMs = now - start;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const years = Math.floor(diffDays / 365);
-  const months = Math.floor((diffDays % 365) / 30);
-  const days = diffDays % 30;
-
-  let display = '';
-  if (years > 0) display += `${years}y `;
-  if (months > 0) display += `${months}mo `;
-  if (years === 0 && months === 0) display += `${days}d`;
-  display = display.trim();
-
-  const totalYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
-
-  return { years, months, days, diffDays, totalYears, display };
-}
-
-export function computeFundAnalytics(fund) {
-  if (!fund) return null;
-
-  const sectors = Array.isArray(fund.sectors) ? fund.sectors : [];
-  const investments = Array.isArray(fund.investments) ? fund.investments : [];
-  const n = sectors.length;
-
-  const totalInvested = investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-
-  // Sector validation
-  const sectorTotal = sectors.reduce((sum, s) => sum + (s.percentage || 0), 0);
-  const sectorValid = Math.abs(sectorTotal - 100) < 0.1;
-
-  // Fund age from launch date
-  const fundAge = computeFundAge(fund.launchDate);
-  const initialInvestment = toNumber(fund.initialInvestment, 0);
-
-  return {
-    sectorTotal,
-    sectorValid,
-    totalInvested,
-    sectorCount: sectors.length,
-    investmentCount: investments.length,
-    fundAge,
-    initialInvestment,
-  };
-}
 
 function enrichFundWithAnalytics(fund) {
   const trackingId = fund.trackingId || fund.fundCode || fundTrackingId(fund.id);
@@ -126,11 +137,8 @@ export async function createFund(config, actor, body, requestContext = {}) {
     riskLabel: toTrimmedString(payload.riskLabel),
     sectors: Array.isArray(payload.sectors) ? payload.sectors : [],
     investments: Array.isArray(payload.investments) ? payload.investments : [],
-    chartConfig: {
-      showSectorDistribution: incomingChartConfig.showSectorDistribution !== false,
-      showInvestmentBreakdown: incomingChartConfig.showInvestmentBreakdown !== false,
-      showCompanyNames: incomingChartConfig.showCompanyNames !== false,
-    },
+    ...buildFundDisplayFields(payload),
+    chartConfig: buildChartConfig(incomingChartConfig),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -192,12 +200,13 @@ export async function updateFund(config, actor, fundId, body, requestContext = {
     const rawStatus = toTrimmedString(payload.status, existing.status);
     const status = ['active', 'coming_soon'].includes(rawStatus) ? rawStatus : existing.status;
 
-    const nextChartConfig = payload.chartConfig !== undefined
-      ? (plainObject(payload.chartConfig) ? payload.chartConfig : existing.chartConfig)
-      : existing.chartConfig;
+    const incomingChartConfig = payload.chartConfig !== undefined && plainObject(payload.chartConfig)
+      ? payload.chartConfig
+      : {};
 
     const next = {
       ...existing,
+      ...buildFundDisplayFields(payload, existing),
       name: payload.name !== undefined ? toTrimmedString(payload.name, existing.name) : existing.name,
       tagline: payload.tagline !== undefined ? toTrimmedString(payload.tagline) : existing.tagline,
       status,
@@ -217,11 +226,7 @@ export async function updateFund(config, actor, fundId, body, requestContext = {
       riskLabel: payload.riskLabel !== undefined ? toTrimmedString(payload.riskLabel) : existing.riskLabel,
       sectors: payload.sectors !== undefined ? (Array.isArray(payload.sectors) ? payload.sectors : existing.sectors) : existing.sectors,
       investments: payload.investments !== undefined ? (Array.isArray(payload.investments) ? payload.investments : existing.investments) : existing.investments,
-      chartConfig: {
-        showSectorDistribution: nextChartConfig.showSectorDistribution !== false,
-        showInvestmentBreakdown: nextChartConfig.showInvestmentBreakdown !== false,
-        showCompanyNames: nextChartConfig.showCompanyNames !== false,
-      },
+      chartConfig: buildChartConfig(incomingChartConfig, existing.chartConfig || {}),
       updatedAt: now,
     };
 
@@ -280,60 +285,6 @@ export async function deleteFund(config, actor, fundId, requestContext = {}) {
   if (!deleted) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
   return deleted;
 }
-
-export function toClientFund(fund) {
-  if (!fund) return null;
-
-  const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed']);
-  if (!CLIENT_VISIBLE_STAGES.has(fund.lifecycleStage)) return null;
-
-  const cfg = fund.chartConfig || {};
-
-  // If showSectorDistribution is false, don't send sectors
-  const sectors = cfg.showSectorDistribution !== false ? fund.sectors : [];
-
-  // If showInvestmentBreakdown is false, don't send investments
-  let investments = [];
-  if (cfg.showInvestmentBreakdown !== false && Array.isArray(fund.investments)) {
-    const totalInvested = fund.investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-    investments = fund.investments.map((i) => ({
-      id: i.id,
-      companyName: cfg.showCompanyNames !== false ? i.companyName : `Company ${i.id.slice(-4)}`,
-      sectorId: i.sectorId,
-      percentage: totalInvested > 0 ? Math.round((Number(i.amount) / totalInvested) * 1000) / 10 : 0,
-    }));
-  }
-
-  const allocation = Array.isArray(sectors)
-    ? sectors.map((s) => ({ label: s.name, pct: s.percentage }))
-    : [];
-
-  const topHoldings = investments
-    .map((i) => ({ name: i.companyName, pct: i.percentage }))
-    .sort((a, b) => b.pct - a.pct);
-
-  const analytics = computeFundAnalytics(fund);
-
-  const {
-    investments: _originalInvestments,
-    sectors: _originalSectors,
-    ...rest
-  } = fund;
-
-  return {
-    ...rest,
-    sectors,
-    investments,
-    allocation,
-    topHoldings,
-    analytics,
-  };
-}
-
-export function toClientFunds(funds) {
-  return (funds || []).map(toClientFund).filter(Boolean);
-}
-
 
 /* -------------------------------------------------------------------------- */
 /* Capital Flow & Allocation Management                                       */

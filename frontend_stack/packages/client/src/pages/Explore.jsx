@@ -5,9 +5,11 @@ import * as fundsApi from '../services/fundsApi.js';
 import * as researchApi from '../services/researchApi.js';
 import { useAppConfig } from '../hooks/useAppConfig.js';
 import { isComponentEnabled } from '@beonedge/shared/appConfig.js';
-import { fmtMoney, fmtPct } from '../utils/format.js';
+import { fmtMoney } from '../utils/format.js';
 import { RiskBadge } from '@beonedge/shared/components/Badges.jsx';
 import { SectorMiniBar } from '@beonedge/shared/components/SectorMiniBar.jsx';
+import { LineComparisonChart } from '../components/Charts.jsx';
+import { fundMonogram, formatReturnPct, formatNavDate, returnTone } from '../utils/fundDisplay.js';
 
 
 const RISK_CHIP_ORDER = ['Growth', 'Balanced', 'Conservative'];
@@ -19,54 +21,103 @@ const SORT_OPTIONS = [
   { key: 'newest', label: 'Newest' },
 ];
 
+const RISK_TEXT = {
+  low: 'Lower risk',
+  low_moderate: 'Low–moderate risk',
+  moderate: 'Moderate risk',
+  moderate_high: 'Moderate–high risk',
+  high: 'Higher risk',
+};
+
 function FundCard({ fund, onNotify }) {
   const navigate = useNavigate();
   const isActive = fund.status === 'active';
 
-  const analytics = fund.analytics || {};
+  const perf = fund.performanceSummary || {};
+  const series = Array.isArray(fund.performanceSeries) ? fund.performanceSeries : [];
+  const hasChart = series.length >= 2;
+  const headline = formatReturnPct(perf.annualizedReturnPct, { decimals: 2 });
+  const oneDay = formatReturnPct(perf.oneDayReturnPct, { decimals: 2 });
+  const niftyPct = formatReturnPct(perf.niftyReturnPct, { decimals: 2, sign: false });
+  const periodLabel = perf.selectedPeriod ? `${perf.selectedPeriod} annualised` : null;
+
+  const riskDisplay = fund.riskText || RISK_TEXT[fund.riskLabel] || '';
+  const metaBits = [riskDisplay, fund.category, fund.subCategory].filter(Boolean);
+  const nav = fund.nav || null;
+  const rating = fund.rating || null;
   const sectors = fund.sectors || [];
 
   return (
     <div
-      className={`be-card apk-fund-card ${isActive ? 'apk-fund-card--active' : 'apk-fund-card--soon'}`}
+      className={`be-card apk-fc ${isActive ? 'apk-fc--active' : 'apk-fc--soon'}`}
       onClick={isActive ? () => navigate(`/app/funds/${fund.id}`) : undefined}
       data-clickable={isActive ? 'true' : 'false'}
       role={isActive ? 'button' : undefined}
       tabIndex={isActive ? 0 : undefined}
     >
-      <div className="apk-fund-header">
-        <h3>{fund.name}</h3>
+      <div className="apk-fc-top">
+        <span className="apk-fc-mono" aria-hidden="true">{fundMonogram(fund.name)}</span>
+        <div className="apk-fc-id">
+          <h3 className="apk-fc-name">{fund.name}</h3>
+          {metaBits.length > 0 && <div className="apk-fc-meta">{metaBits.join(' · ')}</div>}
+        </div>
         <span className={`apk-fund-status apk-fund-status--${fund.status}`}>
-          {fund.status === 'active' ? 'Active' : 'Coming Soon'}
+          {isActive ? 'Active' : 'Coming Soon'}
         </span>
       </div>
-      <p className="apk-fund-tagline">{fund.tagline}</p>
-      <div className="apk-fund-metrics">
-        <span className="apk-fund-pool">{fmtMoney(fund.totalPoolSize)}</span>
-        <span className="apk-fund-sectors">{sectors.length} sectors</span>
 
-      </div>
-      {sectors.length > 0 && (
-        <SectorMiniBar sectors={sectors} height={6} className="apk-fund-sectors-mini" />
-      )}
-      <div className="apk-fund-foot">
-        <div>
-          <div className="apk-fund-foot-l">Risk</div>
-          <div className="apk-fund-foot-v">
-            <RiskBadge riskLabel={fund.riskLabel} size="sm" />
-          </div>
-        </div>
-        <div>
-          <div className="apk-fund-foot-l">Min SIP</div>
-          <div className="apk-fund-foot-v be-money">{fmtMoney(fund.minSip)}</div>
-        </div>
-      </div>
-      {isActive ? (
-        <div className="apk-fund-link">
-          <span className="apk-link">Explore →</span>
+      {headline ? (
+        <div className="apk-fc-perf">
+          <span className={`apk-fc-return apk-tone-${returnTone(perf.annualizedReturnPct)}`}>{headline}</span>
+          {periodLabel && <span className="apk-fc-period">{periodLabel}</span>}
+          {oneDay && (
+            <span className={`apk-fc-oneday apk-tone-${returnTone(perf.oneDayReturnPct)}`}>
+              {oneDay} <span className="apk-fc-oneday-l">1D</span>
+            </span>
+          )}
         </div>
       ) : (
-        <div className="apk-fund-link">
+        fund.tagline && <p className="apk-fc-tagline">{fund.tagline}</p>
+      )}
+
+      {hasChart && (
+        <div className="apk-fc-chart">
+          <LineComparisonChart series={series} width={320} height={56} padding={4} strokeWidth={1.75} />
+          {niftyPct && <div className="apk-fc-bench">Nifty <span>{niftyPct}</span></div>}
+        </div>
+      )}
+
+      <div className="apk-fc-grid">
+        {nav?.value != null && (
+          <div>
+            <span className="apk-fc-grid-l">NAV{nav.asOf ? ` · ${formatNavDate(nav.asOf)}` : ''}</span>
+            <span className="apk-fc-grid-v be-money">{fmtMoney(nav.value)}</span>
+          </div>
+        )}
+        {rating?.value != null && (
+          <div>
+            <span className="apk-fc-grid-l">Rating</span>
+            <span className="apk-fc-grid-v">{rating.value}<span className="apk-fc-star">★</span></span>
+          </div>
+        )}
+        <div>
+          <span className="apk-fc-grid-l">Min SIP</span>
+          <span className="apk-fc-grid-v be-money">{fmtMoney(fund.minSip)}</span>
+        </div>
+        <div>
+          <span className="apk-fc-grid-l">Fund size</span>
+          <span className="apk-fc-grid-v be-money">{fmtMoney(fund.totalPoolSize)}</span>
+        </div>
+      </div>
+
+      {!headline && !hasChart && sectors.length > 0 && (
+        <SectorMiniBar sectors={sectors} height={6} className="apk-fc-sectors" />
+      )}
+
+      <div className="apk-fc-foot">
+        {isActive ? (
+          <span className="apk-fc-cta">View details &rarr;</span>
+        ) : (
           <button
             className="be-btn be-btn-primary be-btn-sm"
             style={{ width: '100%', justifyContent: 'center' }}
@@ -74,9 +125,9 @@ function FundCard({ fund, onNotify }) {
           >
             <Bell size={14} strokeWidth={2} /> Notify me when open
           </button>
-        </div>
-      )}
-      <div className="apk-fund-disclaimer">Past performance is not indicative of future returns.</div>
+        )}
+      </div>
+      <div className="apk-fc-disclaimer">Past performance is not indicative of future returns.</div>
     </div>
   );
 }

@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import {
+  computeFundAge,
+  computeFundAnalytics,
+  toClientFund,
+  toClientFunds,
+} from '#shared/services/fundClientView.js';
+
+// Re-exported so existing importers keep their public contract while the
+// client-view logic lives in a single source (fundClientView.js).
+export { computeFundAge, computeFundAnalytics, toClientFund, toClientFunds };
 
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
@@ -13,51 +23,6 @@ function toNumber(value, fallback = 0) {
 function toTrimmedString(value, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
-}
-
-export function computeFundAge(launchDate) {
-  if (!launchDate) return null;
-  const start = new Date(launchDate);
-  const now = new Date();
-  if (Number.isNaN(start.getTime())) return null;
-
-  const diffMs = now - start;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const years = Math.floor(diffDays / 365);
-  const months = Math.floor((diffDays % 365) / 30);
-  const days = diffDays % 30;
-
-  let display = '';
-  if (years > 0) display += `${years}y `;
-  if (months > 0) display += `${months}mo `;
-  if (years === 0 && months === 0) display += `${days}d`;
-  display = display.trim();
-
-  const totalYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
-
-  return { years, months, days, diffDays, totalYears, display };
-}
-
-export function computeFundAnalytics(fund) {
-  if (!fund) return null;
-
-  const sectors = Array.isArray(fund.sectors) ? fund.sectors : [];
-  const investments = Array.isArray(fund.investments) ? fund.investments : [];
-  const totalInvested = investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-  const sectorTotal = sectors.reduce((sum, s) => sum + (s.percentage || 0), 0);
-  const sectorValid = Math.abs(sectorTotal - 100) < 0.1;
-  const fundAge = computeFundAge(fund.launchDate);
-  const initialInvestment = toNumber(fund.initialInvestment, 0);
-
-  return {
-    sectorTotal,
-    sectorValid,
-    totalInvested,
-    sectorCount: sectors.length,
-    investmentCount: investments.length,
-    fundAge,
-    initialInvestment,
-  };
 }
 
 function enrichFundWithAnalytics(fund) {
@@ -88,58 +53,6 @@ export async function getFund(config, fundId) {
   }
 
   return fund;
-}
-
-export function toClientFund(fund) {
-  if (!fund) return null;
-
-  const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed']);
-  if (!CLIENT_VISIBLE_STAGES.has(fund.lifecycleStage)) return null;
-
-  const cfg = fund.chartConfig || {};
-  const sectors = cfg.showSectorDistribution !== false ? fund.sectors : [];
-
-  let investments = [];
-  if (cfg.showInvestmentBreakdown !== false && Array.isArray(fund.investments)) {
-    const totalInvested = fund.investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-    investments = fund.investments.map((i) => ({
-      id: i.id,
-      companyName: cfg.showCompanyNames !== false ? i.companyName : `Company ${i.id.slice(-4)}`,
-      sectorId: i.sectorId,
-      percentage: totalInvested > 0 ? Math.round((Number(i.amount) / totalInvested) * 1000) / 10 : 0,
-    }));
-  }
-
-  const allocation = Array.isArray(sectors)
-    ? sectors.map((s) => ({ label: s.name, pct: s.percentage }))
-    : [];
-
-  const topHoldings = investments
-    .map((i) => ({ name: i.companyName, pct: i.percentage }))
-    .sort((a, b) => b.pct - a.pct);
-
-  const analytics = computeFundAnalytics(fund);
-
-  const {
-    investments: _originalInvestments,
-    sectors: _originalSectors,
-    ...rest
-  } = fund;
-
-  return {
-    ...rest,
-    trackingId: rest.trackingId || rest.fundCode || `FP-${String(rest.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`,
-    fundCode: rest.fundCode || rest.trackingId || `FP-${String(rest.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`,
-    sectors,
-    investments,
-    allocation,
-    topHoldings,
-    analytics,
-  };
-}
-
-export function toClientFunds(funds) {
-  return (funds || []).map(toClientFund).filter(Boolean);
 }
 
 export async function createRedemptionRequest(config, userId, body) {

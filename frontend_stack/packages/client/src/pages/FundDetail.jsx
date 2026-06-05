@@ -8,10 +8,11 @@ import {
 import AppBar from '../layout/AppBar.jsx';
 import * as fundsApi from '../services/fundsApi.js';
 import * as disclosureApi from '../services/disclosureApi.js';
-import { AllocationRing, PieChart3D } from '../components/Charts.jsx';
+import { AllocationRing, PieChart3D, LineComparisonChart, DonutChart } from '../components/Charts.jsx';
 import { useAppConfig } from '../hooks/useAppConfig.js';
 import { isComponentEnabled } from '@beonedge/shared/appConfig.js';
 import { fmtMoney, fmtNum, fmtPct } from '../utils/format.js';
+import { formatReturnPct, formatNavDate, returnTone } from '../utils/fundDisplay.js';
 import MoneyValue from '@beonedge/shared/components/MoneyValue.jsx';
 
 const RISK_LABELS = {
@@ -25,6 +26,150 @@ const LIFECYCLE_LABELS = {
   paused: 'Paused',
   closed: 'Closed',
 };
+
+// BOE-friendly chart palette (green/gold/slate first, then supporting hues).
+// Used only when an admin slice has no explicit color.
+const DONUT_PALETTE = [
+  '#1F7A4D', '#B5894A', '#5C6470', '#A8741C', '#4AA9D8',
+  '#7A9E3A', '#C0563E', '#8A929D', '#3E7C8C', '#9C7339',
+];
+
+const ADVANCED_RATIO_ROWS = [
+  { key: 'pe', label: 'P/E' },
+  { key: 'pb', label: 'P/B' },
+  { key: 'beta', label: 'Beta' },
+  { key: 'alpha', label: 'Alpha' },
+  { key: 'sharpe', label: 'Sharpe' },
+  { key: 'sortino', label: 'Sortino' },
+];
+
+function withPaletteColors(items) {
+  return items.map((it, i) => ({ ...it, color: it.color || DONUT_PALETTE[i % DONUT_PALETTE.length] }));
+}
+
+function AllocationLegend({ items }) {
+  return (
+    <div className="apk-ha-legend">
+      {items.map((it, i) => (
+        <span key={i} className="apk-ha-legend-item">
+          <span className="apk-ha-dot" style={{ background: it.color }} />
+          <span className="apk-ha-legend-label">{it.label}</span>
+          <span className="apk-ha-legend-pct be-num">{Number(it.percentage).toFixed(2)}%</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Headline annualised return + fund-vs-Nifty chart + period chips.
+function PerformanceSection({ fund }) {
+  const summary = fund.performanceSummary || {};
+  const series = Array.isArray(fund.performanceSeries) ? fund.performanceSeries : [];
+  const periods = Array.isArray(fund.performancePeriods) ? fund.performancePeriods : [];
+  const [activeKey, setActiveKey] = useState(summary.selectedPeriod || periods[0]?.key || 'ALL');
+
+  const headline = formatReturnPct(summary.annualizedReturnPct, { decimals: 2 });
+  const oneDay = formatReturnPct(summary.oneDayReturnPct, { decimals: 2 });
+  const hasSeries = series.length >= 2;
+  if (!headline && !hasSeries) return null;
+  const active = periods.find((p) => p.key === activeKey);
+
+  return (
+    <div className="be-card apk-pf">
+      {headline && (
+        <div className="apk-pf-head">
+          <span className={`apk-pf-return apk-tone-${returnTone(summary.annualizedReturnPct)}`}>{headline}</span>
+          {summary.selectedPeriod && <span className="apk-pf-period">{summary.selectedPeriod} annualised</span>}
+          {oneDay && (
+            <span className={`apk-pf-oneday apk-tone-${returnTone(summary.oneDayReturnPct)}`}>
+              {oneDay} <span className="apk-pf-oneday-l">1D</span>
+            </span>
+          )}
+        </div>
+      )}
+      {hasSeries ? (
+        <LineComparisonChart series={series} width={340} height={150} padding={8} strokeWidth={2}
+          showLegend legendFundLabel="Fund" legendBenchmarkLabel="Nifty 50" />
+      ) : (
+        <div className="apk-pf-pending">Performance data pending.</div>
+      )}
+      {periods.length > 0 && (
+        <div className="apk-pf-chips" role="tablist" aria-label="Performance period">
+          {periods.map((p) => (
+            <button key={p.key} type="button" role="tab" aria-selected={activeKey === p.key}
+              className={`apk-pf-chip ${activeKey === p.key ? 'is-active' : ''}`}
+              onClick={() => setActiveKey(p.key)}>{p.label}</button>
+          ))}
+        </div>
+      )}
+      {active && (
+        <div className="apk-pf-chip-detail">
+          <span>Fund <strong className={`apk-tone-${returnTone(active.fundReturnPct)}`}>{formatReturnPct(active.fundReturnPct, { decimals: 2 })}</strong></span>
+          <span>Nifty 50 <strong>{formatReturnPct(active.niftyReturnPct, { decimals: 2, sign: false })}</strong></span>
+        </div>
+      )}
+      <p className="apk-pf-disclaimer">
+        Returns are admin-published and indicative. Investments are subject to market risk.
+        Past performance is not indicative of future returns.
+      </p>
+    </div>
+  );
+}
+
+// Bottom holdings-analysis: asset split donut + sector donut + ratios grid.
+function HoldingsAnalysis({ fund }) {
+  const assetAllocation = withPaletteColors(Array.isArray(fund.assetAllocation) ? fund.assetAllocation : []);
+  const sectors = withPaletteColors(
+    (Array.isArray(fund.sectors) ? fund.sectors : []).map((s) => ({ label: s.name, percentage: s.percentage, color: s.color })),
+  );
+  const ratios = fund.advancedRatios || {};
+  const ratioRows = ADVANCED_RATIO_ROWS.filter((r) => Number.isFinite(Number(ratios[r.key])));
+
+  const hasAsset = assetAllocation.length > 0;
+  const hasSectors = sectors.length > 0;
+  const hasRatios = ratioRows.length > 0;
+  if (!hasAsset && !hasSectors && !hasRatios) return null;
+  const poolLabel = fund.totalPoolSize ? fmtMoney(fund.totalPoolSize) : '';
+
+  return (
+    <div className="be-card apk-ha">
+      <div className="be-eyebrow">Holdings analysis</div>
+
+      {hasAsset && (
+        <div className="apk-ha-block">
+          <h4 className="apk-ha-title">Equity / Debt / Cash split</h4>
+          <DonutChart data={assetAllocation} size={184} thickness={28} centerLabel={poolLabel}
+            ariaLabel="Equity debt cash split" />
+          <AllocationLegend items={assetAllocation} />
+        </div>
+      )}
+
+      {hasSectors && (
+        <div className="apk-ha-block">
+          <h4 className="apk-ha-title">Equity sector allocation</h4>
+          <DonutChart data={sectors} size={184} thickness={28} ariaLabel="Equity sector allocation" />
+          <AllocationLegend items={sectors} />
+        </div>
+      )}
+
+      {hasRatios && (
+        <div className="apk-ha-block">
+          <h4 className="apk-ha-title">Advanced ratios</h4>
+          <div className="apk-ha-ratios">
+            {ratioRows.map((r) => (
+              <div key={r.key} className="apk-ha-ratio">
+                <span>{r.label}</span>
+                <strong className="be-num">{Number(ratios[r.key]).toFixed(2)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {fund.holdingsAsOf && <div className="apk-ha-asof">*Holdings as of {formatNavDate(fund.holdingsAsOf)}</div>}
+    </div>
+  );
+}
 
 function FundDetailSkeleton() {
   return (
@@ -167,6 +312,9 @@ export default function FundDetail() {
 
         <div className="apk-detail-stack">
           <div className="apk-detail-main">
+            {/* Performance vs Nifty (headline return + comparison chart) */}
+            <PerformanceSection fund={fund} />
+
             {/* Objective */}
             {isComponentEnabled(appConfig, 'fundDetail', 'objective') && (
               <div className="be-card apk-fund-obj">
@@ -390,6 +538,9 @@ export default function FundDetail() {
                 </div>
               </div>
             )}
+
+            {/* Holdings analysis: asset split + sector donut + advanced ratios */}
+            <HoldingsAnalysis fund={fund} />
 
             {/* Investment Flow CTA */}
             <div className="be-card apk-invest-cta-card">

@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => {
         '@beonedge/shared': resolve(__dirname, '../packages/shared/src'),
         '@beonedge/client': resolve(__dirname, '../packages/client/src'),
         '@beonedge/admin': resolve(__dirname, '../packages/admin/src'),
-        '@beonedge/website': resolve(__dirname, '../packages/website/src'),
         '@beonedge/client-platform': resolve(__dirname, clientPlatformPath),
       },
     },

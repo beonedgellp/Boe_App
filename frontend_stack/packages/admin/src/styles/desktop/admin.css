@@ -1150,3 +1150,13 @@
     transition: none;
   }
 }
+
+/* Session 4: performance period table in the fund editor */
+.adm-mini-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.adm-mini-table th {
+  text-align: left; font-size: 11px; font-weight: 600; color: var(--be-slate);
+  padding: 4px 8px; border-bottom: 1px solid var(--be-border);
+}
+.adm-mini-table td { padding: 4px 8px; border-bottom: 1px solid var(--be-border); }
+.adm-mini-table input[type="number"] { width: 100%; }
+.adm-series-row input { width: 100%; }

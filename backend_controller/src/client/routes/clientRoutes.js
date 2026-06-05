@@ -1,4 +1,5 @@
 import { Routes } from '#shared/routes/constants.js';
+import { HttpError } from '#http/errors.js';
 import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
 import { validateBody } from '#http/validate.js';
 import { withIdempotency } from '#http/idempotency.js';
@@ -139,7 +140,11 @@ export function registerClientRoutes(router) {
     description: 'Approved-client strategy detail.',
   }, async ({ config, params }) => {
     const fund = await getFund(config, params.product_id);
-    return toClientFund(fund);
+    const clientFund = toClientFund(fund);
+    // A non-visible (draft/archived) fund must look identical to a missing one
+    // so its existence cannot be probed by id.
+    if (!clientFund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
+    return clientFund;
   });
 
   router.post(Routes.POST_V1_CLIENT_SIPS, {

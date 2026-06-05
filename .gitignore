@@ -63,3 +63,10 @@ frontend_stack/.codex/
 resources/agent/
 resources/_coord/
 extra/coding-sessions/
+
+# Kimi round-trip harness
+kimi_chunks/
+.kimi_backups/
+kimi_response*.txt
+.kimi-patch-*.patch
+kimi-api-key.txt

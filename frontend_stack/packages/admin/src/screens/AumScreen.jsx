@@ -33,6 +33,7 @@ import { clone } from '../helpers/formatters.js';
 import AumAllocationsTab from './AumAllocationsTab.jsx';
 import AumCapitalTab from './AumCapitalTab.jsx';
 import AumRedemptionsTab from './AumRedemptionsTab.jsx';
+import AumDisplayFields from './AumDisplayFields.jsx';
 
 function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, onUserDetail }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -64,10 +65,25 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
     riskLabel: '',
     sectors: [],
     investments: [],
+    // Session 4 display fields (Groww-style profile)
+    category: '',
+    subCategory: '',
+    riskText: '',
+    holdingsAsOf: '',
+    nav: { value: '', asOf: '' },
+    rating: { value: '', scale: 5 },
+    performanceSummary: { selectedPeriod: '3Y', annualizedReturnPct: '', oneDayReturnPct: '', niftyReturnPct: '', asOf: '' },
+    performanceSeries: [],
+    performancePeriods: [],
+    assetAllocation: [],
+    advancedRatios: { pe: '', pb: '', beta: '', alpha: '', sharpe: '', sortino: '' },
     chartConfig: {
       showSectorDistribution: true,
       showInvestmentBreakdown: false,
       showCompanyNames: false,
+      showBenchmarkComparison: true,
+      showAssetAllocation: true,
+      showAdvancedRatios: true,
     },
   };
 
@@ -117,10 +133,34 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
       riskLabel: fund.riskLabel || '',
       sectors: clone(fund.sectors || []),
       investments: clone(fund.investments || []),
+      category: fund.category || '',
+      subCategory: fund.subCategory || '',
+      riskText: fund.riskText || '',
+      holdingsAsOf: fund.holdingsAsOf || '',
+      nav: { value: fund.nav?.value ?? '', asOf: fund.nav?.asOf || '' },
+      rating: { value: fund.rating?.value ?? '', scale: fund.rating?.scale ?? 5 },
+      performanceSummary: {
+        selectedPeriod: fund.performanceSummary?.selectedPeriod || '3Y',
+        annualizedReturnPct: fund.performanceSummary?.annualizedReturnPct ?? '',
+        oneDayReturnPct: fund.performanceSummary?.oneDayReturnPct ?? '',
+        niftyReturnPct: fund.performanceSummary?.niftyReturnPct ?? '',
+        asOf: fund.performanceSummary?.asOf || '',
+      },
+      performanceSeries: clone(fund.performanceSeries || []),
+      performancePeriods: clone(fund.performancePeriods || []),
+      assetAllocation: clone(fund.assetAllocation || []),
+      advancedRatios: {
+        pe: fund.advancedRatios?.pe ?? '', pb: fund.advancedRatios?.pb ?? '',
+        beta: fund.advancedRatios?.beta ?? '', alpha: fund.advancedRatios?.alpha ?? '',
+        sharpe: fund.advancedRatios?.sharpe ?? '', sortino: fund.advancedRatios?.sortino ?? '',
+      },
       chartConfig: {
         showSectorDistribution: fund.chartConfig?.showSectorDistribution !== false,
         showInvestmentBreakdown: fund.chartConfig?.showInvestmentBreakdown === true,
         showCompanyNames: fund.chartConfig?.showCompanyNames === true,
+        showBenchmarkComparison: fund.chartConfig?.showBenchmarkComparison !== false,
+        showAssetAllocation: fund.chartConfig?.showAssetAllocation !== false,
+        showAdvancedRatios: fund.chartConfig?.showAdvancedRatios !== false,
       },
     });
     setFormError('');
@@ -188,11 +228,29 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
     }));
   }
 
+  function getChartWarnings() {
+    const warnings = [];
+    if (form.chartConfig.showBenchmarkComparison && (!form.performanceSeries || form.performanceSeries.length < 2)) {
+      warnings.push('Benchmark comparison chart is enabled but has fewer than 2 data points.');
+    }
+    if (form.chartConfig.showAssetAllocation && (!form.assetAllocation || form.assetAllocation.length === 0)) {
+      warnings.push('Asset split donut is enabled but has no data.');
+    }
+    if (form.chartConfig.showSectorDistribution && form.sectors.length === 0) {
+      warnings.push('Sector distribution chart is enabled but has no sectors.');
+    }
+    if (form.chartConfig.showAdvancedRatios && (!form.advancedRatios || Object.values(form.advancedRatios).every(v => v === '' || v === null || v === undefined))) {
+      warnings.push('Advanced ratios are enabled but all fields are blank.');
+    }
+    return warnings;
+  }
+
   function handleLifecycleClick(stage) {
     if (stage === form.lifecycleStage) return;
     const destructive = (form.lifecycleStage === 'active' && stage === 'archived') ||
                         (form.lifecycleStage === 'active' && stage === 'draft');
-    if (destructive) {
+    const chartWarnings = stage === 'active' ? getChartWarnings() : [];
+    if (destructive || chartWarnings.length > 0) {
       setLifecycleConfirm(stage);
       return;
     }
@@ -228,6 +286,18 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
         riskLabel: form.riskLabel.trim() || undefined,
         sectors: form.sectors.map(s => ({ ...s, percentage: Number(s.percentage) || 0 })),
         investments: form.investments.map(i => ({ ...i, amount: Number(i.amount) || 0 })),
+        // Session 4 display fields — backend sanitizes blanks to null/[].
+        category: form.category,
+        subCategory: form.subCategory,
+        riskText: form.riskText,
+        holdingsAsOf: form.holdingsAsOf,
+        nav: form.nav,
+        rating: form.rating,
+        performanceSummary: form.performanceSummary,
+        performanceSeries: form.performanceSeries,
+        performancePeriods: form.performancePeriods,
+        assetAllocation: form.assetAllocation,
+        advancedRatios: form.advancedRatios,
         chartConfig: { ...form.chartConfig },
         showSectorChart: form.chartConfig.showSectorDistribution,
         showInvestmentChart: form.chartConfig.showInvestmentBreakdown,
@@ -550,6 +620,9 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                 <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addInvestment}><I icon={Plus} size={14} /> Add Investment</button>
                 <p style={{ fontSize: 12, color: 'var(--be-slate)', marginTop: 8 }}>Actual amounts are admin-only and never exposed to clients.</p>
               </div>
+
+              {/* Session 4: display profile, performance vs Nifty, asset split, ratios */}
+              <AumDisplayFields form={form} setForm={setForm} />
             </div>
 
             <div className="adm-fund-editor-side">
@@ -569,6 +642,18 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     <input type="checkbox" checked={form.chartConfig.showCompanyNames} onChange={updateChartConfig('showCompanyNames')} />
                     <span>Show company names in breakdown</span>
                   </label>
+                  <label className="adm-chart-toggle">
+                    <input type="checkbox" checked={form.chartConfig.showBenchmarkComparison !== false} onChange={updateChartConfig('showBenchmarkComparison')} />
+                    <span>Show performance vs Nifty chart</span>
+                  </label>
+                  <label className="adm-chart-toggle">
+                    <input type="checkbox" checked={form.chartConfig.showAssetAllocation !== false} onChange={updateChartConfig('showAssetAllocation')} />
+                    <span>Show asset split donut</span>
+                  </label>
+                  <label className="adm-chart-toggle">
+                    <input type="checkbox" checked={form.chartConfig.showAdvancedRatios !== false} onChange={updateChartConfig('showAdvancedRatios')} />
+                    <span>Show advanced ratios</span>
+                  </label>
                 </div>
                 <p className="adm-cell-meta" style={{ marginTop: 8 }}>Users will only see what you enable above.</p>
               </div>
@@ -580,56 +665,88 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   This is how clients will see your fund card:
                 </div>
                 {(() => {
-                  const previewFund = {
-                    id: selectedFundId || 'preview',
-                    name: form.name || 'Untitled Fund',
-                    tagline: form.tagline || 'No tagline set',
-                    status: form.status,
-                    lifecycleStage: form.lifecycleStage,
-                    riskLabel: form.riskLabel,
-                    totalPoolSize: form.totalPoolSize === '' ? 0 : Number(form.totalPoolSize),
-                    minSip: form.minSip === '' ? 0 : Number(form.minSip),
-                    sectors: form.sectors.filter(s => s.percentage > 0),
-                    analytics: {
-                      fundAge: (() => {
-                        const launch = form.launchDate ? new Date(form.launchDate) : null;
-                        if (!launch || Number.isNaN(launch.getTime())) return null;
-                        const days = Math.floor((new Date() - launch) / (1000 * 60 * 60 * 24));
-                        const y = Math.floor(days / 365);
-                        const m = Math.floor((days % 365) / 30);
-                        return { display: `${y}y ${m}mo` };
-                      })(),
-                    },
-                  };
-                  const isActive = previewFund.status === 'active';
+                  const isActive = form.status === 'active';
+                  const perf = form.performanceSummary || {};
+                  const series = Array.isArray(form.performanceSeries) ? form.performanceSeries : [];
+                  const hasChart = series.length >= 2;
+                  const headline = (() => { const n = Number(perf.annualizedReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
+                  const oneDay = (() => { const n = Number(perf.oneDayReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
+                  const niftyPct = (() => { const n = Number(perf.niftyReturnPct); return Number.isFinite(n) ? `${n.toFixed(2)}%` : null; })();
+                  const metaBits = [form.riskText, form.category, form.subCategory].filter(Boolean);
+                  const nav = form.nav || {};
+                  const rating = form.rating || {};
+                  const poolSize = form.totalPoolSize === '' ? 0 : Number(form.totalPoolSize);
+                  const minSip = form.minSip === '' ? 0 : Number(form.minSip);
+                  const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };
                   return (
-                    <div
-                      style={{
-                        background: 'var(--be-bone)',
-                        border: `2px solid ${isActive ? 'var(--be-gold)' : 'var(--be-border-strong)'}`,
-                        borderRadius: 'var(--be-radius-md)',
-                        padding: 14,
-                        cursor: 'default',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                        <h4 style={{ fontFamily: 'var(--be-font-serif)', fontSize: 15, fontWeight: 600, margin: 0 }}>{previewFund.name}</h4>
-                        <StatusBadge status={previewFund.status} size="sm" />
+                    <div style={{ background: 'var(--be-bone)', border: `2px solid ${isActive ? 'var(--be-gold)' : 'var(--be-border-strong)'}`, borderRadius: 'var(--be-radius-md)', padding: 14, cursor: 'default', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {/* Top row */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <span style={{ flex: '0 0 auto', width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--be-green-soft)', color: 'var(--be-green)', fontWeight: 700, fontSize: 13, letterSpacing: '.3px' }}>{initials(form.name || 'FU')}</span>
+                        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                          <h4 style={{ fontFamily: 'var(--be-font-serif)', fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.25 }}>{form.name || 'Untitled Fund'}</h4>
+                          {metaBits.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--be-slate)', marginTop: 3, lineHeight: 1.3 }}>{metaBits.join(' · ')}</div>}
+                        </div>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, padding: '4px 10px', borderRadius: 999, background: isActive ? 'var(--be-green-soft)' : 'var(--be-slate-soft)', color: isActive ? 'var(--be-green)' : 'var(--be-slate)' }}>{isActive ? 'Active' : 'Coming Soon'}</span>
                       </div>
-                      <p style={{ fontSize: 12, color: 'var(--be-slate)', margin: '0 0 10px' }}>{previewFund.tagline}</p>
-                      <div style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 600 }}>₹{(previewFund.totalPoolSize / 1e5).toFixed(1)}L</span>
-                        {previewFund.analytics.fundAge && (
-                          <span style={{ color: 'var(--be-slate)' }}>{previewFund.analytics.fundAge.display}</span>
-                        )}
-                        <span>{previewFund.sectors.length} sectors</span>
 
+                      {/* Performance */}
+                      {headline ? (
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--be-font-mono, monospace)', fontSize: 22, fontWeight: 700, lineHeight: 1, color: Number(perf.annualizedReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{headline}</span>
+                          {perf.selectedPeriod && <span style={{ fontSize: 11, color: 'var(--be-slate)' }}>{perf.selectedPeriod} annualised</span>}
+                          {oneDay && <span style={{ fontSize: 12, fontFamily: 'var(--be-font-mono, monospace)', marginLeft: 'auto', whiteSpace: 'nowrap', color: Number(perf.oneDayReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{oneDay} <span style={{ color: 'var(--be-slate-2)' }}>1D</span></span>}
+                        </div>
+                      ) : (
+                        form.tagline && <p style={{ fontSize: 12.5, color: 'var(--be-slate)', margin: 0 }}>{form.tagline}</p>
+                      )}
+
+                      {/* Mini chart placeholder */}
+                      {hasChart && (
+                        <div style={{ position: 'relative', padding: '8px 0', background: 'var(--be-slate-soft)', borderRadius: 'var(--be-radius-sm)', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>📈 Mini comparison chart ({series.length} points)</span>
+                          {niftyPct && <span style={{ position: 'absolute', right: 8, top: 4, fontSize: 11, color: 'var(--be-slate)' }}>Nifty <span style={{ color: 'var(--be-ink)', fontFamily: 'var(--be-font-mono, monospace)' }}>{niftyPct}</span></span>}
+                        </div>
+                      )}
+
+                      {/* Metric grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '9px 14px', paddingTop: 11, borderTop: '1px solid var(--be-border)' }}>
+                        {nav.value != null && Number.isFinite(Number(nav.value)) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                            <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
+                            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(nav.value)}</span>
+                          </div>
+                        )}
+                        {rating.value != null && Number.isFinite(Number(rating.value)) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                            <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Rating</span>
+                            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{rating.value}<span style={{ color: 'var(--be-gold)', marginLeft: 1 }}>★</span></span>
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Min SIP</span>
+                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(minSip)}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Fund size</span>
+                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(poolSize)}</span>
+                        </div>
                       </div>
-                      <SectorMiniBar sectors={previewFund.sectors} height={6} style={{ marginBottom: 10 }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <RiskBadge riskLabel={previewFund.riskLabel} size="sm" />
-                        <span style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>Min SIP ₹{previewFund.minSip.toLocaleString()}</span>
+
+                      {/* Sector fallback */}
+                      {!headline && !hasChart && form.sectors.length > 0 && (
+                        <SectorMiniBar sectors={form.sectors.filter(s => s.percentage > 0)} height={6} style={{ marginTop: 2 }} />
+                      )}
+
+                      {/* Footer */}
+                      <div style={{ marginTop: 2 }}>
+                        {isActive ? (
+                          <span style={{ color: 'var(--be-green)', fontWeight: 600, fontSize: 13 }}>View details →</span>
+                        ) : (
+                          <span style={{ fontSize: 13, color: 'var(--be-slate)' }}>Notify me when open</span>
+                        )}
                       </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--be-slate-2)', lineHeight: 1.3 }}>Past performance is not indicative of future returns.</div>
                     </div>
                   );
                 })()}
@@ -732,10 +849,26 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   </div>
                   <button className="adm-icon-btn" onClick={() => setLifecycleConfirm(null)} aria-label="Close"><I icon={X}/></button>
                 </div>
-                <p style={{ fontSize: 13, color: 'var(--be-slate)' }}>
-                  You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
-                  This may affect visibility for users.
-                </p>
+                <div style={{ fontSize: 13, color: 'var(--be-slate)' }}>
+                  <p style={{ margin: '0 0 10px' }}>
+                    You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
+                    This may affect visibility for users.
+                  </p>
+                  {lifecycleConfirm === 'active' && (() => {
+                    const warnings = getChartWarnings();
+                    return warnings.length > 0 ? (
+                      <div className="adm-validation-banner adm-validation-banner--warning" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
+                        <I icon={AlertTriangle} size={14} />
+                        <div>
+                          <strong>Chart data incomplete</strong>
+                          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                          </ul>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
                 <div className="adm-review-actions">
                   <button className="be-btn be-btn-secondary" onClick={() => setLifecycleConfirm(null)}>Cancel</button>
                   <button className="be-btn be-btn-primary" onClick={() => applyLifecycleChange(lifecycleConfirm)}>
@@ -924,10 +1057,26 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
               </div>
               <button className="adm-icon-btn" onClick={() => setLifecycleConfirm(null)} aria-label="Close"><I icon={X}/></button>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--be-slate)' }}>
-              You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
-              This may affect visibility for users.
-            </p>
+            <div style={{ fontSize: 13, color: 'var(--be-slate)' }}>
+              <p style={{ margin: '0 0 10px' }}>
+                You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
+                This may affect visibility for users.
+              </p>
+              {lifecycleConfirm === 'active' && (() => {
+                const warnings = getChartWarnings();
+                return warnings.length > 0 ? (
+                  <div className="adm-validation-banner adm-validation-banner--warning" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
+                    <I icon={AlertTriangle} size={14} />
+                    <div>
+                      <strong>Chart data incomplete</strong>
+                      <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                        {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
             <div className="adm-review-actions">
               <button className="be-btn be-btn-secondary" onClick={() => setLifecycleConfirm(null)}>Cancel</button>
               <button className="be-btn be-btn-primary" onClick={() => applyLifecycleChange(lifecycleConfirm)}>
@@ -950,30 +1099,92 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
               <button className="adm-icon-btn" onClick={() => setPreviewFund(null)} aria-label="Close"><I icon={X}/></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <LifecycleBadge stage={previewFund.lifecycleStage} />
-                <StatusBadge status={previewFund.status} />
-                <RiskBadge riskLabel={previewFund.riskLabel} />
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--be-slate)', margin: 0 }}>{previewFund.tagline}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
-                <div><span className="be-eyebrow">Pool Size</span><div className="be-money" style={{ fontSize: 16 }}>₹{(previewFund.totalPoolSize ?? 0).toLocaleString()}</div></div>
-                <div><span className="be-eyebrow">Min SIP</span><div className="be-money" style={{ fontSize: 16 }}>₹{(previewFund.minSip ?? 0).toLocaleString()}</div></div>
-              </div>
-              {previewFund.sectors?.length > 0 && (
-                <div>
-                  <span className="be-eyebrow" style={{ display: 'block', marginBottom: 6 }}>Sector Allocation</span>
-                  <SectorMiniBar sectors={previewFund.sectors} height={8} />
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 10px', marginTop: 8 }}>
-                    {previewFund.sectors.map((s, i) => (
-                      <span key={s.id || i} style={{ fontSize: 11, color: 'var(--be-slate)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, display: 'inline-block' }} />
-                        {s.name || 'Unnamed'} {s.percentage}%
-                      </span>
-                    ))}
+              {(() => {
+                const isActive = previewFund.status === 'active';
+                const perf = previewFund.performanceSummary || {};
+                const series = Array.isArray(previewFund.performanceSeries) ? previewFund.performanceSeries : [];
+                const hasChart = series.length >= 2;
+                const headline = (() => { const n = Number(perf.annualizedReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
+                const oneDay = (() => { const n = Number(perf.oneDayReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
+                const niftyPct = (() => { const n = Number(perf.niftyReturnPct); return Number.isFinite(n) ? `${n.toFixed(2)}%` : null; })();
+                const metaBits = [previewFund.riskText, previewFund.category, previewFund.subCategory].filter(Boolean);
+                const nav = previewFund.nav || {};
+                const rating = previewFund.rating || {};
+                const poolSize = previewFund.totalPoolSize ?? 0;
+                const minSip = previewFund.minSip ?? 0;
+                const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Top row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <span style={{ flex: '0 0 auto', width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--be-green-soft)', color: 'var(--be-green)', fontWeight: 700, fontSize: 13, letterSpacing: '.3px' }}>{initials(previewFund.name || 'FU')}</span>
+                      <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                        <h4 style={{ fontFamily: 'var(--be-font-serif)', fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.25 }}>{previewFund.name || 'Untitled Fund'}</h4>
+                        {metaBits.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--be-slate)', marginTop: 3, lineHeight: 1.3 }}>{metaBits.join(' · ')}</div>}
+                      </div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, padding: '4px 10px', borderRadius: 999, background: isActive ? 'var(--be-green-soft)' : 'var(--be-slate-soft)', color: isActive ? 'var(--be-green)' : 'var(--be-slate)' }}>{isActive ? 'Active' : 'Coming Soon'}</span>
+                    </div>
+
+                    {/* Performance */}
+                    {headline ? (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'var(--be-font-mono, monospace)', fontSize: 22, fontWeight: 700, lineHeight: 1, color: Number(perf.annualizedReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{headline}</span>
+                        {perf.selectedPeriod && <span style={{ fontSize: 11, color: 'var(--be-slate)' }}>{perf.selectedPeriod} annualised</span>}
+                        {oneDay && <span style={{ fontSize: 12, fontFamily: 'var(--be-font-mono, monospace)', marginLeft: 'auto', whiteSpace: 'nowrap', color: Number(perf.oneDayReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{oneDay} <span style={{ color: 'var(--be-slate-2)' }}>1D</span></span>}
+                      </div>
+                    ) : (
+                      previewFund.tagline && <p style={{ fontSize: 12.5, color: 'var(--be-slate)', margin: 0 }}>{previewFund.tagline}</p>
+                    )}
+
+                    {/* Mini chart placeholder */}
+                    {hasChart && (
+                      <div style={{ position: 'relative', padding: '8px 0', background: 'var(--be-slate-soft)', borderRadius: 'var(--be-radius-sm)', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>📈 Mini comparison chart ({series.length} points)</span>
+                        {niftyPct && <span style={{ position: 'absolute', right: 8, top: 4, fontSize: 11, color: 'var(--be-slate)' }}>Nifty <span style={{ color: 'var(--be-ink)', fontFamily: 'var(--be-font-mono, monospace)' }}>{niftyPct}</span></span>}
+                      </div>
+                    )}
+
+                    {/* Metric grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '9px 14px', paddingTop: 11, borderTop: '1px solid var(--be-border)' }}>
+                      {nav.value != null && Number.isFinite(Number(nav.value)) && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
+                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(nav.value)}</span>
+                        </div>
+                      )}
+                      {rating.value != null && Number.isFinite(Number(rating.value)) && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Rating</span>
+                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{rating.value}<span style={{ color: 'var(--be-gold)', marginLeft: 1 }}>★</span></span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                        <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Min SIP</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(minSip)}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                        <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Fund size</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(poolSize)}</span>
+                      </div>
+                    </div>
+
+                    {/* Sector fallback */}
+                    {!headline && !hasChart && (previewFund.sectors || []).length > 0 && (
+                      <SectorMiniBar sectors={previewFund.sectors.filter(s => s.percentage > 0)} height={6} style={{ marginTop: 2 }} />
+                    )}
+
+                    {/* Footer */}
+                    <div style={{ marginTop: 2 }}>
+                      {isActive ? (
+                        <span style={{ color: 'var(--be-green)', fontWeight: 600, fontSize: 13 }}>View details →</span>
+                      ) : (
+                        <span style={{ fontSize: 13, color: 'var(--be-slate)' }}>Notify me when open</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'var(--be-slate-2)', lineHeight: 1.3 }}>Past performance is not indicative of future returns.</div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               <div className="adm-review-actions" style={{ marginTop: 4 }}>
                 <button className="be-btn be-btn-secondary" onClick={() => setPreviewFund(null)}>Close</button>
                 <button className="be-btn be-btn-primary" onClick={() => { setPreviewFund(null); openEdit(previewFund); }}>Edit this fund</button>

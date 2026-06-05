@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "kimi:chunk": "node scripts/kimi/chunk-codebase.mjs",
+    "kimi:run": "node scripts/kimi/kimi-api.mjs",
+    "kimi:apply": "node scripts/kimi/apply-kimi-output.mjs"
+  },
   "devDependencies": {
     "ngrok": "^5.0.0-beta.2",
     "playwright": "^1.59.1"

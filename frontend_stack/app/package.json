@@ -19,7 +19,6 @@
     "@beonedge/design-tokens": "0.1.0",
     "@beonedge/shared": "0.1.0",
     "@beonedge/ui-kits": "0.1.0",
-    "@beonedge/website": "0.1.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
