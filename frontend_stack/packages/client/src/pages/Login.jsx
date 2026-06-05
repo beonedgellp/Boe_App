@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSession } from '../store/SessionContext.jsx';
-import { isClientShell } from '@beonedge/shared/appTarget.js';
 import { openOnboarding } from '../utils/openOnboarding.js';
 
 function EyeIcon({ open }) {
@@ -23,12 +22,12 @@ function EyeIcon({ open }) {
 }
 
 function postLoginPath(from) {
-  if (!from) return isClientShell ? '/app/dashboard' : '/app/start';
+  if (!from) return '/app/dashboard';
   try {
     const decoded = decodeURIComponent(from);
-    return decoded.startsWith('/app/') && decoded !== '/app/login' ? decoded : (isClientShell ? '/app/dashboard' : '/app/start');
+    return decoded.startsWith('/app/') && decoded !== '/app/login' ? decoded : '/app/dashboard';
   } catch {
-    return isClientShell ? '/app/dashboard' : '/app/start';
+    return '/app/dashboard';
   }
 }
 

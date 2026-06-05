@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../store/SessionContext.jsx';
 import * as authApi from '../services/authApi.js';
-import { isClientShell } from '@beonedge/shared/appTarget.js';
 import logoOnDark from '@beonedge/shared/assets/logo-on-dark.svg';
 
 function isAdmin(user) {
@@ -24,7 +23,7 @@ export default function Splash() {
       if (!r.ok) return;
       t = setTimeout(() => {
         if (cancelled) return;
-        navigate(user ? (isAdmin(user) ? '/admin' : (isClientShell ? '/app/dashboard' : '/app/start')) : '/app/login', { replace: true });
+        navigate(user ? (isAdmin(user) ? '/admin' : '/app/dashboard') : '/app/login', { replace: true });
       }, 900);
     });
     return () => { cancelled = true; clearTimeout(t); };

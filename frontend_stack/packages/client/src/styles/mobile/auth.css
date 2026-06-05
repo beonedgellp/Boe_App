@@ -87,7 +87,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* Legacy auth-page (AppStart, etc.) — keep for now                           */
+/* Shared auth page                                                           */
 /* -------------------------------------------------------------------------- */
 
 .auth-page {
@@ -221,77 +221,7 @@
   text-underline-offset: 3px;
 }
 
-/* Start page (mobile-first) */
-.app-start {
-  width: 100%;
-  margin: 0 auto;
-  padding: 18px 16px 80px;
-}
-.app-start-head {
-  max-width: 760px;
-}
-.app-start-head h1 {
-  margin: 8px 0 10px;
-  font-family: var(--be-font-serif);
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: 0;
-}
-.app-start-head p {
-  color: var(--be-slate);
-  font-size: 15px;
-  line-height: 1.55;
-}
-.app-start-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  margin-top: 24px;
-}
-.app-start-card {
-  min-height: 160px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 20px;
-  border: 1px solid var(--be-border);
-  border-radius: var(--be-r-8);
-  background: var(--be-bone);
-  color: var(--be-ink);
-  text-align: left;
-  box-shadow: var(--be-shadow-1), var(--be-shadow-card-bevel);
-  cursor: pointer;
-  transition: background var(--be-d-2) var(--be-ease), border-color var(--be-d-2) var(--be-ease), transform var(--be-d-1) var(--be-ease);
-}
-.app-start-card:hover {
-  background: var(--be-ivory);
-  border-color: var(--be-border-strong);
-  transform: translateY(-1px);
-}
-.app-start-card svg {
-  color: var(--be-gold-2);
-}
-.app-start-card strong {
-  font-size: 18px;
-  font-weight: 600;
-}
-.app-start-card span {
-  max-width: 46ch;
-  color: var(--be-slate);
-  font-size: 14px;
-  line-height: 1.55;
-}
-.app-start-download {
-  margin-top: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--be-ink) !important;
-  font-weight: 600;
-}
-.app-start-note {
+.apk-approval-note {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -331,7 +261,7 @@
 
 
 
-/* Auth page (mobile-first) — used by AppStart and AdminLogin */
+/* Auth page (mobile-first) — used by AdminLogin */
 .auth-page {
   min-height: 100vh;
   display: grid;

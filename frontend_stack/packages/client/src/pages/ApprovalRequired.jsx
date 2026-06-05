@@ -18,7 +18,7 @@ export default function ApprovalRequired() {
             <p>Explore the dashboard and strategies while we review the account.</p>
           </div>
         </div>
-        <div className="app-start-note">
+        <div className="apk-approval-note">
           <ShieldCheck size={18} strokeWidth={1.6} />
           <span>Investment, payment, and mandate actions unlock after approval.</span>
         </div>

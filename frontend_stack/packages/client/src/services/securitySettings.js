@@ -1,4 +1,4 @@
-import { platformSecurity, platformStorage } from '@beonedge/client-platform';
+import { platformSecurity, platformStorage } from '../platform/clientPlatform.js';
 
 const SETTINGS_PREFIX = 'boe.client.security.v1';
 const UNLOCK_PREFIX = 'boe.client.security.unlock.v1';

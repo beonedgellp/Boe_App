@@ -303,8 +303,7 @@
 
 .be-card,
 .be-card-flat,
-.auth-card,
-.app-start-card {
+.auth-card {
   overflow: hidden;
 }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Fingerprint, LockKeyhole, LogOut } from 'lucide-react';
-import { platformLifecycle } from '@beonedge/client-platform';
+import { platformLifecycle } from '../platform/clientPlatform.js';
 import {
   authenticateBiometric,
   clearUnlock,

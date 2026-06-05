@@ -20,7 +20,7 @@ function sessionKeys(scope = 'client') {
   return SESSION_KEYS[scope] || SESSION_KEYS.client;
 }
 
-function browserStorage() {
+function localStorageHandle() {
   if (typeof window === 'undefined') return null;
   try {
     return window.localStorage;
@@ -42,7 +42,7 @@ export function apiBaseUrl() {
 }
 
 export function setSessionTokens({ user, accessToken, refreshToken, scope = 'client' }) {
-  const storage = browserStorage();
+  const storage = localStorageHandle();
   if (!storage) return;
   const keys = sessionKeys(scope);
   if (user) storage.setItem(keys.user, JSON.stringify(user));
@@ -51,7 +51,7 @@ export function setSessionTokens({ user, accessToken, refreshToken, scope = 'cli
 }
 
 export function clearSessionTokens(scope = 'client') {
-  const storage = browserStorage();
+  const storage = localStorageHandle();
   if (!storage) return;
   const keys = sessionKeys(scope);
   storage.removeItem(keys.accessToken);
@@ -60,15 +60,15 @@ export function clearSessionTokens(scope = 'client') {
 }
 
 export function storedAccessToken(scope = 'client') {
-  return browserStorage()?.getItem(sessionKeys(scope).accessToken) || '';
+  return localStorageHandle()?.getItem(sessionKeys(scope).accessToken) || '';
 }
 
 export function storedRefreshToken(scope = 'client') {
-  return browserStorage()?.getItem(sessionKeys(scope).refreshToken) || '';
+  return localStorageHandle()?.getItem(sessionKeys(scope).refreshToken) || '';
 }
 
 export function storedUser(scope = 'client') {
-  const raw = browserStorage()?.getItem(sessionKeys(scope).user);
+  const raw = localStorageHandle()?.getItem(sessionKeys(scope).user);
   if (!raw) return null;
   try {
     return JSON.parse(raw);

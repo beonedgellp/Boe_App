@@ -3,7 +3,6 @@ import ClientLayout from './layout/ClientLayout.jsx';
 
 import Splash from './pages/Splash.jsx';
 import Login from './pages/Login.jsx';
-import AppStart from './pages/AppStart.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Explore from './pages/Explore.jsx';
 import FundDetail from './pages/FundDetail.jsx';
@@ -43,7 +42,7 @@ export default function ClientApp() {
       <Route element={<ClientLayout />}>
         <Route path="splash" element={<RouteErrorBoundary><Splash /></RouteErrorBoundary>} />
         <Route path="login" element={<RouteErrorBoundary><Login /></RouteErrorBoundary>} />
-        <Route path="start" element={<RouteErrorBoundary><AppStart /></RouteErrorBoundary>} />
+        <Route path="start" element={<Navigate to="dashboard" replace />} />
         <Route path="approval-required" element={<RouteErrorBoundary><ApprovalRequired /></RouteErrorBoundary>} />
         <Route path="dashboard" element={<RouteErrorBoundary><Dashboard /></RouteErrorBoundary>} />
         <Route path="explore" element={<RouteErrorBoundary><Explore /></RouteErrorBoundary>} />

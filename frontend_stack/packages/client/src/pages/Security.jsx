@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import AppBar from '../layout/AppBar.jsx';
 import { Fingerprint, KeyRound, LockKeyhole, LogOut, MonitorSmartphone, TimerReset, Trash2 } from 'lucide-react';
 import { useSession } from '../store/SessionContext.jsx';
-import { platformSecurity } from '@beonedge/client-platform';
+import { platformSecurity } from '../platform/clientPlatform.js';
 import {
   authenticateBiometric,
   autoLockOptions,
@@ -21,7 +21,6 @@ function resolveBiometricLabel(availability, pinSet) {
   if (!pinSet) return 'Set an app PIN first';
   if (!availability?.available) return 'Not available on this device';
   if (availability.type === 'native-biometric') return 'Use fingerprint or face unlock on this device';
-  if (availability.type === 'webauthn-platform') return "Use this device's browser authenticator";
   return availability.label || 'Not available on this device';
 }
 

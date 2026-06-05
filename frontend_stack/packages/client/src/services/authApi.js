@@ -38,7 +38,7 @@ function localUuid() {
   return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function browserStorage() {
+function localStorageHandle() {
   if (typeof window === 'undefined') return null;
   try {
     return window.localStorage;
@@ -48,7 +48,7 @@ function browserStorage() {
 }
 
 function readLocalPendingApprovals() {
-  const raw = browserStorage()?.getItem(LOCAL_PENDING_APPROVALS_KEY);
+  const raw = localStorageHandle()?.getItem(LOCAL_PENDING_APPROVALS_KEY);
   if (!raw) return [];
   try {
     const rows = JSON.parse(raw);
@@ -59,7 +59,7 @@ function readLocalPendingApprovals() {
 }
 
 function writeLocalPendingApprovals(rows) {
-  const storage = browserStorage();
+  const storage = localStorageHandle();
   if (!storage) return;
   storage.setItem(LOCAL_PENDING_APPROVALS_KEY, JSON.stringify(rows));
 }

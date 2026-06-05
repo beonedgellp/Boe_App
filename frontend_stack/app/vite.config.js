@@ -5,13 +5,7 @@ import { dirname, resolve } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(({ mode }) => {
-  const platformTarget = process.env.VITE_BEO_PLATFORM || (mode === 'android' ? 'native' : 'web');
-
-  const clientPlatformPath = platformTarget === 'native'
-    ? '../packages/client-platform-native/src'
-    : '../packages/client-platform-web/src';
-
+export default defineConfig(() => {
   return {
     plugins: [react()],
     resolve: {
@@ -21,7 +15,6 @@ export default defineConfig(({ mode }) => {
         '@beonedge/shared': resolve(__dirname, '../packages/shared/src'),
         '@beonedge/client': resolve(__dirname, '../packages/client/src'),
         '@beonedge/admin': resolve(__dirname, '../packages/admin/src'),
-        '@beonedge/client-platform': resolve(__dirname, clientPlatformPath),
       },
     },
     server: { host: '127.0.0.1', port: 5173, open: false, strictPort: true },

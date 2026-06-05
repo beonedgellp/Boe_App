@@ -72,16 +72,6 @@ function isBiometricType(type) {
   return type !== BiometryType.NONE && type !== BiometryType.DEVICE_CREDENTIAL;
 }
 
-function availabilityReason(result) {
-  if (result?.isAvailable) return 'ok';
-  const code = authErrorCode(result?.errorCode);
-  if (code === BiometricAuthError.BIOMETRICS_NOT_ENROLLED) return 'not-enrolled';
-  if (code === BiometricAuthError.BIOMETRICS_UNAVAILABLE) return 'not-supported';
-  if (code === BiometricAuthError.PASSCODE_NOT_SET) return 'device-not-secure';
-  if (code === BiometricAuthError.USER_LOCKOUT || code === BiometricAuthError.USER_TEMPORARY_LOCKOUT) return 'locked-out';
-  return 'plugin-error';
-}
-
 function authErrorCode(value) {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
@@ -90,6 +80,16 @@ function authErrorCode(value) {
     if (Object.prototype.hasOwnProperty.call(BiometricAuthError, value)) return BiometricAuthError[value];
   }
   return BiometricAuthError.UNKNOWN_ERROR;
+}
+
+function availabilityReason(result) {
+  if (result?.isAvailable) return 'ok';
+  const code = authErrorCode(result?.errorCode);
+  if (code === BiometricAuthError.BIOMETRICS_NOT_ENROLLED) return 'not-enrolled';
+  if (code === BiometricAuthError.BIOMETRICS_UNAVAILABLE) return 'not-supported';
+  if (code === BiometricAuthError.PASSCODE_NOT_SET) return 'device-not-secure';
+  if (code === BiometricAuthError.USER_LOCKOUT || code === BiometricAuthError.USER_TEMPORARY_LOCKOUT) return 'locked-out';
+  return 'plugin-error';
 }
 
 function platformError(code, message) {

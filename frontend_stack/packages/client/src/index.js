@@ -42,7 +42,6 @@ export { openOnboarding } from './utils/openOnboarding.js';
 
 // Pages with default exports
 export { default as ApprovalRequired } from './pages/ApprovalRequired.jsx';
-export { default as AppStart } from './pages/AppStart.jsx';
 export { default as Blocked } from './pages/Blocked.jsx';
 export { default as Dashboard } from './pages/Dashboard.jsx';
 export { default as Explore } from './pages/Explore.jsx';
