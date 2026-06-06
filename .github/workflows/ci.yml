@@ -1,0 +1,54 @@
+# CI gate for `main` — the enforcement that replaces PR review in this workflow.
+# Runs the backend invariant guards + tests and the landing build, so a red
+# build means "do not push to origin/main".
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: backend (guards + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend_controller
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      # Static authorization-invariant guards (no DB needed).
+      - run: npm run authz:mandate
+      - run: npm run authz:payment
+      - run: npm run authz:jwt-status
+      - run: npm run authz:admin-rbac
+      - run: npm run authz:admin-audit
+      - run: npm run authz:403
+      - run: npm run payment:reconcile
+      # Colocated unit tests (json store, no external services).
+      - run: node --test
+        env:
+          DATA_STORE: json
+
+  landing:
+    name: landing (test + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend_stack/packages/landing_page
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
