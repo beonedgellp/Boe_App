@@ -28,6 +28,7 @@ backend_controller/data/*.json
 backend_controller/data/*.bak
 backend_controller/data/*.backup*
 backend_controller/data/*.tmp
+resources/
 resources/credentials/
 resources/testing/**/raw/
 *.pem
@@ -70,3 +71,7 @@ kimi_chunks/
 kimi_response*.txt
 .kimi-patch-*.patch
 kimi-api-key.txt
+
+# Local release and emulator artifacts
+release_manager/
+emu/
