@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { site } from '../content/site';
 import { navLinks, authLinks } from '../content/nav';
 import { useAuth } from './AuthProvider';
@@ -28,36 +29,38 @@ export default function Nav() {
 
   const authActions = user ? (
     <>
-      <span className="nav__user">Hi {displayName(user)}</span>
+      <Link className="nav__user" href="/login">
+        Account
+      </Link>
       <button type="button" className="nav__logout" onClick={onLogout}>
         Log out
       </button>
     </>
   ) : (
     <>
-      <a className="nav__signin" href={authLinks.signIn.href}>
+      <Link className="nav__signin" href={authLinks.signIn.href}>
         {authLinks.signIn.label}
-      </a>
-      <a className="btn btn--primary" href={authLinks.signUp.href}>
+      </Link>
+      <Link className="btn btn--primary" href={authLinks.signUp.href}>
         {authLinks.signUp.label}
-      </a>
+      </Link>
     </>
   );
 
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <a className="nav__brand" href="#top" aria-label={`${site.name} home`}>
+        <Link className="nav__brand" href="/" aria-label={`${site.name} home`}>
           {site.name}
-        </a>
+        </Link>
 
         <nav aria-label="Primary">
           <ul className="nav__links">
             {navLinks.map((link) => (
               <li key={link.href}>
-                <a className="nav__link" href={link.href}>
+                <Link className="nav__link" href={link.href}>
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -83,22 +86,24 @@ export default function Nav() {
           <ul>
             {navLinks.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   className="nav__link"
                   href={link.href}
                   onClick={() => setOpen(false)}
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
             <li>
               {user ? (
-                <span className="nav__user">Hi {displayName(user)}</span>
+                <Link className="nav__user" href="/login" onClick={() => setOpen(false)}>
+                  Account
+                </Link>
               ) : (
-                <a className="nav__signin" href={authLinks.signIn.href}>
+                <Link className="nav__signin" href={authLinks.signIn.href} onClick={() => setOpen(false)}>
                   {authLinks.signIn.label}
-                </a>
+                </Link>
               )}
             </li>
           </ul>
@@ -107,13 +112,13 @@ export default function Nav() {
               Log out
             </button>
           ) : (
-            <a
+            <Link
               className="btn btn--primary btn--block"
               href={authLinks.signUp.href}
               onClick={() => setOpen(false)}
             >
               {authLinks.signUp.label}
-            </a>
+            </Link>
           )}
           {logoutError ? <p className="form__status form__status--error">{logoutError}</p> : null}
         </div>

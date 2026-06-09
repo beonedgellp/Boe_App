@@ -4,7 +4,7 @@
 export type Plan = {
   id: string;
   name: string;
-  price: string;
+  pricePaise: number;
   cadence: string;
   tagline: string;
   features: readonly string[];
@@ -16,7 +16,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'starter',
     name: 'Starter course access',
-    price: '₹499',
+    pricePaise: 49900,
     cadence: 'one-time',
     tagline: 'Begin with a single course at your own pace.',
     features: [
@@ -30,7 +30,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'premium',
     name: 'Premium membership',
-    price: '₹299',
+    pricePaise: 29900,
     cadence: 'per month',
     tagline: 'Ongoing learning, news briefings, and live sessions.',
     features: [
@@ -47,7 +47,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'bundle',
     name: 'Complete learning bundle',
-    price: '₹2,499',
+    pricePaise: 249900,
     cadence: 'one-time',
     tagline: 'Every course plus a year of premium benefits.',
     features: [

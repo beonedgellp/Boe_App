@@ -4,11 +4,11 @@
 export type NavLink = { label: string; href: string };
 
 export const navLinks: readonly NavLink[] = [
-  { label: 'Courses', href: '#courses' },
-  { label: 'Premium', href: '#premium' },
-  { label: 'News', href: '#news' },
-  { label: 'Plans', href: '#plans' },
-  { label: 'About', href: '#about' },
+  { label: 'Courses', href: '/courses' },
+  { label: 'Premium', href: '/premium' },
+  { label: 'News', href: '/news' },
+  { label: 'Plans', href: '/plans' },
+  { label: 'About', href: '/about' },
 ];
 
 export const authLinks = {
@@ -16,5 +16,5 @@ export const authLinks = {
   signUp: { label: 'Sign up', href: '/signup' },
 } as const;
 
-export const primaryCta = { label: 'Start learning', href: '#courses' } as const;
-export const secondaryCta = { label: 'See premium benefits', href: '#premium' } as const;
+export const primaryCta = { label: 'Explore courses', href: '/courses' } as const;
+export const secondaryCta = { label: 'View plans', href: '/plans' } as const;
