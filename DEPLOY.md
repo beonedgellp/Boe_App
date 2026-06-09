@@ -56,7 +56,11 @@ cd ../..
 ```
 
 `deploy.sh` reuses an existing `BOE_APP/.env`; the bundle's `.env` is only a first-deploy
-fallback. Postgres data persists in the `pgdata` volume across deploys and rollbacks.
+fallback. During VPS shipping, the script archives the active `BOE_APP/` directory and
+replaces the remote `BOE_APP/` after `docker compose down`. The VPS `.env` is restored
+into the new directory with only `BOE_VERSION` advanced, so compose uses the newly
+loaded image tags while keeping the VPS secrets/domains intact. Postgres data persists
+in the `pgdata` volume across deploys and rollbacks.
 
 ## Host nginx + TLS (one-time, on the VPS)
 
