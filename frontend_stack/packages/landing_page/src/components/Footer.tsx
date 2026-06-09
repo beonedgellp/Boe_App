@@ -48,8 +48,9 @@ export default function Footer() {
             © {new Date().getFullYear()} {site.name}. {site.descriptor}
           </span>
           <span>
-            <a href="#">Terms</a> · <a href="#">Privacy</a> ·{' '}
-            <a href="#">Educational disclaimer</a>
+            <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> ·{' '}
+            <a href="/disclaimer">Educational disclaimer</a> ·{' '}
+            <a href="/refund">Refund policy</a>
           </span>
         </div>
       </div>
