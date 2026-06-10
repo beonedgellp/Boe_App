@@ -1,13 +1,8 @@
 import Link from 'next/link';
 import Nav from '../../components/Nav';
-import Reveal from '../../components/Reveal';
 import Footer from '../../components/Footer';
+import Reveal from '../../components/Reveal';
 import { newsDigests } from '../../content/news';
-
-export const metadata = {
-  title: 'News — BeOnEdge',
-  description: 'Jargon-free financial briefings that help you stay informed.',
-};
 
 export default function NewsPage() {
   return (
@@ -17,19 +12,28 @@ export default function NewsPage() {
         <section className="section">
           <div className="container">
             <div className="section__head">
+              <span className="eyebrow">News</span>
               <h1 className="section__title">Financial news, explained</h1>
               <p className="section__lead">
-                Curated money and economy updates, summarised so you stay informed in minutes.
+                Jargon-free briefings on economy, tax, credit, and policy. Know what matters, not just what happened.
               </p>
             </div>
             <div className="grid grid--3">
-              {newsDigests.map((digest) => (
-                <Reveal as="div" key={digest.id} className="card">
-                  <span className="digest__tag">{digest.tag}</span>
-                  <h3 className="digest__title">{digest.title}</h3>
-                  <p className="digest__summary">{digest.summary}</p>
+              {newsDigests.map((item) => (
+                <Reveal as="div" key={item.id} className="card stagger-item">
+                  <span className="digest__tag">{item.tag}</span>
+                  <h3 className="digest__title">{item.title}</h3>
+                  <p className="digest__summary">{item.summary}</p>
                 </Reveal>
               ))}
+            </div>
+            <div className="section__head" style={{ marginTop: '3rem', textAlign: 'center' }}>
+              <p className="section__lead" style={{ maxWidth: 'none' }}>
+                Premium members receive daily and weekly briefings.{' '}
+                <Link href="/premium" style={{ color: 'var(--accent-strong)', fontWeight: 600 }}>
+                  Explore premium benefits
+                </Link>
+              </p>
             </div>
           </div>
         </section>

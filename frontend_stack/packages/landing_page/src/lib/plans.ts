@@ -1,13 +1,25 @@
-import { plans, type Plan } from '../content/plans';
+export type Plan = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  pricePaise: number;
+  cadence: string;
+  features: string[];
+  ctaLabel: string;
+  featured?: boolean;
+  status: string;
+  sortOrder: number;
+  createdAt: string;
+};
 
-export type { Plan } from '../content/plans';
-
-export function formatPrice(pricePaise: number): string {
-  const rupees = Math.round(pricePaise / 100);
-  return `₹${rupees.toLocaleString('en-IN')}`;
+export function formatPrice(paise: number): string {
+  return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
 
 export async function fetchPlans(): Promise<Plan[]> {
-  // In the future this can become a real API call.
-  return Promise.resolve([...plans]);
+  const res = await fetch('/api/plans', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load plans');
+  const data = await res.json();
+  return data.items || [];
 }

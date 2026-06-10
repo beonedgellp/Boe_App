@@ -233,3 +233,7 @@ export function getStoredUser(): LandingUser | null {
     return null;
   }
 }
+
+export function isApprovedUser(user: LandingUser | null): boolean {
+  return user?.status === 'approved';
+}

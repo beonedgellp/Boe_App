@@ -1,5 +1,5 @@
 // Course catalog. Framed around education, behavior, systems, and decision
-// clarity — never investment products or fund listings.
+// clarity - never investment products or fund listings.
 
 export type SkillLevel = 'Beginner' | 'Intermediate' | 'All levels';
 
@@ -9,7 +9,6 @@ export type Course = {
   level: SkillLevel;
   format: string;
   outcome: string;
-  pricePaise?: number;
 };
 
 export const courses: readonly Course[] = [

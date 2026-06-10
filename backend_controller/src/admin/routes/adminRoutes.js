@@ -35,6 +35,12 @@ import {
   listCapitalTransactions,
   listRedemptionRequests, processRedemptionRequest,
 } from '../services/fundsService.js';
+import {
+  listAdminCourses, createCourse, updateCourse, deleteCourse,
+} from '#shared/services/courseService.js';
+import {
+  listAdminPlans, createPlan, updatePlan, deletePlan,
+} from '#shared/services/planService.js';
 import { updateMandateStatus } from '../services/mandateAdminService.js';
 import {
   approvePayment,
@@ -196,6 +202,56 @@ export function registerAdminRoutes(router) {
     roles: ADMIN_ROLES,
     description: 'Delete an FAQ.',
   }, ({ config, actor, params }) => deleteFaq(config, actor, params.faq_id));
+
+  /* ----- Courses & Plans ----- */
+
+  router.get(Routes.GET_V1_ADMIN_COURSES, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Admin course list.',
+  }, ({ config }) => listAdminCourses(config));
+
+  router.post(Routes.POST_V1_ADMIN_COURSES, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Create a course.',
+  }, ({ config, body }) => createCourse(config, body));
+
+  router.patch(Routes.PATCH_V1_ADMIN_COURSES_COURSE_ID, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Update a course.',
+  }, ({ config, params, body }) => updateCourse(config, params.course_id, body));
+
+  router.delete(Routes.DELETE_V1_ADMIN_COURSES_COURSE_ID, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Archive a course.',
+  }, ({ config, params }) => deleteCourse(config, params.course_id));
+
+  router.get(Routes.GET_V1_ADMIN_PLANS, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Admin plan list.',
+  }, ({ config }) => listAdminPlans(config));
+
+  router.post(Routes.POST_V1_ADMIN_PLANS, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Create a plan.',
+  }, ({ config, body }) => createPlan(config, body));
+
+  router.patch(Routes.PATCH_V1_ADMIN_PLANS_PLAN_ID, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Update a plan.',
+  }, ({ config, params, body }) => updatePlan(config, params.plan_id, body));
+
+  router.delete(Routes.DELETE_V1_ADMIN_PLANS_PLAN_ID, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Archive a plan.',
+  }, ({ config, params }) => deletePlan(config, params.plan_id));
 
   router.get(Routes.GET_V1_ADMIN_USERS_USER_ID_DETAIL, {
     group: 'admin',

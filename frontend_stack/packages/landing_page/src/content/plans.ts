@@ -1,10 +1,10 @@
 // Education-access tiers. CTAs are education-only: Start learning, Join
-// premium, View plans — never invest/SIP/buy-fund/open-account language.
+// premium, View plans - never invest/SIP/buy-fund/open-account language.
 
 export type Plan = {
   id: string;
   name: string;
-  pricePaise: number;
+  price: string;
   cadence: string;
   tagline: string;
   features: readonly string[];
@@ -16,7 +16,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'starter',
     name: 'Starter course access',
-    pricePaise: 49900,
+    price: '₹499',
     cadence: 'one-time',
     tagline: 'Begin with a single course at your own pace.',
     features: [
@@ -30,7 +30,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'premium',
     name: 'Premium membership',
-    pricePaise: 29900,
+    price: '₹299',
     cadence: 'per month',
     tagline: 'Ongoing learning, news briefings, and live sessions.',
     features: [
@@ -47,7 +47,7 @@ export const plans: readonly Plan[] = [
   {
     id: 'bundle',
     name: 'Complete learning bundle',
-    pricePaise: 249900,
+    price: '₹2,499',
     cadence: 'one-time',
     tagline: 'Every course plus a year of premium benefits.',
     features: [

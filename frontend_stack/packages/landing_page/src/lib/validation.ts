@@ -32,7 +32,7 @@ function digitsOnly(value: unknown): string {
   return toText(value).replace(/[^0-9]/g, '');
 }
 
-/** Trim inputs and lowercase the email. Pure — returns a fresh object. */
+/** Trim inputs and lowercase the email. Pure - returns a fresh object. */
 export function normalizeLead(input: LeadInput = {}): NormalizedLead {
   return {
     name: toText(input.name).trim(),

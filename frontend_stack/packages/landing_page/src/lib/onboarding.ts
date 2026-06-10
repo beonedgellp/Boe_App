@@ -1,7 +1,7 @@
 // Lead submission to the existing backend onboarding endpoint.
 // Contract: POST /v1/onboarding/applications with { name, email, phone }.
 // The backend ignores unknown fields, so interest/message ride along safely
-// for future use. Errors are intentionally NOT swallowed — the UI surfaces
+// for future use. Errors are intentionally NOT swallowed - the UI surfaces
 // err.message to the user.
 
 import { normalizeLead, type LeadInput, type NormalizedLead } from './validation';

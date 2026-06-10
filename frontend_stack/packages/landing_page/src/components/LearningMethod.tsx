@@ -1,7 +1,7 @@
 import SectionHead from './SectionHead';
 import { learningSteps } from '../content/benefits';
 
-// The five-step learning method. Practical and simple — finance understood
+// The five-step learning method. Practical and simple - finance understood
 // through steady learning, not complexity.
 export default function LearningMethod() {
   return (

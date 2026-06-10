@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { site } from '../content/site';
 import { navLinks, authLinks } from '../content/nav';
 import { useAuth } from './AuthProvider';
+import ThemeToggle from './ThemeToggle';
 
 function displayName(user: { firstName?: string; name?: string; username?: string | null } | null) {
   return user?.firstName || user?.name || user?.username || 'there';
@@ -29,9 +30,7 @@ export default function Nav() {
 
   const authActions = user ? (
     <>
-      <Link className="nav__user" href="/login">
-        Account
-      </Link>
+      <span className="nav__user">Hi {displayName(user)}</span>
       <button type="button" className="nav__logout" onClick={onLogout}>
         Log out
       </button>
@@ -67,6 +66,7 @@ export default function Nav() {
         </nav>
 
         <div className="nav__actions nav__desktop-actions">
+          <ThemeToggle />
           {authActions}
         </div>
 
@@ -97,9 +97,7 @@ export default function Nav() {
             ))}
             <li>
               {user ? (
-                <Link className="nav__user" href="/login" onClick={() => setOpen(false)}>
-                  Account
-                </Link>
+                <span className="nav__user">Hi {displayName(user)}</span>
               ) : (
                 <Link className="nav__signin" href={authLinks.signIn.href} onClick={() => setOpen(false)}>
                   {authLinks.signIn.label}

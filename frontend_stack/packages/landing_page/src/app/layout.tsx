@@ -3,12 +3,13 @@ import './globals.css';
 import './components.css';
 import { site } from '../content/site';
 import { AuthProvider } from '../components/AuthProvider';
+import { ThemeProvider } from '../components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: `${site.name} — ${site.descriptor}`,
+  title: `${site.name} - ${site.descriptor}`,
   description: site.longDescriptor,
   openGraph: {
-    title: `${site.name} — Financial education made clear`,
+    title: `${site.name} - Financial education made clear`,
     description: site.longDescriptor,
     type: 'website',
   },
@@ -29,7 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en-IN">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

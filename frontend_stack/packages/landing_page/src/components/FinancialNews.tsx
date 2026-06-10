@@ -3,7 +3,7 @@ import Reveal from './Reveal';
 import { newsDigests, newsTaglines } from '../content/news';
 import { site } from '../content/site';
 
-// Jargon-free news feature. Framed strictly as education — never trading
+// Jargon-free news feature. Framed strictly as education - never trading
 // signals or investment recommendations.
 export default function FinancialNews() {
   return (

@@ -2,7 +2,7 @@ import SectionHead from './SectionHead';
 import Reveal from './Reveal';
 import { stats, testimonials, instructorNote } from '../content/socialProof';
 
-// Trust-building block. Outcomes are about learning and habits — never
+// Trust-building block. Outcomes are about learning and habits - never
 // guaranteed income, returns, or investment performance.
 export default function SocialProof() {
   return (

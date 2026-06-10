@@ -1,5 +1,5 @@
 // Trust-building content. No claims of guaranteed income, returns, wealth
-// growth, or investment performance — only learning outcomes.
+// growth, or investment performance - only learning outcomes.
 
 export type Stat = { id: string; value: string; label: string };
 
