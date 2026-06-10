@@ -92,4 +92,84 @@ It proxies `/v1/` → `127.0.0.1:47502` and `/` → `127.0.0.1:3100`.
 - Signup is gated: landing sends `x-signup-key` (= `SIGNUP_PROXY_SECRET`) + `origin`
   (= `PUBLIC_LANDING_ORIGIN`); the backend rejects account creation from anywhere else.
 - Back up Postgres: `docker compose exec postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"`.
-```
+
+## DB-safe rollback (dump on deploy, restore on rollback)
+
+A deploy runs migrations **forward** before the new app starts. If a rollback only
+restored the old *images*, the old app would be pointed at the newer, already-migrated
+schema — which can break. So the snapshot carries the data too:
+
+- **`deploy.sh`** — at the *ROLLBACK SNAPSHOT* step (before the new stack migrates), it
+  `pg_dump`s the still-running database into the snapshot as `db.sql.gz`, pinned to the
+  exact release being replaced. Skipped cleanly on the first deploy (no DB yet); a dump
+  failure is non-fatal (snapshot keeps images only).
+- **`rollback.sh`** — if the chosen snapshot has a `db.sql.gz`, it brings up **Postgres
+  alone** (app down, no writers), then — after an explicit destructive-overwrite confirm —
+  drops + recreates the database and reloads the dump onto a clean schema, then starts the
+  full stack. Use `--skip-db-restore` for an images-only rollback that keeps current data.
+
+The `pgdata` volume still persists across deploys/rollbacks; the dump/restore is a
+point-in-time data rewind layered on top, used only when you actually roll back.
+
+## VPS DB sync on `--ship` (consistent across updates *and* migrations)
+
+The VPS Postgres lives in a Docker named volume. That volume survives `compose down`
+on the **same** VPS, but it does **not** travel when you move to a **different** VPS —
+a fresh host starts with an empty database. To keep data consistent across both,
+`deploy.sh --ship` synchronizes the database around the stack swap:
+
+1. **Pull (always, before touching the remote):** it probes the live VPS DB and, if it
+   has data, `pg_dump`s it back to `release_manager/BOE_APP/db_records/<version>-<ts>.sql.gz`
+   (with a `latest.sql.gz` pointer; the newest `DB_RECORDS_KEEP=10` are retained). Your
+   local machine thus always holds the freshest production snapshot. *(db_records/ is
+   gitignored — it contains real user data — and is excluded from the shipped archive.)*
+2. **Seed a fresh VPS (migration):** after the stack is loaded, Postgres is brought up
+   **alone**, and if the remote DB is **empty** (new host / new volume) the latest local
+   snapshot is restored into it **before** migrations run. `compose up` then runs migrate
+   forward over that restored data, so a brand-new VPS comes up with the old VPS's data,
+   schema-upgraded to the shipped release.
+3. **Never clobbers a populated remote:** if the VPS already has data, it is left intact
+   (it was just backed up in step 1, and its `pgdata` volume persists anyway).
+
+Flags:
+
+- `--skip-db-sync` — ship the stack only; no pull, no seed.
+- `--db-force-restore` — **DESTRUCTIVE.** Restore the latest local `db_records` snapshot
+  onto the VPS *even if it already has data*, overwriting it. Use only when you
+  deliberately want local to become the source of truth.
+
+Migration in practice: ship to the old VPS once (this pulls its DB into `db_records/`),
+then point `SHIP_HOST` at the new VPS and ship again — the fresh host is detected as
+empty and seeded from that local snapshot automatically.
+
+## Migration rule: expand/contract (backward-compatible)
+
+Every migration must be **backward-compatible with the previous app version**, so the
+prior release can run against the new schema. This is what makes an *images-only* rollback
+(`--skip-db-restore`, no data rewind) safe.
+
+- **Expand (the release that needs the change):** add-only. New tables, new **nullable**
+  columns (or columns with a default), new indexes. Never drop or rename in the same
+  release that starts depending on the change.
+- **Contract (a *later* release, once nothing rolls back to the old app):** drop/rename the
+  now-unused columns or tables.
+- Backfills run as their own step and tolerate both old and new code reading the row.
+
+When a migration genuinely cannot be made backward-compatible, treat it as a
+**data-restoring rollback only** — i.e. rolling back *requires* `db.sql.gz` (do not use
+`--skip-db-restore`), and call that out in the release notes.
+
+## Scaling roadmap (build → registry → pull-deploy → staging)
+
+Today images are built locally and shipped as tarballs over SSH. The path to scale:
+
+1. **CI builds from a tag.** Pushing a release tag (e.g. `v1.2.0`) triggers CI to build the
+   backend + landing images reproducibly from that commit — no more build-machine drift,
+   and provenance is the tag itself.
+2. **GHCR registry.** CI pushes the images to GitHub Container Registry
+   (`ghcr.io/<org>/boe-backend:<tag>`, `…/boe-landing:<tag>`) instead of producing tarballs.
+3. **`compose pull` deploy.** The VPS deploy becomes `docker compose pull && up -d` against
+   the pinned tag — no `docker load`, no SSH tar upload. Rollback = pull the previous tag
+   (the DB dump/restore flow above still applies).
+4. **Staging environment.** A staging stack (own domain + DB) deploys every tag first;
+   promotion to production is re-using the *same* registry image, not a rebuild.

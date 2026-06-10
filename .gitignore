@@ -55,6 +55,7 @@ frontend_stack/app/android/capacitor-cordova-android-plugins/build/
 .codex
 .codex/
 .agents/
+.github/skills/
 AGENTS.md
 CLAUDE.md
 *_SKILL.md
