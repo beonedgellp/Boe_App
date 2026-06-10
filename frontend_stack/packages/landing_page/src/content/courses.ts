@@ -9,6 +9,7 @@ export type Course = {
   level: SkillLevel;
   format: string;
   outcome: string;
+  pricePaise?: number;
 };
 
 export const courses: readonly Course[] = [

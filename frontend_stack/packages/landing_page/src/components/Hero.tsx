@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { authLinks, primaryCta, secondaryCta } from '../content/nav';
 
 // Education-focused hero. No stock tickers, trading charts, return graphics,
@@ -7,26 +8,25 @@ export default function Hero() {
   return (
     <section className="hero" id="top">
       <div className="container hero__grid">
-        <div>
-          <span className="eyebrow">Learn finance with clarity</span>
+        <div className="hero__text">
+          <span className="eyebrow">Financial education, made clear</span>
           <h1 className="hero__title">
             Understand money and manage it smarter.
           </h1>
           <p className="hero__lead">
-            Practical finance courses and premium money insights that help you
-            budget, save, handle debt and credit, and follow financial news
-            without the jargon.
+            Practical courses and premium insights that help you budget, save,
+            and follow financial news without jargon.
           </p>
           <div className="hero__actions">
-            <a className="btn btn--primary" href={primaryCta.href}>
+            <Link className="btn btn--primary" href={primaryCta.href}>
               {primaryCta.label}
-            </a>
-            <a className="btn btn--ghost" href={secondaryCta.href}>
+            </Link>
+            <Link className="btn btn--ghost" href={secondaryCta.href}>
               {secondaryCta.label}
-            </a>
+            </Link>
           </div>
           <p className="hero__note">
-            New here? <a href={authLinks.signUp.href}>Sign up</a> to create a
+            New here? <Link href={authLinks.signUp.href}>Sign up</Link> to create a
             free learner account.
           </p>
         </div>

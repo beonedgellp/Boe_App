@@ -1,10 +1,28 @@
 import SectionHead from './SectionHead';
 import Reveal from './Reveal';
-import { plans } from '../content/plans';
+import { type Plan } from '../lib/plans';
+import { formatPrice } from '../lib/plans';
 
 // Education-access tiers. CTAs are education-only — never invest/SIP/buy-fund/
 // open-account language.
-export default function Plans() {
+export default function Plans({ plans }: { plans: Plan[] }) {
+  if (plans.length === 0) {
+    return (
+      <section className="section" id="plans">
+        <div className="container">
+          <SectionHead
+            eyebrow="Plans"
+            title="Choose how you want to learn"
+            lead="Start with a single course or join premium for ongoing learning, news briefings, and live sessions."
+          />
+          <p className="section__lead" style={{ marginTop: '2rem' }}>
+            No plans available right now.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="section" id="plans">
       <div className="container">
@@ -23,7 +41,7 @@ export default function Plans() {
               {plan.featured ? <span className="plan__badge">Most popular</span> : null}
               <h3 className="plan__name">{plan.name}</h3>
               <div className="plan__price">
-                {plan.price} <span>· {plan.cadence}</span>
+                {formatPrice(plan.pricePaise)} <span>· {plan.cadence}</span>
               </div>
               <p className="plan__tagline">{plan.tagline}</p>
               <ul className="plan__features">

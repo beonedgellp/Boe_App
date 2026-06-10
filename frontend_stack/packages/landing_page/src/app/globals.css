@@ -178,10 +178,24 @@ img {
   width: 100%;
 }
 
+.btn:active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .card,
+  .bento-tile {
+    transition: none;
+  }
+  .card:hover,
+  .bento-tile:hover {
+    transform: none;
   }
 }
