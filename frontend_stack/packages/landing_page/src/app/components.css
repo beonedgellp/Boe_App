@@ -843,6 +843,68 @@
 .stagger-item:nth-child(5) { animation-delay: 240ms; }
 .stagger-item:nth-child(6) { animation-delay: 300ms; }
 
+/* ── Founders ──────────────────────────────────────────────────────────── */
+.founders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 600px) {
+  .founders {
+    grid-template-columns: 1fr;
+  }
+}
+.founder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.founder-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+}
+.founder-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+.founder-role {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+  margin-top: 0.2rem;
+}
+.founder-bio {
+  margin-top: 0.75rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* ── Values ────────────────────────────────────────────────────────────── */
+.value-card {
+  display: flex;
+  flex-direction: column;
+}
+.value-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+}
+.value-desc {
+  margin-top: 0.5rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stagger-item {
     opacity: 1;
