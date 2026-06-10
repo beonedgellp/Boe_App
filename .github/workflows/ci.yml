@@ -31,8 +31,10 @@ jobs:
       - run: npm run authz:admin-audit
       - run: npm run authz:403
       - run: npm run payment:reconcile
-      # Colocated unit tests (json store, no external services).
-      - run: node --test
+      # Colocated unit tests only (src/**/*.test.js). Scoped to src/ so Node's
+      # test auto-discovery doesn't pull in scripts/*-smoke-test.js, which need a
+      # seeded store and are run manually, not in CI.
+      - run: node --test "src/**/*.test.js"
         env:
           DATA_STORE: json
 
