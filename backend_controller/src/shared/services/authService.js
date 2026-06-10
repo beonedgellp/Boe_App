@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import { HttpError } from '#http/errors.js';
 import { createAccessToken } from '#security/tokens.js';
 import { query, transaction } from '#db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { hashPassword, verifyPassword } from '#security/passwords.js';
 
 const DEV_USER = {
@@ -206,25 +206,13 @@ function clientIp(headers = {}) {
 }
 
 async function findUserByIdentifier(config, identifier) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    const user = store.users.find((item) => (
-      (identifier.email && item.email === identifier.email) ||
-      (identifier.phone && item.phone === identifier.phone) ||
-      (identifier.username && item.username === identifier.username)
-    ));
-    return jsonUserToRow(user);
-  }
-
-  const result = await query(config, `
-    SELECT id, first_name, last_name, email, phone, password_hash, role::text, status::text,
-           username, risk_profile_status::text, kyc_status::text
-    FROM users
-    WHERE email = $1 OR phone = $2 OR lower(username) = $3
-    LIMIT 1
-  `, [identifier.email, identifier.phone, identifier.username]);
-
-  return result.rows[0] || null;
+  const store = await readJsonStore(config);
+  const user = store.users.find((item) => (
+    (identifier.email && item.email === identifier.email) ||
+    (identifier.phone && item.phone === identifier.phone) ||
+    (identifier.username && item.username === identifier.username)
+  ));
+  return jsonUserToRow(user);
 }
 
 async function createDeviceSession(config, user, { headers = {}, body = {} } = {}) {
@@ -234,56 +222,31 @@ async function createDeviceSession(config, user, { headers = {}, body = {} } = {
   const userAgent = String(headers['user-agent'] || '').slice(0, 512) || null;
   const ipAddress = clientIp(headers);
 
-  if (jsonStoreEnabled(config)) {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
-    const session = await updateJsonStore(config, (store) => {
-      for (const item of store.deviceSessions) {
-        if (item.userId === user.id && item.deviceId === deviceId && !item.revokedAt) {
-          item.revokedAt = now.toISOString();
-          item.updatedAt = now.toISOString();
-        }
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
+  const session = await updateJsonStore(config, (store) => {
+    for (const item of store.deviceSessions) {
+      if (item.userId === user.id && item.deviceId === deviceId && !item.revokedAt) {
+        item.revokedAt = now.toISOString();
+        item.updatedAt = now.toISOString();
       }
+    }
 
-      const next = {
-        id: randomUUID(),
-        userId: user.id,
-        deviceId,
-        refreshTokenHash,
-        userAgent,
-        ipAddress,
-        lastSeenAt: now.toISOString(),
-        expiresAt,
-        revokedAt: null,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      };
-      store.deviceSessions.push(next);
-      return next;
-    });
-
-    return {
-      deviceSessionId: session.id,
-      refreshToken,
+    const next = {
+      id: randomUUID(),
+      userId: user.id,
+      deviceId,
+      refreshTokenHash,
+      userAgent,
+      ipAddress,
+      lastSeenAt: now.toISOString(),
+      expiresAt,
+      revokedAt: null,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
-  }
-
-  const session = await transaction(config, async (client) => {
-    await client.query(`
-      UPDATE device_sessions
-      SET revoked_at = now(), updated_at = now()
-      WHERE user_id = $1 AND device_id = $2 AND revoked_at IS NULL
-    `, [user.id, deviceId]);
-
-    const inserted = await client.query(`
-      INSERT INTO device_sessions (
-        user_id, device_id, refresh_token_hash, user_agent, ip_address, expires_at
-      )
-      VALUES ($1, $2, $3, $4, $5::inet, now() + interval '365 days')
-      RETURNING id
-    `, [user.id, deviceId, refreshTokenHash, userAgent, ipAddress]);
-
-    return inserted.rows[0];
+    store.deviceSessions.push(next);
+    return next;
   });
 
   return {
@@ -301,103 +264,51 @@ async function rotateRefreshToken(config, refreshToken) {
   const nextRefreshToken = randomBytes(32).toString('base64url');
   const nextHash = hashToken(nextRefreshToken);
 
-  if (jsonStoreEnabled(config)) {
-    const now = new Date();
-    const row = await updateJsonStore(config, (store) => {
-      const session = store.deviceSessions.find((item) => (
-        item.refreshTokenHash === oldHash &&
-        !item.revokedAt &&
-        new Date(item.expiresAt).getTime() > now.getTime()
-      ));
-      if (!session) return null;
+  const now = new Date();
+  const row = await updateJsonStore(config, (store) => {
+    const session = store.deviceSessions.find((item) => (
+      item.refreshTokenHash === oldHash &&
+      !item.revokedAt &&
+      new Date(item.expiresAt).getTime() > now.getTime()
+    ));
+    if (!session) return null;
 
-      const user = store.users.find((item) => item.id === session.userId);
-      if (!user) return null;
+    const user = store.users.find((item) => item.id === session.userId);
+    if (!user) return null;
 
-      session.refreshTokenHash = nextHash;
-      session.expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
-      session.lastSeenAt = now.toISOString();
-      session.updatedAt = now.toISOString();
-
-      return {
-        ...jsonUserToRow(user),
-        device_session_id: session.id,
-      };
-    });
-
-    if (!row) {
-      throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
-    }
-
-    if (row.status === 'suspended' || row.status === 'closed') {
-      throw new HttpError(403, 'USER_NOT_ALLOWED', 'This account cannot refresh a session.', {
-        status: row.status,
-      });
-    }
-
-    const apiUser = toApiUser(row);
-    const accessToken = createAccessToken({
-      sub: apiUser.id,
-      role: apiUser.role,
-      deviceSessionId: row.device_session_id,
-    }, config);
+    session.refreshTokenHash = nextHash;
+    session.expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
+    session.lastSeenAt = now.toISOString();
+    session.updatedAt = now.toISOString();
 
     return {
-      user: apiUser,
-      accessToken,
-      refreshToken: nextRefreshToken,
-      deviceSessionId: row.device_session_id,
+      ...jsonUserToRow(user),
+      device_session_id: session.id,
     };
-  }
-
-  const result = await transaction(config, async (client) => {
-    const found = await client.query(`
-      SELECT ds.id AS device_session_id,
-             u.id, u.first_name, u.last_name, u.email, u.phone, u.username,
-             u.role::text, u.status::text, u.risk_profile_status::text, u.kyc_status::text
-      FROM device_sessions ds
-      JOIN users u ON u.id = ds.user_id
-      WHERE ds.refresh_token_hash = $1
-        AND ds.revoked_at IS NULL
-        AND ds.expires_at > now()
-      LIMIT 1
-      FOR UPDATE OF ds
-    `, [oldHash]);
-
-    const row = found.rows[0];
-    if (!row) return null;
-
-    await client.query(`
-      UPDATE device_sessions
-      SET refresh_token_hash = $1, expires_at = now() + interval '365 days', last_seen_at = now(), updated_at = now()
-      WHERE id = $2
-    `, [nextHash, row.device_session_id]);
-
-    return row;
   });
 
-  if (!result) {
+  if (!row) {
     throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
   }
 
-  if (result.status === 'suspended' || result.status === 'closed') {
+  if (row.status === 'suspended' || row.status === 'closed') {
     throw new HttpError(403, 'USER_NOT_ALLOWED', 'This account cannot refresh a session.', {
-      status: result.status,
+      status: row.status,
     });
   }
 
-  const apiUser = toApiUser(result);
+  const apiUser = toApiUser(row);
   const accessToken = createAccessToken({
     sub: apiUser.id,
     role: apiUser.role,
-    deviceSessionId: result.device_session_id,
+    deviceSessionId: row.device_session_id,
   }, config);
 
   return {
     user: apiUser,
     accessToken,
     refreshToken: nextRefreshToken,
-    deviceSessionId: result.device_session_id,
+    deviceSessionId: row.device_session_id,
   };
 }
 
@@ -479,8 +390,6 @@ export async function login(body, config, requestContext = {}) {
   let user = null;
   if (config.databaseUrl || (config.databaseHost && config.databaseName && config.databaseUser)) {
     user = await findUserByIdentifier(config, identifier);
-  } else if (jsonStoreEnabled(config)) {
-    user = await findUserByIdentifier(config, identifier);
   }
 
   if (!user) {
@@ -543,65 +452,31 @@ export async function signup(body, config, requestContext = {}) {
   const passwordHash = await hashPassword(password);
 
   let user;
-  if (jsonStoreEnabled(config)) {
-    const now = new Date().toISOString();
-    user = await updateJsonStore(config, (store) => {
-      const exists = store.users.some((item) => (
-        item.email === email ||
-        item.phone === phone ||
-        item.username === username
-      ));
-      if (exists) {
-        throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
-      }
-
-      const next = {
-        id: randomUUID(),
-        firstName,
-        lastName,
+  try {
+    const inserted = await query(config, `
+      INSERT INTO users (
+        first_name,
+        last_name,
         email,
         phone,
         username,
-        passwordHash,
-        role: 'client',
-        status: 'pending_review',
-        approvalRef: randomUUID(),
-        riskProfileStatus: 'pending',
-        kycStatus: 'pending',
-        approvedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
-      store.users.push(next);
-      return jsonUserToRow(next);
-    });
-  } else {
-    try {
-      const inserted = await query(config, `
-        INSERT INTO users (
-          first_name,
-          last_name,
-          email,
-          phone,
-          username,
-          password_hash,
-          role,
-          status,
-          risk_profile_status,
-          kyc_status,
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, 'client', 'pending_review', 'pending', 'pending', now())
-        RETURNING id, first_name, last_name, email, phone, username, role::text, status::text,
-                  risk_profile_status::text, kyc_status::text
-      `, [firstName, lastName, email, phone, username, passwordHash]);
-      user = inserted.rows[0];
-    } catch (error) {
-      if (error.code === '23505') {
-        throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
-      }
-      throw error;
+        password_hash,
+        role,
+        status,
+        risk_profile_status,
+        kyc_status,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, 'client', 'pending_review', 'pending', 'pending', now())
+      RETURNING id, first_name, last_name, email, phone, username, role::text, status::text,
+                risk_profile_status::text, kyc_status::text
+    `, [firstName, lastName, email, phone, username, passwordHash]);
+    user = inserted.rows[0];
+  } catch (error) {
+    if (error.code === '23505') {
+      throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
     }
+    throw error;
   }
 
   const apiUser = toApiUser(user);
@@ -645,23 +520,14 @@ export function session(actor) {
 
 export async function logout(actor, config) {
   if (actor?.deviceSessionId) {
-    if (jsonStoreEnabled(config)) {
-      await updateJsonStore(config, (store) => {
-        const session = store.deviceSessions.find((item) => item.id === actor.deviceSessionId && !item.revokedAt);
-        if (session) {
-          const now = new Date().toISOString();
-          session.revokedAt = now;
-          session.updatedAt = now;
-        }
-      });
-      return { loggedOut: true };
-    }
-
-    await query(config, `
-      UPDATE device_sessions
-      SET revoked_at = now(), updated_at = now()
-      WHERE id = $1 AND revoked_at IS NULL
-    `, [actor.deviceSessionId]);
+    await updateJsonStore(config, (store) => {
+      const session = store.deviceSessions.find((item) => item.id === actor.deviceSessionId && !item.revokedAt);
+      if (session) {
+        const now = new Date().toISOString();
+        session.revokedAt = now;
+        session.updatedAt = now;
+      }
+    });
   }
 
   return { loggedOut: true };

@@ -1,5 +1,5 @@
 import { emptyCollection } from '#shared/services/placeholderService.js';
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
+import { readJsonStore } from '#db/pgAdapter.js';
 
 function userPortfolioKey(userId) {
   return `portfolio_${userId}`;
@@ -205,16 +205,6 @@ function enrichPayment(store, payment) {
 }
 
 export async function clientDashboard(config, userId) {
-  if (!jsonStoreEnabled(config)) {
-    return {
-      source: 'postgres_pending',
-      portfolio: null,
-      activeOrders: [],
-      recentTransactions: [],
-      notifications: [],
-    };
-  }
-
   const store = await readJsonStore(config);
   const user = store.users.find((u) => u.id === userId);
   const portfolio = store[userPortfolioKey(userId)] || {
@@ -242,20 +232,6 @@ export async function clientDashboard(config, userId) {
 }
 
 export async function clientPortfolio(config, userId) {
-  if (!jsonStoreEnabled(config)) {
-    return {
-      source: 'postgres_pending',
-      currentValue: 0,
-      invested: 0,
-      allTimeGain: 0,
-      allTimeGainPct: 0,
-      todayChange: 0,
-      xirrPct: 0,
-      asOf: new Date().toISOString(),
-      holdings: [],
-    };
-  }
-
   const store = await readJsonStore(config);
   const portfolio = store[userPortfolioKey(userId)] || {
     invested: 0,
@@ -267,14 +243,12 @@ export async function clientPortfolio(config, userId) {
 }
 
 export async function clientOrders(config, userId) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const items = (store.investmentPlans || store.orders || []).filter((o) => o.userId === userId);
   return { items, count: items.length, source: 'json' };
 }
 
 export async function clientTransactions(config, userId) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const items = (store.transactions || [])
     .filter((t) => t.userId === userId)
@@ -284,7 +258,6 @@ export async function clientTransactions(config, userId) {
 }
 
 export async function clientPayments(config, userId, filters = {}) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const status = String(filters.status || '').trim();
   const statuses = status
@@ -299,14 +272,12 @@ export async function clientPayments(config, userId, filters = {}) {
 }
 
 export async function clientMandates(config, userId) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const items = (store.mandates || []).filter((m) => m.userId === userId);
   return { items, count: items.length, source: 'json' };
 }
 
 export async function clientNotifications(config, userId) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const items = (store.notifications || [])
     .filter((n) => n.userId === userId)
@@ -315,7 +286,6 @@ export async function clientNotifications(config, userId) {
 }
 
 export async function clientSupportTickets(config, userId) {
-  if (!jsonStoreEnabled(config)) return emptyCollection({ source: 'postgres_pending' });
   const store = await readJsonStore(config);
   const items = (store.supportTickets || [])
     .filter((t) => t.userId === userId)

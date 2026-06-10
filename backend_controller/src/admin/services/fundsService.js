@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import {
   computeFundAge,
@@ -92,10 +92,6 @@ function enrichFundWithAnalytics(fund) {
 }
 
 export async function listFunds(config) {
-  if (!jsonStoreEnabled(config)) {
-    return { items: [], count: 0, source: 'postgres_pending' };
-  }
-
   const store = await readJsonStore(config);
   const items = Array.isArray(store.funds) ? store.funds : [];
   return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
@@ -143,10 +139,6 @@ export async function createFund(config, actor, body, requestContext = {}) {
     updatedAt: new Date().toISOString(),
   };
 
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for funds is not yet implemented.');
-  }
-
   await updateJsonStore(config, (store) => {
     store.funds.push(fund);
     store.adminAuditLogs.push({
@@ -169,10 +161,6 @@ export async function createFund(config, actor, body, requestContext = {}) {
 }
 
 export async function getFund(config, fundId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for funds is not yet implemented.');
-  }
-
   const store = await readJsonStore(config);
   const fund = (store.funds || []).find((f) => f.id === fundId);
 
@@ -184,10 +172,6 @@ export async function getFund(config, fundId) {
 }
 
 export async function updateFund(config, actor, fundId, body, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for funds is not yet implemented.');
-  }
-
   const payload = body && typeof body === 'object' ? body : {};
 
   const updated = await updateJsonStore(config, (store) => {
@@ -253,10 +237,6 @@ export async function updateFund(config, actor, fundId, body, requestContext = {
 }
 
 export async function deleteFund(config, actor, fundId, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for funds is not yet implemented.');
-  }
-
   const deleted = await updateJsonStore(config, (store) => {
     const idx = (store.funds || []).findIndex((f) => f.id === fundId);
     if (idx === -1) return null;

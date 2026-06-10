@@ -1,11 +1,7 @@
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore } from '#db/pgAdapter.js';
 
 export async function markNotificationRead(config, actor, notificationId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for notifications is not yet implemented.');
-  }
-
   const updated = await updateJsonStore(config, (store) => {
     const notifications = store.notifications || [];
     const idx = notifications.findIndex((n) => n.id === notificationId);

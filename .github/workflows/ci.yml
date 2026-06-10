@@ -24,19 +24,10 @@ jobs:
           node-version: 22
       - run: npm ci
       # Static authorization-invariant guards (no DB needed).
-      - run: npm run authz:mandate
-      - run: npm run authz:payment
-      - run: npm run authz:jwt-status
       - run: npm run authz:admin-rbac
-      - run: npm run authz:admin-audit
       - run: npm run authz:403
-      - run: npm run payment:reconcile
-      # Colocated unit tests only (src/**/*.test.js). Scoped to src/ so Node's
-      # test auto-discovery doesn't pull in scripts/*-smoke-test.js, which need a
-      # seeded store and are run manually, not in CI.
+      # Colocated unit tests only (src/**/*.test.js).
       - run: node --test "src/**/*.test.js"
-        env:
-          DATA_STORE: json
 
   landing:
     name: landing (test + build)

@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, atomicCompositeWrite } from '#db/jsonStore.js';
+import { readJsonStore, atomicCompositeWrite } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
@@ -21,10 +21,6 @@ function shortReceipt(prefix, id) {
 }
 
 async function _createSip(config, actor, body, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for SIPs is not yet implemented.');
-  }
-
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a SIP.');
   }

@@ -1,6 +1,6 @@
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from './withReceipt.js';
 import { getPaymentProvider } from './payments/providerFactory.js';
 
@@ -45,10 +45,6 @@ function checkReplay(eventId, timestamp, store) {
 }
 
 async function _processPaymentWebhook(config, provider, rawBody, headers) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'JSON store is not enabled.');
-  }
-
   // `rawBody` may be the exact UTF-8 bytes (preferred for HMAC) or an
   // already-parsed object. Use the string for signature verification and
   // a parsed object for payload field extraction.
@@ -226,10 +222,6 @@ export const processPaymentWebhook = withReceipt(_processPaymentWebhook, (result
 });
 
 export async function processMandateWebhook(config, provider, rawBody, headers) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'JSON store is not enabled.');
-  }
-
   const body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
   let payload;
   if (rawBody && typeof rawBody === 'object') {

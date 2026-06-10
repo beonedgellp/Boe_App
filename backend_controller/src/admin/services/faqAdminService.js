@@ -1,21 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 
 export async function listAdminFaqs(config) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for FAQs is not yet implemented.');
-  }
   const store = await readJsonStore(config);
   const items = Array.isArray(store.faqs) ? store.faqs : [];
   return { items, count: items.length };
 }
 
 export async function createFaq(config, actor, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for FAQs is not yet implemented.');
-  }
-
   const question = String(body?.question || '').trim();
   const answer = String(body?.answer || '').trim();
   const category = String(body?.category || 'general').trim();
@@ -46,10 +39,6 @@ export async function createFaq(config, actor, body) {
 }
 
 export async function updateFaq(config, actor, faqId, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for FAQs is not yet implemented.');
-  }
-
   const now = new Date().toISOString();
 
   return updateJsonStore(config, (store) => {
@@ -76,10 +65,6 @@ export async function updateFaq(config, actor, faqId, body) {
 }
 
 export async function deleteFaq(config, actor, faqId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for FAQs is not yet implemented.');
-  }
-
   return updateJsonStore(config, (store) => {
     const idx = (store.faqs || []).findIndex((f) => f.id === faqId);
     if (idx === -1) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');

@@ -1,12 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 
 export async function sendNotification(config, actor, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for notifications is not yet implemented.');
-  }
-
   const title = String(body?.title || '').trim();
   const messageBody = String(body?.body || '').trim();
   const target = String(body?.target || '').trim().toLowerCase();
@@ -59,7 +55,6 @@ export async function sendNotification(config, actor, body) {
 }
 
 export async function notifyUserApproved(config, userId, userName) {
-  if (!jsonStoreEnabled(config)) return null;
   const now = new Date().toISOString();
   let notificationId;
   await updateJsonStore(config, (s) => {
@@ -81,7 +76,6 @@ export async function notifyUserApproved(config, userId, userName) {
 }
 
 export async function notifyUserRejected(config, userId, userName, reason) {
-  if (!jsonStoreEnabled(config)) return null;
   const now = new Date().toISOString();
   let notificationId;
   await updateJsonStore(config, (s) => {
@@ -103,9 +97,6 @@ export async function notifyUserRejected(config, userId, userName, reason) {
 }
 
 export async function listAdminNotifications(config, { page = 1, limit = 25 } = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for notifications is not yet implemented.');
-  }
   const store = await readJsonStore(config);
   let items = Array.isArray(store.notifications) ? store.notifications : [];
   items = items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));

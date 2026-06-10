@@ -1,15 +1,12 @@
-// Store factory: returns a backend-agnostic record store.
+// Store factory: returns the Postgres adapter.
 //
-// Existing services import from `./jsonStore.js` directly, so this module is
-// additive — call `getStore(config)` from new code that wants to be driver
-// agnostic. Existing call sites are unchanged.
+// Postgres is the sole supported data store. This module re-exports pgAdapter
+// for backward compatibility with existing `getStore(config)` callers.
 
-import * as jsonStore from './jsonStore.js';
 import * as pgAdapter from './pgAdapter.js';
 
-export function getStore(config) {
-  return config && config.dbDriver === 'pg' ? pgAdapter : jsonStore;
+export function getStore(/* config */) {
+  return pgAdapter;
 }
 
-// Convenience re-export of the json store for callers that explicitly want it.
-export { jsonStore, pgAdapter };
+export { pgAdapter };

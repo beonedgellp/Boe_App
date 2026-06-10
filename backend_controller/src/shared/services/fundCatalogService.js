@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import {
   computeFundAge,
   computeFundAnalytics,
@@ -31,20 +31,12 @@ function enrichFundWithAnalytics(fund) {
 }
 
 export async function listFunds(config) {
-  if (!jsonStoreEnabled(config)) {
-    return { items: [], count: 0, source: 'postgres_pending' };
-  }
-
   const store = await readJsonStore(config);
   const items = Array.isArray(store.funds) ? store.funds : [];
   return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
 }
 
 export async function getFund(config, fundId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for funds is not yet implemented.');
-  }
-
   const store = await readJsonStore(config);
   const fund = (store.funds || []).find((f) => f.id === fundId);
 

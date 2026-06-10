@@ -3,7 +3,7 @@ import { emptyCollection } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
 import { HttpError } from '#http/errors.js';
 import { query, transaction } from '#db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { notifyUserApproved, notifyUserRejected } from './notificationComposerService.js';
 
 const PENDING_APPROVAL_STATUSES = new Set(['draft', 'pending_review', 'kyc_pending']);
@@ -92,7 +92,6 @@ function pendingApproval(user) {
 }
 
 async function jsonCollection(config, key) {
-  if (!jsonStoreEnabled(config)) return emptyForActiveStore(config);
   const store = await readJsonStore(config);
   return collection(Array.isArray(store[key]) ? store[key] : []);
 }
@@ -103,128 +102,63 @@ function todayCount(items, dateKey) {
 }
 
 export async function adminOverview(config) {
-  if (!jsonStoreEnabled(config)) {
-    const result = await query(config, `
-      SELECT role::text, status::text, kyc_status::text
-      FROM users
-    `);
-    const users = result.rows.map((row) => ({
-      role: row.role,
-      status: row.status,
-      kycStatus: row.kyc_status,
-    }));
-    const pendingApprovals = users.filter(pendingApproval);
-    const kyc = users.filter((user) => user.role === 'client' && user.kycStatus && user.kycStatus !== 'approved');
-    const rejected = users.filter((user) => user.role === 'client' && user.status === 'rejected');
-    const approved = users.filter((user) => user.role === 'client' && user.status === 'approved');
-
-    return {
-      source: 'postgres',
-      counts: {
-        approvals: pendingApprovals.length,
-        kyc: kyc.length,
-        requests: 0,
-        users: users.length,
-        products: 0,
-        payments: 0,
-        mandates: 0,
-        support: 0,
-        audit: 0,
-      },
-      stats: {
-        pendingApprovals: pendingApprovals.length,
-        approvedThisWeek: approved.length,
-        rejectedThisWeek: rejected.length,
-        avgReviewTime: '0h',
-        paymentsProcessedToday: 0,
-        pendingPayments: 0,
-        failedPayments: 0,
-        reconciledPayments: 0,
-        activeMandates: 0,
-        pendingMandates: 0,
-        pausedMandates: 0,
-        autopaySuccess: computeAutopaySuccess([]),
-      },
-    };
-  }
-
-  const store = await readJsonStore(config);
-  const users = store.users.map(userPayload);
-  const payments = store.payments || [];
-  const mandates = store.mandates || [];
-  const sipControlRequests = store.sipControlRequests || [];
-  const supportTickets = store.supportTickets || [];
+  const result = await query(config, `
+    SELECT role::text, status::text, kyc_status::text
+    FROM users
+  `);
+  const users = result.rows.map((row) => ({
+    role: row.role,
+    status: row.status,
+    kycStatus: row.kyc_status,
+  }));
   const pendingApprovals = users.filter(pendingApproval);
   const kyc = users.filter((user) => user.role === 'client' && user.kycStatus && user.kycStatus !== 'approved');
-  const rejectedThisWeek = users.filter((user) => user.status === 'rejected');
-
-  let strategies = [];
-  try {
-    const appConfig = await getPublishedAppConfig(config);
-    strategies = appConfig.config?.mobile?.products || [];
-  } catch {
-    strategies = [];
-  }
+  const rejected = users.filter((user) => user.role === 'client' && user.status === 'rejected');
+  const approved = users.filter((user) => user.role === 'client' && user.status === 'approved');
 
   return {
-    source: 'json',
+    source: 'postgres',
     counts: {
       approvals: pendingApprovals.length,
       kyc: kyc.length,
-      requests: sipControlRequests.length,
+      requests: 0,
       users: users.length,
-      products: strategies.length,
-      payments: payments.length,
-      mandates: mandates.length,
-      support: supportTickets.length,
-      audit: store.adminAuditLogs.length,
+      products: 0,
+      payments: 0,
+      mandates: 0,
+      support: 0,
+      audit: 0,
     },
     stats: {
       pendingApprovals: pendingApprovals.length,
-      approvedThisWeek: users.filter((user) => user.status === 'approved').length,
-      rejectedThisWeek: rejectedThisWeek.length,
+      approvedThisWeek: approved.length,
+      rejectedThisWeek: rejected.length,
       avgReviewTime: '0h',
-      paymentsProcessedToday: todayCount(payments, 'time'),
-      pendingPayments: payments.filter((item) => item.status === 'pending').length,
-      failedPayments: payments.filter((item) => item.status === 'failed').length,
-      reconciledPayments: payments.filter((item) => item.status === 'reconciled').length,
-      activeMandates: mandates.filter((item) => item.status === 'active').length,
-      pendingMandates: mandates.filter((item) => item.status === 'pending_user_auth').length,
-      pausedMandates: mandates.filter((item) => item.status === 'paused').length,
-      autopaySuccess: computeAutopaySuccess(mandates),
+      paymentsProcessedToday: 0,
+      pendingPayments: 0,
+      failedPayments: 0,
+      reconciledPayments: 0,
+      activeMandates: 0,
+      pendingMandates: 0,
+      pausedMandates: 0,
+      autopaySuccess: computeAutopaySuccess([]),
     },
   };
 }
 
 export async function adminUsers(config, { status = 'approved', q, page = 1, limit = 25 } = {}) {
   let users;
-  if (!jsonStoreEnabled(config)) {
-    let whereSql = "WHERE role = 'client'";
-    const params = [];
-    if (status) {
-      params.push(status);
-      whereSql += ` AND status = $${params.length}::user_status`;
-    }
-    if (q) {
-      params.push(`%${q}%`);
-      whereSql += ` AND (first_name ILIKE $${params.length} OR last_name ILIKE $${params.length} OR email ILIKE $${params.length})`;
-    }
-    users = await postgresUsers(config, whereSql, params);
-  } else {
-    const store = await readJsonStore(config);
-    users = store.users.map(userPayload).filter((user) => (user.role || 'client') === 'client');
-    if (status) {
-      users = users.filter((user) => user.status === status);
-    }
-    if (q) {
-      const lowerQ = q.toLowerCase();
-      users = users.filter((user) =>
-        user.name.toLowerCase().includes(lowerQ) ||
-        user.email.toLowerCase().includes(lowerQ) ||
-        user.phone.includes(lowerQ)
-      );
-    }
+  let whereSql = "WHERE role = 'client'";
+  const params = [];
+  if (status) {
+    params.push(status);
+    whereSql += ` AND status = $${params.length}::user_status`;
   }
+  if (q) {
+    params.push(`%${q}%`);
+    whereSql += ` AND (first_name ILIKE $${params.length} OR last_name ILIKE $${params.length} OR email ILIKE $${params.length})`;
+  }
+  users = await postgresUsers(config, whereSql, params);
 
   const total = users.length;
   const start = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit));
@@ -237,125 +171,84 @@ export async function adminUsers(config, { status = 'approved', q, page = 1, lim
     total,
     page: Number(page),
     limit: Number(limit),
-    source: jsonStoreEnabled(config) ? 'json' : 'postgres',
+    source: 'postgres',
   };
 }
 
 export async function adminTransactions(config, { fundId, status, type, userId, q, page = 1, limit = 25 } = {}) {
   let transactions = [];
 
-  if (!jsonStoreEnabled(config)) {
-    let whereSql = 'WHERE 1=1';
-    const params = [];
-    if (fundId) {
-      params.push(fundId);
-      whereSql += ` AND product_id = $${params.length}`;
-    }
-    if (status) {
-      params.push(status);
-      whereSql += ` AND status = $${params.length}`;
-    }
-    const normalizedType = visibleTransactionType(type);
-    if (normalizedType === 'sip') {
-      params.push(['sip', 'sip_installment', 'installment']);
-      whereSql += ` AND type = ANY($${params.length})`;
-    } else if (normalizedType === 'lumpsum') {
-      params.push(['lumpsum', 'one_time']);
-      whereSql += ` AND type = ANY($${params.length})`;
-    } else if (type) {
-      params.push(type);
-      whereSql += ` AND type = $${params.length}`;
-    }
-    if (userId) {
-      params.push(userId);
-      whereSql += ` AND user_id = $${params.length}`;
-    }
+  let whereSql = 'WHERE 1=1';
+  const params = [];
+  if (fundId) {
+    params.push(fundId);
+    whereSql += ` AND product_id = $${params.length}`;
+  }
+  if (status) {
+    params.push(status);
+    whereSql += ` AND status = $${params.length}`;
+  }
+  const normalizedType = visibleTransactionType(type);
+  if (normalizedType === 'sip') {
+    params.push(['sip', 'sip_installment', 'installment']);
+    whereSql += ` AND type = ANY($${params.length})`;
+  } else if (normalizedType === 'lumpsum') {
+    params.push(['lumpsum', 'one_time']);
+    whereSql += ` AND type = ANY($${params.length})`;
+  } else if (type) {
+    params.push(type);
+    whereSql += ` AND type = $${params.length}`;
+  }
+  if (userId) {
+    params.push(userId);
+    whereSql += ` AND user_id = $${params.length}`;
+  }
 
-    const result = await query(config, `
-      SELECT t.id, t.user_id, t.product_id, t.investment_plan_id, t.type::text,
-             t.amount, t.date, t.nav, t.units, t.status::text, t.idempotency_key,
-             t.requested_at, t.payment_confirmed_at, t.allotted_at, t.cancelled_at,
-             t.created_at, t.updated_at,
-             u.first_name, u.last_name, u.email,
-             f.name as fund_name
-      FROM transactions t
-      JOIN users u ON u.id = t.user_id
-      LEFT JOIN funds f ON f.id = t.product_id
-      ${whereSql}
-      ORDER BY t.created_at DESC
-    `, params);
+  const result = await query(config, `
+    SELECT t.id, t.user_id, t.product_id, t.investment_plan_id, t.type::text,
+           t.amount, t.date, t.nav, t.units, t.status::text, t.idempotency_key,
+           t.requested_at, t.payment_confirmed_at, t.allotted_at, t.cancelled_at,
+           t.created_at, t.updated_at,
+           u.first_name, u.last_name, u.email,
+           f.name as fund_name
+    FROM transactions t
+    JOIN users u ON u.id = t.user_id
+    LEFT JOIN funds f ON f.id = t.product_id
+    ${whereSql}
+    ORDER BY t.created_at DESC
+  `, params);
 
-    transactions = result.rows.map((row) => ({
-      id: row.id,
-      userId: row.user_id,
-      productId: row.product_id,
-      investmentPlanId: row.investment_plan_id,
-      type: row.type,
-      amount: row.amount,
-      date: row.date,
-      nav: row.nav,
-      units: row.units,
-      status: row.status,
-      idempotencyKey: row.idempotency_key,
-      requestedAt: row.requested_at,
-      paymentConfirmedAt: row.payment_confirmed_at,
-      allottedAt: row.allotted_at,
-      cancelledAt: row.cancelled_at,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      userName: [row.first_name, row.last_name].filter(Boolean).join(' ') || row.email || row.user_id,
-      userEmail: row.email || '',
-      fundName: row.fund_name || row.product_id || '—',
-    }));
+  transactions = result.rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    productId: row.product_id,
+    investmentPlanId: row.investment_plan_id,
+    type: row.type,
+    amount: row.amount,
+    date: row.date,
+    nav: row.nav,
+    units: row.units,
+    status: row.status,
+    idempotencyKey: row.idempotency_key,
+    requestedAt: row.requested_at,
+    paymentConfirmedAt: row.payment_confirmed_at,
+    allottedAt: row.allotted_at,
+    cancelledAt: row.cancelled_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    userName: [row.first_name, row.last_name].filter(Boolean).join(' ') || row.email || row.user_id,
+    userEmail: row.email || '',
+    fundName: row.fund_name || row.product_id || '—',
+  }));
 
-    if (q) {
-      const lowerQ = q.toLowerCase();
-      transactions = transactions.filter((tx) =>
-        tx.userName.toLowerCase().includes(lowerQ) ||
-        tx.userEmail.toLowerCase().includes(lowerQ) ||
-        tx.fundName.toLowerCase().includes(lowerQ) ||
-        tx.id.toLowerCase().includes(lowerQ)
-      );
-    }
-  } else {
-    const store = await readJsonStore(config);
-    const users = store.users || [];
-    const funds = store.funds || [];
-
-    transactions = (store.transactions || []).map((tx) => {
-      const user = users.find((u) => u.id === tx.userId);
-      const fund = funds.find((f) => f.id === tx.productId);
-      return {
-        ...tx,
-        userName: user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || tx.userId : tx.userId,
-        userEmail: user?.email || '',
-        fundName: fund?.name || tx.productId || '—',
-      };
-    });
-
-    if (fundId) {
-      transactions = transactions.filter((tx) => tx.productId === fundId);
-    }
-    if (status) {
-      transactions = transactions.filter((tx) => tx.status === status);
-    }
-    if (type) {
-      transactions = transactions.filter((tx) => transactionTypeMatches(tx.type, type));
-    }
-    if (userId) {
-      transactions = transactions.filter((tx) => tx.userId === userId);
-    }
-    if (q) {
-      const lowerQ = q.toLowerCase();
-      transactions = transactions.filter((tx) =>
-        tx.userName.toLowerCase().includes(lowerQ) ||
-        tx.userEmail.toLowerCase().includes(lowerQ) ||
-        tx.fundName.toLowerCase().includes(lowerQ) ||
-        tx.id.toLowerCase().includes(lowerQ)
-      );
-    }
-
-    transactions.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  if (q) {
+    const lowerQ = q.toLowerCase();
+    transactions = transactions.filter((tx) =>
+      tx.userName.toLowerCase().includes(lowerQ) ||
+      tx.userEmail.toLowerCase().includes(lowerQ) ||
+      tx.fundName.toLowerCase().includes(lowerQ) ||
+      tx.id.toLowerCase().includes(lowerQ)
+    );
   }
 
   const total = transactions.length;
@@ -369,7 +262,7 @@ export async function adminTransactions(config, { fundId, status, type, userId, 
     total,
     page: Number(page),
     limit: Number(limit),
-    source: jsonStoreEnabled(config) ? 'json' : 'postgres',
+    source: 'postgres',
   };
 }
 
@@ -377,35 +270,19 @@ export async function adminApprovals(config, status = 'pending') {
   const pendingStatuses = ['draft', 'pending_review', 'kyc_pending'];
   let users;
 
-  if (!jsonStoreEnabled(config)) {
-    let whereSql = "WHERE role = 'client'";
-    const params = [];
+  let whereSql = "WHERE role = 'client'";
+  const params = [];
 
-    if (status === 'pending') {
-      whereSql += ` AND status IN ('draft', 'pending_review', 'kyc_pending')`;
-    } else if (status === 'rejected') {
-      whereSql += ` AND status = 'rejected'`;
-    } else if (status === 'approved') {
-      whereSql += ` AND status = 'approved'`;
-    }
-    // status === 'all' adds no filter
-
-    users = await postgresUsers(config, whereSql, params);
-  } else {
-    const store = await readJsonStore(config);
-    users = store.users
-      .map(userPayload)
-      .filter((user) => (user.role || 'client') === 'client');
-
-    if (status === 'pending') {
-      users = users.filter((user) => pendingStatuses.includes(user.status));
-    } else if (status === 'rejected') {
-      users = users.filter((user) => user.status === 'rejected');
-    } else if (status === 'approved') {
-      users = users.filter((user) => user.status === 'approved');
-    }
-    // status === 'all' keeps all
+  if (status === 'pending') {
+    whereSql += ` AND status IN ('draft', 'pending_review', 'kyc_pending')`;
+  } else if (status === 'rejected') {
+    whereSql += ` AND status = 'rejected'`;
+  } else if (status === 'approved') {
+    whereSql += ` AND status = 'approved'`;
   }
+  // status === 'all' adds no filter
+
+  users = await postgresUsers(config, whereSql, params);
 
   return collection(users);
 }
@@ -452,20 +329,7 @@ async function postgresKycReview(config) {
 }
 
 export async function adminKycReview(config) {
-  if (!jsonStoreEnabled(config)) {
-    return collection(await postgresKycReview(config), 'postgres');
-  }
-  const store = await readJsonStore(config);
-  const kycProfiles = store.kycProfiles || [];
-  return collection(
-    store.users
-      .map(userPayload)
-      .filter((user) => user.kycStatus && user.kycStatus !== 'approved')
-      .map((user) => {
-        const kycProfile = kycProfiles.find((p) => p.userId === user.id);
-        return kycReviewPayload(user, kycProfile);
-      }),
-  );
+  return collection(await postgresKycReview(config), 'postgres');
 }
 
 function riskProfilePayload(user, riskProfile) {
@@ -508,20 +372,7 @@ async function postgresRiskProfiles(config) {
 }
 
 export async function adminRiskProfiles(config) {
-  if (!jsonStoreEnabled(config)) {
-    return collection(await postgresRiskProfiles(config), 'postgres');
-  }
-  const store = await readJsonStore(config);
-  const riskProfiles = store.riskProfiles || [];
-  return collection(
-    store.users
-      .map(userPayload)
-      .filter((user) => (user.role || 'client') === 'client')
-      .map((user) => {
-        const riskProfile = riskProfiles.find((p) => p.userId === user.id);
-        return riskProfilePayload(user, riskProfile);
-      }),
-  );
+  return collection(await postgresRiskProfiles(config), 'postgres');
 }
 
 export async function adminStrategies(config) {
@@ -626,7 +477,6 @@ function matchesDateRange(row, from, to) {
 }
 
 export async function adminPayments(config, filters = {}) {
-  if (!jsonStoreEnabled(config)) return emptyForActiveStore(config);
   const store = await readJsonStore(config);
   const queryText = String(filters.q || '').trim().toLowerCase();
   const status = String(filters.status || '').trim();
@@ -678,7 +528,6 @@ export async function adminMandates(config) {
 }
 
 export async function adminSipControlRequests(config) {
-  if (!jsonStoreEnabled(config)) return emptyForActiveStore(config);
   const store = await readJsonStore(config);
   const users = store.users || [];
   const plans = store.investmentPlans || store.orders || [];
@@ -709,24 +558,17 @@ export async function adminFunds(config) {
 }
 
 export async function adminAuditLogs(config) {
-  if (!jsonStoreEnabled(config)) return emptyForActiveStore(config);
   const store = await readJsonStore(config);
   return collection(store.adminAuditLogs);
 }
 
 export async function adminPendingStats(config) {
-  if (!jsonStoreEnabled(config)) {
-    const result = await query(config, `
-      SELECT COUNT(*) as count
-      FROM users
-      WHERE role = 'client' AND status IN ('draft', 'pending_review', 'kyc_pending')
-    `);
-    return { pendingCount: Number(result.rows[0]?.count || 0), source: 'postgres' };
-  }
-  const store = await readJsonStore(config);
-  const users = store.users || [];
-  const pendingCount = users.filter((u) => (u.role || 'client') === 'client' && PENDING_APPROVAL_STATUSES.has(u.status)).length;
-  return { pendingCount, source: 'json' };
+  const result = await query(config, `
+    SELECT COUNT(*) as count
+    FROM users
+    WHERE role = 'client' AND status IN ('draft', 'pending_review', 'kyc_pending')
+  `);
+  return { pendingCount: Number(result.rows[0]?.count || 0), source: 'postgres' };
 }
 
 export async function updateUserStatus(config, actor, userId, body = {}, metadata = {}) {
@@ -739,59 +581,6 @@ export async function updateUserStatus(config, actor, userId, body = {}, metadat
 
   if (nextStatus === 'rejected' && !reason) {
     throw new HttpError(400, 'REASON_REQUIRED', 'A rejection reason is required.');
-  }
-
-  if (jsonStoreEnabled(config)) {
-    const updated = await updateJsonStore(config, (store) => {
-      const user = store.users.find((item) => item.id === userId);
-      if (!user) return null;
-      if ((user.role || 'client') !== 'client') {
-        throw new HttpError(400, 'ADMIN_USER_STATUS_FORBIDDEN', 'Only client users can be updated from this queue.');
-      }
-
-      const before = userPayload(user);
-      const now = new Date().toISOString();
-      user.status = nextStatus;
-      user.updatedAt = now;
-      if (!user.approvalRef) user.approvalRef = randomUUID();
-      if (nextStatus === 'approved') {
-        user.approvedAt = now;
-        user.riskProfileStatus = user.riskProfileStatus === 'pending' ? 'approved' : user.riskProfileStatus;
-        user.kycStatus = user.kycStatus === 'pending' ? 'approved' : user.kycStatus;
-      } else {
-        user.approvedAt = null;
-      }
-      if (nextStatus === 'rejected') user.rejectedAt = now;
-      if (nextStatus === 'suspended') user.suspendedAt = now;
-      if (nextStatus === 'closed') user.closedAt = now;
-
-      const after = userPayload(user);
-      store.adminAuditLogs.push({
-        id: randomUUID(),
-        adminId: actor?.userId || null,
-        action: 'user.status.update',
-        entityType: 'users',
-        entityId: user.id,
-        beforeJson: before,
-        afterJson: after,
-        reason,
-        ipAddress: metadata.ipAddress || null,
-        userAgent: metadata.userAgent || null,
-        createdAt: now,
-      });
-      return after;
-    });
-
-    if (!updated) throw new HttpError(404, 'USER_NOT_FOUND', 'User was not found.');
-
-    if (nextStatus === 'approved') {
-      await notifyUserApproved(config, userId, updated.name);
-    } else if (nextStatus === 'rejected') {
-      await notifyUserRejected(config, userId, updated.name, reason);
-    }
-
-    const stats = await adminPendingStats(config);
-    return { user: updated, pendingCount: stats.pendingCount };
   }
 
   const updated = await transaction(config, async (client) => {

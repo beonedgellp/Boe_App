@@ -1,5 +1,5 @@
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
+import { readJsonStore } from '#db/pgAdapter.js';
 
 function getMonthKey(dateStr) {
   return dateStr.slice(0, 7); // YYYY-MM
@@ -51,9 +51,6 @@ function buildStatement(userId, monthKey, transactions) {
 }
 
 export async function listStatements(config, actor) {
-  if (!jsonStoreEnabled(config)) {
-    return { items: [], count: 0, page: 1, pageSize: 0, total: 0, source: 'postgres_pending' };
-  }
   const store = await readJsonStore(config);
   const userTxns = (store.transactions || []).filter((t) => t.userId === actor?.userId);
 
@@ -72,9 +69,6 @@ export async function listStatements(config, actor) {
 }
 
 export async function getStatement(config, actor, statementId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for statements is not yet implemented.');
-  }
   const parsed = parseStatementId(statementId);
   if (!parsed) throw new HttpError(404, 'STATEMENT_NOT_FOUND', 'Statement not found.');
   if (parsed.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Statement does not belong to you.');

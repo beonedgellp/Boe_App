@@ -139,16 +139,7 @@ const files = await migrationFiles(dir).catch((error) => {
   throw error;
 });
 
-if (config.dbDriver === 'json') {
-  if (command === 'status') {
-    console.log('json driver — no migrations to run');
-  } else if (command === 'up') {
-    console.log('json driver — no migrations to run');
-  } else {
-    console.error('Usage: node scripts/migrate.js [status|up]');
-    process.exitCode = 1;
-  }
-} else if (command === 'status') await status(config, files);
+if (command === 'status') await status(config, files);
 else if (command === 'up') await up(config, dir, files);
 else {
   console.error('Usage: node scripts/migrate.js [status|up]');

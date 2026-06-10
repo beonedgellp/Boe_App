@@ -4,7 +4,7 @@ import { HttpError } from '#http/errors.js';
 import { registerInternalRoutes } from '#shared/routes/internalRoutes.js';
 import { registerAdminReceiptRoutes } from '#shared/routes/receiptRoutes.js';
 import { registerAdminTimelineRoutes } from '#shared/routes/timelineRoutes.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { reviewKyc } from '../services/kycReviewService.js';
 import { getUserDetail } from '../services/userDetailService.js';
 import { replyToTicket } from '../services/supportTicketAdminService.js';
@@ -409,9 +409,6 @@ export function registerAdminRoutes(router) {
     roles: ADMIN_ROLES,
     description: 'Publish strategy disclosure.',
   }, async ({ config, actor, params, body, headers }) => {
-    if (!jsonStoreEnabled(config)) {
-      throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for disclosures is not yet implemented.');
-    }
     const fundId = params.product_id;
     const store = await readJsonStore(config);
     const fundExists = (store.funds || []).some((f) => f.id === fundId);
@@ -460,9 +457,6 @@ export function registerAdminRoutes(router) {
     roles: ADMIN_ROLES,
     description: 'Upload strategy holdings.',
   }, async ({ config, actor, params, body, headers }) => {
-    if (!jsonStoreEnabled(config)) {
-      throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for holdings is not yet implemented.');
-    }
     const fundId = params.product_id;
     const store = await readJsonStore(config);
     const fundExists = (store.funds || []).some((f) => f.id === fundId);

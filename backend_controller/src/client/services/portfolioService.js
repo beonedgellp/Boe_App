@@ -1,5 +1,5 @@
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
+import { readJsonStore } from '#db/pgAdapter.js';
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -7,10 +7,6 @@ function toNumber(value, fallback = 0) {
 }
 
 export async function getHolding(config, actor, fundId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for portfolio is not yet implemented.');
-  }
-
   const store = await readJsonStore(config);
   const portfolio = store[`portfolio_${actor.userId}`] || { holdings: [] };
   const holding = (portfolio.holdings || []).find((h) => h.fundId === fundId);

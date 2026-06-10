@@ -1,4 +1,4 @@
-// Postgres adapter mirroring the public surface of `jsonStore.js`.
+// Postgres adapter providing the data-store surface used by services and scripts.
 //
 // Design notes:
 // - Reuses `query` / `transaction` from `db/client.js` (which manages the pool).
@@ -80,6 +80,9 @@ const COLLECTION_MAP = {
   disclosures: { table: 'disclosures', idColumn: 'id' },
   staticPages: { table: 'static_pages', idColumn: 'id' },
   portfolioSnapshots: { table: 'portfolio_snapshots', idColumn: 'id' },
+
+  // Idempotency storage
+  requestIdempotency: { table: 'request_idempotency', idColumn: 'id' },
 };
 
 function mappingFor(collection) {
@@ -119,17 +122,6 @@ const TABLES_WITH_PAYLOAD = new Set([
 ]);
 
 // -------------------- public surface --------------------
-
-// Mirrors jsonStore.jsonStoreEnabled. For the pg adapter, returning true would
-// be misleading — keep services able to tell whether they're on json or pg.
-export function jsonStoreEnabled(/* config */) {
-  return false;
-}
-
-export function jsonStorePath(/* config */) {
-  // No file path in pg mode.
-  return null;
-}
 
 // Read everything: returned as a JSON-store-shaped object so that callers that
 // loop over a single collection still work. This is potentially expensive — use
@@ -247,6 +239,24 @@ export async function updateMandate(config, id, updater) {
 
 export async function updateSipControlRequest(config, id, updater) {
   return updateByIdWithUpdater(config, 'sipControlRequests', id, updater);
+}
+
+export async function deleteJsonRecord(config, collection, predicate) {
+  const m = mappingFor(collection);
+  let rows;
+  try {
+    const r = await query(config, `SELECT * FROM ${m.table}`);
+    rows = r.rows.map(rowToRecord);
+  } catch (err) {
+    if (err && err.code === '42P01') return null;
+    throw err;
+  }
+  const idx = rows.findIndex(predicate);
+  if (idx === -1) return null;
+  const existing = rows[idx];
+  const id = existing[snakeToCamel(m.idColumn)];
+  await query(config, `DELETE FROM ${m.table} WHERE ${m.idColumn} = $1`, [id]);
+  return existing;
 }
 
 async function updateByIdWithUpdater(config, collection, id, updater) {

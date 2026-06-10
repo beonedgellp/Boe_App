@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
 
 function normalizeEmail(value) {
   if (!value || typeof value !== 'string') return '';
@@ -48,10 +48,6 @@ function computeRiskCategory(answers) {
 }
 
 export async function submitApplication(config, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for onboarding applications is not yet implemented.');
-  }
-
   const { name, email, phone } = body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -103,10 +99,6 @@ export async function submitApplication(config, body) {
 }
 
 export async function submitRiskProfile(config, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for risk profiles is not yet implemented.');
-  }
-
   const { email, answers, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {
@@ -156,10 +148,6 @@ export async function submitRiskProfile(config, body) {
 }
 
 export async function submitKycDocuments(config, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for KYC documents is not yet implemented.');
-  }
-
   const { email, documentType, documentRef, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {

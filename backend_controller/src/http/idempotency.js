@@ -8,20 +8,16 @@
 //
 // Header presence is OPTIONAL — when absent the handler runs normally.
 //
-// Storage: `requestIdempotency` collection in the JSON dev store. PG branch
-// is not yet wired (handler short-circuits to a 503 on PG, mirroring the
-// existing service-level 503 stubs). TODO: implement PG-backed store with a
-// UNIQUE (userId, route, key) index.
+// Storage: `request_idempotency` table in PostgreSQL.
 
 import { createHash } from 'node:crypto';
 import { HttpError } from './errors.js';
 import {
-  jsonStoreEnabled,
   findRecord,
   insertJsonRecord,
   updateJsonRecord,
   deleteJsonRecord,
-} from '#db/jsonStore.js';
+} from '#db/pgAdapter.js';
 
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const IN_FLIGHT_TIMEOUT_MS = 30_000;
@@ -90,16 +86,6 @@ export function withIdempotency(routePath, handler) {
 
     if (!key) {
       return handler(context);
-    }
-
-    if (!jsonStoreEnabled(config)) {
-      // PG branch not yet implemented for idempotency persistence. Mirror the
-      // existing service 503 stubs rather than silently dropping the dedup.
-      throw new HttpError(
-        503,
-        'IDEMPOTENCY_NOT_CONFIGURED',
-        'Idempotency-Key persistence is not yet implemented for this database driver.',
-      );
     }
 
     const userId = actor?.userId || null;

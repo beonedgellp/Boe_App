@@ -1,5 +1,5 @@
 // Disclosure content service — SEBI/AMFI mandated blocks
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
+import { readJsonStore } from '#db/pgAdapter.js';
 
 const RISKOMETER_CONFIG = {
   low: {
@@ -29,13 +29,11 @@ export async function getDisclosures(config) {
   const riskometer = RISKOMETER_CONFIG[riskLevel] || RISKOMETER_CONFIG.moderate;
 
   let publishedDisclosure = null;
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    if (store.disclosures) {
-      publishedDisclosure = store.disclosures
-        .filter((d) => d.status === 'published')
-        .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))[0];
-    }
+  const store = await readJsonStore(config);
+  if (store.disclosures) {
+    publishedDisclosure = store.disclosures
+      .filter((d) => d.status === 'published')
+      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))[0];
   }
 
   return {
@@ -59,11 +57,9 @@ export async function getDisclosures(config) {
 
 export async function getInvestorCharter(config) {
   let page = null;
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    if (store.staticPages) {
-      page = store.staticPages.find((p) => p.slug === 'investor-charter' && p.status === 'published');
-    }
+  const store = await readJsonStore(config);
+  if (store.staticPages) {
+    page = store.staticPages.find((p) => p.slug === 'investor-charter' && p.status === 'published');
   }
 
   if (page?.content) {
@@ -125,11 +121,9 @@ export async function getInvestorCharter(config) {
 
 export async function getGrievanceContent(config) {
   let page = null;
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    if (store.staticPages) {
-      page = store.staticPages.find((p) => p.slug === 'grievance' && p.status === 'published');
-    }
+  const store = await readJsonStore(config);
+  if (store.staticPages) {
+    page = store.staticPages.find((p) => p.slug === 'grievance' && p.status === 'published');
   }
 
   if (page?.content) {

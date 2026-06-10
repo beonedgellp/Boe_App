@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore, readJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
 
 const VALID_CATEGORIES = ['general', 'technical', 'billing', 'kyc', 'sip', 'withdrawal', 'mandate'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -79,10 +79,6 @@ const STATIC_FAQS = [
 ];
 
 export async function createTicket(config, actor, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for support tickets is not yet implemented.');
-  }
-
   const { title, description, category = 'general', priority = 'medium', subject, body: bodyText } = body || {};
   const resolvedTitle = title || subject;
   const resolvedDescription = description || bodyText;
@@ -129,24 +125,22 @@ export async function createTicket(config, actor, body) {
 }
 
 export async function listFaqs(config) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    const publishedFaqs = (store.faqs || [])
-      .filter((f) => f.status === 'published')
-      .sort((a, b) => (a.order || 0) - (b.order || 0))
-      .map((f) => ({
-        id: f.id,
-        question: f.question,
-        answer: f.answer,
-        category: f.category,
-      }));
-    if (publishedFaqs.length > 0) {
-      return {
-        items: publishedFaqs,
-        count: publishedFaqs.length,
-        source: 'json',
-      };
-    }
+  const store = await readJsonStore(config);
+  const publishedFaqs = (store.faqs || [])
+    .filter((f) => f.status === 'published')
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((f) => ({
+      id: f.id,
+      question: f.question,
+      answer: f.answer,
+      category: f.category,
+    }));
+  if (publishedFaqs.length > 0) {
+    return {
+      items: publishedFaqs,
+      count: publishedFaqs.length,
+      source: 'json',
+    };
   }
   // Fallback to static FAQs until admin publishes managed ones
   return {

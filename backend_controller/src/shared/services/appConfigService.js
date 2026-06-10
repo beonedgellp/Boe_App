@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { hasDatabaseConfig, query, transaction } from '#db/client.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 
 const CONFIG_KEY = 'mobile_app';
 const MAX_CONFIG_BYTES = 1024 * 1024;
@@ -61,35 +60,7 @@ function rowToPayload(row) {
   };
 }
 
-function jsonConfigToPayload(row) {
-  if (!row) {
-    return {
-      config: null,
-      source: 'json',
-      published: false,
-    };
-  }
-
-  return {
-    id: row.id,
-    version: row.version,
-    config: row.config,
-    publishedAt: row.publishedAt,
-    publishedBy: row.publishedBy,
-    source: 'json',
-    published: true,
-  };
-}
-
 export async function getPublishedAppConfig(config) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    const row = store.appConfigVersions
-      .filter((item) => item.configKey === CONFIG_KEY && item.status === 'published')
-      .sort((a, b) => b.version - a.version)[0];
-    return jsonConfigToPayload(row);
-  }
-
   requireDatabase(config);
 
   const result = await query(config, `
@@ -105,41 +76,6 @@ export async function getPublishedAppConfig(config) {
 
 export async function publishAppConfig(config, actor, body, requestContext = {}) {
   const incoming = validateAppConfig(body?.config ?? body);
-
-  if (jsonStoreEnabled(config)) {
-    const inserted = await updateJsonStore(config, (store) => {
-      const previous = store.appConfigVersions
-        .filter((item) => item.configKey === CONFIG_KEY && item.status === 'published')
-        .sort((a, b) => b.version - a.version)[0] || null;
-      const now = new Date().toISOString();
-      const next = {
-        id: randomUUID(),
-        configKey: CONFIG_KEY,
-        version: (previous?.version || 0) + 1,
-        config: incoming,
-        status: 'published',
-        publishedAt: now,
-        publishedBy: actor?.userId || null,
-      };
-      store.appConfigVersions.push(next);
-      store.adminAuditLogs.push({
-        id: randomUUID(),
-        adminId: actor?.userId || null,
-        action: 'app_config.publish',
-        entityType: 'app_config',
-        entityId: next.id,
-        before: previous?.config || null,
-        after: incoming,
-        reason: body?.reason || 'Admin published app configuration.',
-        ipAddress: requestContext.ipAddress || null,
-        userAgent: requestContext.userAgent || null,
-        createdAt: now,
-      });
-      return next;
-    });
-
-    return jsonConfigToPayload(inserted);
-  }
 
   requireDatabase(config);
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const FATCA_STATUSES = new Set(['not_started', 'pending', 'completed', 'exempt']);
@@ -106,19 +106,6 @@ function toApiKycProfile(profile, user) {
 }
 
 export async function getKycStatus(config, actor) {
-  if (!jsonStoreEnabled(config)) {
-    return {
-      source: 'postgres_pending',
-      fatcaStatus: 'not_started',
-      fatcaDeclaration: null,
-      nominees: [],
-      reKycDueDate: null,
-      reKycTriggerReason: null,
-      reviewStatus: 'not_started',
-      user: { userId: actor.userId },
-    };
-  }
-
   const store = await readJsonStore(config);
   let profile = store.kycProfiles.find((p) => p.userId === actor.userId);
   let user = store.users.find((u) => u.id === actor.userId);
@@ -137,10 +124,6 @@ export async function getKycStatus(config, actor) {
 }
 
 async function _updateKycDepth(config, actor, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(501, 'NOT_IMPLEMENTED', 'KYC depth updates are only supported in JSON store mode.');
-  }
-
   const fatcaStatus = body.fatcaStatus;
   const fatcaDeclaration = body.fatcaDeclaration;
   const nominees = body.nominees;

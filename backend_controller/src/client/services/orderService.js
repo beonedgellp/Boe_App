@@ -1,11 +1,10 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import {
-  jsonStoreEnabled,
   readJsonStore,
   atomicCompositeWrite,
   updateJsonStore,
-} from '#db/jsonStore.js';
+} from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
@@ -28,10 +27,6 @@ function shortReceipt(prefix, id) {
 /* ---------- getOrder ---------- */
 
 export async function getOrder(config, actor, orderId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for orders is not yet implemented.');
-  }
-
   const store = await readJsonStore(config);
   const plan = (store.investmentPlans || []).find((o) => o.id === orderId)
     || (store.orders || []).find((o) => o.id === orderId);
@@ -50,10 +45,6 @@ export async function getOrder(config, actor, orderId) {
 /* ---------- createLumpsumOrder ---------- */
 
 async function _createLumpsumOrder(config, actor, body, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for lumpsum orders is not yet implemented.');
-  }
-
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a lumpsum order.');
   }
@@ -242,10 +233,6 @@ export const createLumpsumOrder = withReceipt(_createLumpsumOrder, 'lumpsum_crea
 /* ---------- payPendingInstallment ---------- */
 
 async function _payPendingInstallment(config, actor, orderId, options = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for orders is not yet implemented.');
-  }
-
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to pay an installment.');
   }

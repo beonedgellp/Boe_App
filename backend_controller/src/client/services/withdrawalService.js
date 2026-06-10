@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { TAX_REGIMES, getTaxRegimeForDate } from '#shared/config/taxConfig.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
@@ -57,10 +57,6 @@ function findHoldingAllottedAt(store, userId, fundId) {
 }
 
 export async function previewWithdrawal(config, actor, holdingId, amount, previewDate) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for withdrawal preview is not yet implemented.');
-  }
-
   const amt = toNumber(amount, 0);
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
@@ -189,10 +185,6 @@ export async function previewWithdrawal(config, actor, holdingId, amount, previe
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
 async function _createRedemption(config, actor, previewId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for withdrawal is not yet implemented.');
-  }
-
   if (!previewId) throw new HttpError(400, 'INVALID_REQUEST', 'Preview ID is required.');
 
   const request = await updateJsonStore(config, (store) => {

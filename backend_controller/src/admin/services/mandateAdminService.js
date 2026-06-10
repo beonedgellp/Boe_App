@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_MANDATE_STATUSES = new Set([
@@ -24,10 +24,6 @@ function toTrimmedString(value, fallback = '') {
 }
 
 async function _updateMandateStatus(config, actor, mandateId, body, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for mandate admin actions is not yet implemented.');
-  }
-
   const action = toTrimmedString(body?.action).toLowerCase();
   const reason = toTrimmedString(body?.reason);
 

@@ -1,12 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, updateJsonStore } from '#db/jsonStore.js';
+import { updateJsonStore } from '#db/pgAdapter.js';
 
 export async function replyToTicket(config, actor, ticketId, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for support tickets is not yet implemented.');
-  }
-
   const message = String(body?.message || '').trim();
   if (!message) {
     throw new HttpError(400, 'MESSAGE_REQUIRED', 'Reply message is required.');

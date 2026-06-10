@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
+import { readJsonStore } from '#db/pgAdapter.js';
 import { isValidMoneyState } from '../contracts/moneyState.js';
 import { getCopy, getLatestVersion } from './copyRegistry.js';
 
@@ -200,9 +200,6 @@ function supportTicketsToEvents(tickets, userMap) {
 }
 
 async function readStore(config) {
-  if (!jsonStoreEnabled(config)) {
-    return { users: [] };
-  }
   return readJsonStore(config);
 }
 
@@ -367,10 +364,6 @@ export async function getNextStepText(config, userId, explicitState = null) {
   const version = getLatestVersion();
   if (explicitState && isValidMoneyState(explicitState)) {
     return getCopy(version, explicitState);
-  }
-
-  if (!jsonStoreEnabled(config)) {
-    return getCopy(version, null);
   }
 
   const store = await readJsonStore(config);

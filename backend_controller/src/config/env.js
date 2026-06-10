@@ -41,22 +41,11 @@ function unsafeSecret(value) {
 export function loadConfig(env = process.env) {
   const providerMode = PROVIDER_MODES.has(env.PROVIDER_MODE) ? env.PROVIDER_MODE : 'development';
 
-  // dbDriver: forward-looking field that selects the store implementation.
-  // Defaults to 'json' so existing dev workflows are unchanged. Honour DATA_STORE
-  // (legacy alias) when DB_DRIVER is not explicitly set.
+  // dbDriver selects the store implementation. Postgres is the only supported driver.
   const rawDbDriver = (env.DB_DRIVER || '').toLowerCase();
-  const legacyDataStore = (env.DATA_STORE || '').toLowerCase();
-  let dbDriver;
+  let dbDriver = 'pg';
   if (rawDbDriver === 'pg' || rawDbDriver === 'postgres' || rawDbDriver === 'postgresql') {
     dbDriver = 'pg';
-  } else if (rawDbDriver === 'json') {
-    dbDriver = 'json';
-  } else if (legacyDataStore === 'json') {
-    dbDriver = 'json';
-  } else if (legacyDataStore === 'postgres' || legacyDataStore === 'pg') {
-    dbDriver = 'pg';
-  } else {
-    dbDriver = 'json';
   }
 
   return {
@@ -73,10 +62,7 @@ export function loadConfig(env = process.env) {
     databaseSsl: readBoolean(env.DATABASE_SSL, false),
     pgSsl: readBoolean(env.PGSSL, false),
     dbDriver,
-    // Legacy alias retained so existing call sites (e.g. healthService) still
-    // see the familiar 'json' / 'postgres' values.
-    dataStore: dbDriver === 'json' ? 'json' : 'postgres',
-    jsonDbPath: env.JSON_DB_PATH || './data/dev-db.json',
+    dataStore: 'postgres',
     dbPoolMax: readPositiveInt(env.DB_POOL_MAX, 10),
     dbConnectionTimeoutMs: readPositiveInt(env.DB_CONNECTION_TIMEOUT_MS, 3000),
     dbIdleTimeoutMs: readPositiveInt(env.DB_IDLE_TIMEOUT_MS, 10000),
@@ -108,9 +94,7 @@ export function assertRuntimeConfig(config) {
   if (!config.databaseUrl && !hasDiscreteDatabaseConfig) {
     warnings.push('Database connection is not configured; database-backed routes will remain unavailable.');
   }
-  if (config.dataStore === 'json') {
-    warnings.push('DATA_STORE=json is enabled; PostgreSQL config is retained but not used for development auth data.');
-  }
+
   if (unsafeSecret(config.accessTokenSecret)) {
     warnings.push('ACCESS_TOKEN_SECRET is not configured for shared environments.');
   }
@@ -139,11 +123,9 @@ export function assertProductionConfig(config) {
   if (config.allowDevAuth) {
     errors.push('ALLOW_DEV_AUTH must be false in production/live mode.');
   }
-  if (config.dbDriver === 'pg') {
-    const hasDiscrete = Boolean(config.databaseHost && config.databaseName && config.databaseUser);
-    if (!config.databaseUrl && !hasDiscrete) {
-      errors.push('DATABASE_URL (or DATABASE_HOST/NAME/USER) must be set when DB_DRIVER=pg.');
-    }
+  const hasDiscrete = Boolean(config.databaseHost && config.databaseName && config.databaseUser);
+  if (!config.databaseUrl && !hasDiscrete) {
+    errors.push('DATABASE_URL (or DATABASE_HOST/NAME/USER) must be set.');
   }
   if (config.adminUserId === '00000000-0000-4000-8000-000000000001') {
     errors.push('ADMIN_USER_ID must be set to a non-default value in production/live mode.');

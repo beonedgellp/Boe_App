@@ -1,13 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { validateReceipt } from '../contracts/receipt.js';
 
 export async function emitReceipt(config, receiptData) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'Receipt persistence requires JSON store.');
-  }
-
   const now = new Date().toISOString();
 
   const receipt = {
@@ -45,10 +41,6 @@ export async function emitReceipt(config, receiptData) {
 }
 
 export async function getReceipts(config, filters = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'Receipt query requires JSON store.');
-  }
-
   const store = await readJsonStore(config);
   let receipts = Array.isArray(store.receipts) ? [...store.receipts] : [];
 
@@ -69,10 +61,6 @@ export async function getReceipts(config, filters = {}) {
 }
 
 export async function getReceipt(config, receiptId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'Receipt query requires JSON store.');
-  }
-
   const store = await readJsonStore(config);
   const receipts = Array.isArray(store.receipts) ? store.receipts : [];
   return receipts.find((r) => r.id === receiptId) || null;

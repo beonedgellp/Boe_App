@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { query } from '#db/client.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -43,13 +42,6 @@ function sortCourses(items) {
 }
 
 export async function listCourses(config, opts = {}) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    let items = Array.isArray(store.courses) ? store.courses : [];
-    items = items.filter((c) => c.status === 'published');
-    return { items: sortCourses(items), count: items.length, source: 'json' };
-  }
-
   const result = await query(config, `
     SELECT * FROM courses
     WHERE status = 'published'
@@ -60,12 +52,6 @@ export async function listCourses(config, opts = {}) {
 }
 
 export async function listAdminCourses(config) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    const items = Array.isArray(store.courses) ? store.courses : [];
-    return { items: sortCourses(items), count: items.length, source: 'json' };
-  }
-
   const result = await query(config, `
     SELECT * FROM courses
     ORDER BY sort_order ASC, created_at DESC
@@ -105,15 +91,6 @@ export async function createCourse(config, body) {
     updatedAt: now,
   };
 
-  if (jsonStoreEnabled(config)) {
-    await updateJsonStore(config, (store) => {
-      if (!Array.isArray(store.courses)) store.courses = [];
-      store.courses.push(course);
-      return course;
-    });
-    return course;
-  }
-
   const result = await query(config, `
     INSERT INTO courses (id, slug, name, level, format, outcome, description, price_paise, status, sort_order, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -128,32 +105,6 @@ export async function createCourse(config, body) {
 export async function updateCourse(config, id, body) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
-
-  if (jsonStoreEnabled(config)) {
-    const updated = await updateJsonStore(config, (store) => {
-      const idx = (store.courses || []).findIndex((c) => c.id === id);
-      if (idx === -1) return null;
-      const existing = store.courses[idx];
-      const now = new Date().toISOString();
-
-      const next = { ...existing };
-      if (payload.slug !== undefined) next.slug = toTrimmedString(payload.slug);
-      if (payload.name !== undefined) next.name = toTrimmedString(payload.name);
-      if (payload.level !== undefined) next.level = toTrimmedString(payload.level);
-      if (payload.format !== undefined) next.format = toTrimmedString(payload.format);
-      if (payload.outcome !== undefined) next.outcome = toTrimmedString(payload.outcome);
-      if (payload.description !== undefined) next.description = toTrimmedString(payload.description);
-      if (payload.pricePaise !== undefined) next.pricePaise = Number(payload.pricePaise) || null;
-      if (payload.status !== undefined) next.status = toTrimmedString(payload.status);
-      if (payload.sortOrder !== undefined) next.sortOrder = Number(payload.sortOrder) || 0;
-      next.updatedAt = now;
-
-      store.courses[idx] = next;
-      return next;
-    });
-    if (!updated) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
-    return updated;
-  }
 
   const fields = [];
   const values = [];
@@ -188,19 +139,6 @@ export async function updateCourse(config, id, body) {
 
 export async function deleteCourse(config, id) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
-
-  if (jsonStoreEnabled(config)) {
-    const updated = await updateJsonStore(config, (store) => {
-      const idx = (store.courses || []).findIndex((c) => c.id === id);
-      if (idx === -1) return null;
-      const existing = store.courses[idx];
-      existing.status = 'archived';
-      existing.updatedAt = new Date().toISOString();
-      return existing;
-    });
-    if (!updated) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
-    return updated;
-  }
 
   const result = await query(config, `
     UPDATE courses SET status = 'archived', updated_at = now() WHERE id = $1 RETURNING *

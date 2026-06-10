@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_ACTIONS = ['pause', 'resume', 'cancel', 'skip', 'step_up', 'change_amount'];
@@ -15,10 +15,6 @@ const STATUS_MAP = {
 };
 
 async function _requestSipControl(config, actor, planId, action, reason, confirmed) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for SIP control is not yet implemented.');
-  }
-
   if (!VALID_ACTIONS.includes(action)) {
     throw new HttpError(400, 'INVALID_ACTION', `Action must be one of: ${VALID_ACTIONS.join(', ')}.`);
   }
@@ -79,9 +75,6 @@ async function _requestSipControl(config, actor, planId, action, reason, confirm
 }
 
 export async function listSipControlRequests(config, actor) {
-  if (!jsonStoreEnabled(config)) {
-    return { items: [], count: 0, page: 1, pageSize: 0, total: 0, source: 'postgres_pending' };
-  }
   const store = await readJsonStore(config);
   const items = (store.sipControlRequests || [])
     .filter((r) => r.userId === actor?.userId)

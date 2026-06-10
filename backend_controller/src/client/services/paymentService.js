@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, findRecord, updateJsonStore, updatePayment } from '#db/jsonStore.js';
+import { findRecord, updateJsonStore, updatePayment } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 function verifyRazorpayCheckoutSignature(orderId, paymentId, signature, secret) {
@@ -96,9 +96,6 @@ function paymentResponse(payment, store, config) {
 }
 
 export async function getPayment(config, actor, paymentId) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for payments is not yet implemented.');
-  }
   let { item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId);
   if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   if (payment.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
@@ -137,10 +134,6 @@ export async function getPayment(config, actor, paymentId) {
 }
 
 export async function confirmRazorpayPayment(config, actor, paymentId, body) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for payments is not yet implemented.');
-  }
-
   const razorpayPaymentId = String(body?.razorpay_payment_id || '').trim();
   const razorpayOrderId = String(body?.razorpay_order_id || '').trim();
   const razorpaySignature = String(body?.razorpay_signature || '').trim();
@@ -217,10 +210,6 @@ async function _retryPayment(config, actor, paymentId, options = {}) {
   // compatibility / call-site symmetry; the existing payment row's own
   // idempotencyKey field is unchanged so receipts/audit trail are stable.
   void options;
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for payments is not yet implemented.');
-  }
-
   const result = await updatePayment(config, paymentId, (payment, store) => {
     if (payment.userId !== actor?.userId) {
       throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');

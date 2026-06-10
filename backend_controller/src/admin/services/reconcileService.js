@@ -1,14 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
+import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
 async function _reconcilePayment(config, actor, paymentId, body, requestContext = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for reconciliation is not yet implemented.');
-  }
-
   const reason = String(body?.reason || '').trim();
   if (!reason) {
     throw new HttpError(400, 'REASON_REQUIRED', 'Reconciliation reason is required.');
@@ -92,9 +88,6 @@ export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconcil
 });
 
 export async function listReconciliationLedger(config, { paymentId, limit = 50 } = {}) {
-  if (!jsonStoreEnabled(config)) {
-    throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL persistence for reconciliation ledger is not yet implemented.');
-  }
   const store = await readJsonStore(config);
   let items = store.reconciliationLedger || [];
   if (paymentId) {

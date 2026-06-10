@@ -1,7 +1,6 @@
 import { HttpError } from '#http/errors.js';
 import { verifyAccessToken } from './tokens.js';
 import { hasDatabaseConfig, query } from '#db/client.js';
-import { jsonStoreEnabled, readJsonStore } from '#db/jsonStore.js';
 
 function bearerToken(req) {
   const header = req.headers.authorization || '';
@@ -14,48 +13,6 @@ function bearerToken(req) {
 }
 
 async function activeSessionActor(claims, config) {
-  if (jsonStoreEnabled(config)) {
-    if (claims.role === 'admin' && claims.sub === config.adminUserId) {
-      return {
-        userId: claims.sub,
-        role: 'admin',
-        status: 'approved',
-        deviceSessionId: claims.deviceSessionId,
-      };
-    }
-
-    const store = await readJsonStore(config);
-
-    if (!claims.deviceSessionId) {
-      const user = store.users.find((item) => item.id === claims.sub);
-      if (!user) return null;
-
-      return {
-        userId: user.id,
-        role: user.role,
-        status: user.status,
-        deviceSessionId: claims.deviceSessionId,
-      };
-    }
-
-    const now = Date.now();
-    const session = store.deviceSessions.find((item) => (
-      item.id === claims.deviceSessionId &&
-      item.userId === claims.sub &&
-      !item.revokedAt &&
-      new Date(item.expiresAt).getTime() > now
-    ));
-    const user = session ? store.users.find((item) => item.id === session.userId) : null;
-    if (!session || !user) return null;
-
-    return {
-      userId: user.id,
-      role: user.role,
-      status: user.status,
-      deviceSessionId: session.id,
-    };
-  }
-
   if (!hasDatabaseConfig(config)) {
     return null;
   }

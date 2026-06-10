@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { jsonStoreEnabled, readJsonStore, updateJsonStore } from '#db/jsonStore.js';
 import { query } from '#db/client.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -45,13 +44,6 @@ function sortPlans(items) {
 }
 
 export async function listPlans(config, opts = {}) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    let items = Array.isArray(store.plans) ? store.plans : [];
-    items = items.filter((p) => p.status === 'published');
-    return { items: sortPlans(items), count: items.length, source: 'json' };
-  }
-
   const result = await query(config, `
     SELECT * FROM plans
     WHERE status = 'published'
@@ -62,12 +54,6 @@ export async function listPlans(config, opts = {}) {
 }
 
 export async function listAdminPlans(config) {
-  if (jsonStoreEnabled(config)) {
-    const store = await readJsonStore(config);
-    const items = Array.isArray(store.plans) ? store.plans : [];
-    return { items: sortPlans(items), count: items.length, source: 'json' };
-  }
-
   const result = await query(config, `
     SELECT * FROM plans
     ORDER BY sort_order ASC, created_at DESC
@@ -114,15 +100,6 @@ export async function createPlan(config, body) {
     updatedAt: now,
   };
 
-  if (jsonStoreEnabled(config)) {
-    await updateJsonStore(config, (store) => {
-      if (!Array.isArray(store.plans)) store.plans = [];
-      store.plans.push(plan);
-      return plan;
-    });
-    return plan;
-  }
-
   const result = await query(config, `
     INSERT INTO plans (id, slug, name, tagline, price_paise, cadence, features, cta_label, featured, status, sort_order, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13)
@@ -138,37 +115,6 @@ export async function createPlan(config, body) {
 export async function updatePlan(config, id, body) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Plan ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
-
-  if (jsonStoreEnabled(config)) {
-    const updated = await updateJsonStore(config, (store) => {
-      const idx = (store.plans || []).findIndex((p) => p.id === id);
-      if (idx === -1) return null;
-      const existing = store.plans[idx];
-      const now = new Date().toISOString();
-
-      const next = { ...existing };
-      if (payload.slug !== undefined) next.slug = toTrimmedString(payload.slug);
-      if (payload.name !== undefined) next.name = toTrimmedString(payload.name);
-      if (payload.tagline !== undefined) next.tagline = toTrimmedString(payload.tagline);
-      if (payload.pricePaise !== undefined) next.pricePaise = Number(payload.pricePaise) || 0;
-      if (payload.cadence !== undefined) {
-        const c = toTrimmedString(payload.cadence);
-        if (!VALID_CADENCES.has(c)) throw new HttpError(400, 'INVALID_CADENCE', 'Cadence must be one of: one_time, monthly, yearly.');
-        next.cadence = c;
-      }
-      if (payload.features !== undefined) next.features = Array.isArray(payload.features) ? payload.features : [];
-      if (payload.ctaLabel !== undefined) next.ctaLabel = toTrimmedString(payload.ctaLabel);
-      if (payload.featured !== undefined) next.featured = Boolean(payload.featured);
-      if (payload.status !== undefined) next.status = toTrimmedString(payload.status);
-      if (payload.sortOrder !== undefined) next.sortOrder = Number(payload.sortOrder) || 0;
-      next.updatedAt = now;
-
-      store.plans[idx] = next;
-      return next;
-    });
-    if (!updated) throw new HttpError(404, 'PLAN_NOT_FOUND', `Plan ${id} not found.`);
-    return updated;
-  }
 
   const fields = [];
   const values = [];
@@ -212,19 +158,6 @@ export async function updatePlan(config, id, body) {
 
 export async function deletePlan(config, id) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Plan ID is required.');
-
-  if (jsonStoreEnabled(config)) {
-    const updated = await updateJsonStore(config, (store) => {
-      const idx = (store.plans || []).findIndex((p) => p.id === id);
-      if (idx === -1) return null;
-      const existing = store.plans[idx];
-      existing.status = 'archived';
-      existing.updatedAt = new Date().toISOString();
-      return existing;
-    });
-    if (!updated) throw new HttpError(404, 'PLAN_NOT_FOUND', `Plan ${id} not found.`);
-    return updated;
-  }
 
   const result = await query(config, `
     UPDATE plans SET status = 'archived', updated_at = now() WHERE id = $1 RETURNING *
