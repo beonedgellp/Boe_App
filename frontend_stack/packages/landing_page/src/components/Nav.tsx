@@ -99,7 +99,7 @@ export default function Nav() {
               {user ? (
                 <span className="nav__user">Hi {displayName(user)}</span>
               ) : (
-                <Link className="nav__signin" href={authLinks.signIn.href}>
+                <Link className="nav__signin" href={authLinks.signIn.href} onClick={() => setOpen(false)}>
                   {authLinks.signIn.label}
                 </Link>
               )}
