@@ -34,8 +34,8 @@ export default function Hero() {
 
         <div className="hero__media" aria-hidden="true">
           <img
-            src="https://picsum.photos/seed/calm-study-desk/600/450"
-            alt=""
+            src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=600&q=80"
+            alt="Financial planning documents and calculator"
             className="hero__image"
             width={600}
             height={450}

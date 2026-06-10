@@ -23,9 +23,9 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: saturate(140%) blur(10px);
+  background: var(--paper-raised);
   border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
 }
 .nav__inner {
   display: flex;
@@ -640,41 +640,41 @@
 
 /* Footer */
 .footer {
-  background: var(--ink);
-  color: #dfe6e3;
+  background: var(--paper-sunken);
+  color: var(--ink);
+  border-top: 1px solid var(--line);
   padding-block: clamp(3rem, 6vw, 4.5rem) 2rem;
 }
 .footer a {
-  color: #dfe6e3;
-  opacity: 0.82;
-  transition: opacity var(--transition);
+  color: var(--ink-soft);
+  transition: color var(--transition);
 }
 .footer a:hover {
-  opacity: 1;
+  color: var(--ink);
 }
 .footer__grid {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr 1fr;
   gap: 2rem;
   padding-bottom: 2.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--line);
 }
 .footer__brand {
   font-family: var(--font-serif);
   font-size: 1.3rem;
-  color: #fff;
+  color: var(--ink);
 }
 .footer__desc {
   margin-top: 0.8rem;
   font-size: 0.9rem;
-  opacity: 0.78;
+  color: var(--ink-soft);
   max-width: 22rem;
 }
 .footer__col h4 {
   font-size: 0.8rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  opacity: 0.6;
+  color: var(--ink-muted);
   margin: 0 0 0.9rem;
 }
 .footer__col ul {
@@ -692,12 +692,12 @@
   justify-content: space-between;
   gap: 1rem;
   font-size: 0.82rem;
-  opacity: 0.7;
+  color: var(--ink-muted);
 }
 .footer__disclaimer {
   margin-top: 1.25rem;
   font-size: 0.82rem;
-  opacity: 0.65;
+  color: var(--ink-muted);
   max-width: 52rem;
   line-height: 1.55;
 }
