@@ -11,7 +11,7 @@ export default function PremiumBenefits() {
         <SectionHead
           eyebrow="Premium"
           title="Membership that keeps paying off"
-          lead="Premium gives you ongoing learning, curated financial news, and practical tools — useful well beyond a single course."
+          lead="Premium gives you ongoing learning, curated financial news, and practical tools, useful well beyond a single course."
         />
         <div className="grid grid--3">
           {premiumBenefits.map((benefit) => (

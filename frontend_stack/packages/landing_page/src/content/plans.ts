@@ -1,5 +1,5 @@
 // Education-access tiers. CTAs are education-only: Start learning, Join
-// premium, View plans — never invest/SIP/buy-fund/open-account language.
+// premium, View plans - never invest/SIP/buy-fund/open-account language.
 
 export type Plan = {
   id: string;

@@ -40,6 +40,8 @@ function defaultStore() {
     receipts: [],
     timelineEvents: [],
     requestIdempotency: [],
+    courses: [],
+    plans: [],
     approvalMigrationVersion: 0,
   };
 }
@@ -68,6 +70,8 @@ function normalizeStore(value) {
     receipts: Array.isArray(value?.receipts) ? value.receipts : [],
     timelineEvents: Array.isArray(value?.timelineEvents) ? value.timelineEvents : [],
     requestIdempotency: Array.isArray(value?.requestIdempotency) ? value.requestIdempotency : [],
+    courses: Array.isArray(value?.courses) ? value.courses : [],
+    plans: Array.isArray(value?.plans) ? value.plans : [],
     approvalMigrationVersion: Number.isInteger(value?.approvalMigrationVersion) ? value.approvalMigrationVersion : 0,
   };
 }

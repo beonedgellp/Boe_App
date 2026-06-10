@@ -52,7 +52,7 @@ export const termsPolicy: LegalPolicy = {
     {
       heading: '5. Intellectual Property',
       body: [
-        'All content on the BeOnEdge platform — including videos, text, worksheets, templates, graphics, and software — is the property of BeOnEdge or its licensors and is protected by copyright and other intellectual property laws.',
+        'All content on the BeOnEdge platform, including videos, text, worksheets, templates, graphics, and software, is the property of BeOnEdge or its licensors and is protected by copyright and other intellectual property laws.',
         'You may download and print materials for personal study, but you may not reproduce, distribute, modify, create derivative works from, or publicly display any content without our prior written consent.',
         'The BeOnEdge name, logo, and brand elements are trademarks of BeOnEdge. You may not use them without permission.',
       ],
@@ -261,7 +261,7 @@ export const disclaimerPolicy: LegalPolicy = {
     {
       heading: '4. Consult a Qualified Professional',
       body: [
-        'Before making significant financial decisions — including major purchases, debt restructuring, tax filing, or legal matters — you should consult a qualified professional who understands your individual circumstances.',
+        'Before making significant financial decisions, including major purchases, debt restructuring, tax filing, or legal matters, you should consult a qualified professional who understands your individual circumstances.',
       ],
     },
     {

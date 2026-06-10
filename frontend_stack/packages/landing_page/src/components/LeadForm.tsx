@@ -66,7 +66,7 @@ export default function LeadForm() {
             <h2 className="section__title">Tell us what you want to learn</h2>
             <p className="section__lead">
               Share your details and we’ll send course and premium membership
-              information. No pressure — just clear information to help you
+              information. No pressure, just clear information to help you
               start learning.
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function LeadForm() {
             <div aria-live="polite">
               {status.kind === 'success' ? (
                 <p className="form__status form__status--success">
-                  Thanks — we’ve received your request and will be in touch by
+                  Thanks. We’ve received your request and will be in touch by
                   email.
                 </p>
               ) : null}

@@ -24,6 +24,7 @@ import {
 type AuthContextValue = {
   user: LandingUser | null;
   isReady: boolean;
+  isApproved: boolean;
   login: (input: LoginInput) => Promise<LandingUser>;
   signup: (input: SignupInput) => Promise<LandingUser>;
   logout: () => Promise<void>;
@@ -63,13 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const isApproved = user?.status === 'approved';
+
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isReady,
+    isApproved,
     login,
     signup,
     logout,
-  }), [isReady, login, logout, signup, user]);
+  }), [isReady, isApproved, login, logout, signup, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

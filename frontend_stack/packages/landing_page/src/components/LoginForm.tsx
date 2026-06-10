@@ -37,8 +37,12 @@ export default function LoginForm() {
 
     setStatus({ kind: 'submitting' });
     try {
-      await login(values);
-      router.push('/');
+      const user = await login(values);
+      if (user.status === 'pending_review') {
+        router.push('/pending-approval');
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       setStatus({
         kind: 'error',

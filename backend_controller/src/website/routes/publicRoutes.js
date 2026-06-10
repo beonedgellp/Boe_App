@@ -2,6 +2,8 @@ import { Routes } from '#shared/routes/constants.js';
 import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
 import { listFunds, toClientFunds } from '#shared/services/fundCatalogService.js';
+import { listCourses } from '#shared/services/courseService.js';
+import { listPlans } from '#shared/services/planService.js';
 import { getDisclosures, getInvestorCharter, getGrievanceContent } from '../services/disclosureService.js';
 import { submitApplication, submitRiskProfile, submitKycDocuments } from '../services/onboardingService.js';
 import { validateBody } from '#http/validate.js';
@@ -81,4 +83,16 @@ export function registerPublicRoutes(router) {
     auth: false,
     description: 'Grievance redressal process and escalation matrix.',
   }, ({ config }) => getGrievanceContent(config));
+
+  router.get(Routes.GET_V1_PUBLIC_COURSES, {
+    group: 'public',
+    auth: false,
+    description: 'Published courses.',
+  }, async ({ config }) => listCourses(config));
+
+  router.get(Routes.GET_V1_PUBLIC_PLANS, {
+    group: 'public',
+    auth: false,
+    description: 'Published plans.',
+  }, async ({ config }) => listPlans(config));
 }
