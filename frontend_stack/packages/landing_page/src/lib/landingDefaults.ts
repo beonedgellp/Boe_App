@@ -124,14 +124,6 @@ export const landingDefaults = {
   leadForm: leadFormDefaults,
 } as const;
 
-type Widen<T> =
-  T extends string ? string :
-  T extends number ? number :
-  T extends boolean ? boolean :
-  T extends readonly (infer U)[] ? Widen<U>[] :
-  T extends object ? { [K in keyof T]: Widen<T[K]> } :
-  T;
-
 export type MetaDefaults = typeof metaDefaults;
 export type NavDefaults = typeof navDefaults;
 export type HeroDefaults = typeof heroDefaults;

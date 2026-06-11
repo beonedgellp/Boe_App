@@ -20,7 +20,14 @@ export default function Hero({ hero = heroDefaults }: { hero?: Partial<HeroDefau
             </Link>
           </div>
           <p className="hero__note">
-            {resolved.note}
+            {resolved.note.split('Sign up').map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <Link href={resolved.secondaryCta?.href ?? '/signup'}>Sign up</Link>
+                )}
+              </span>
+            ))}
           </p>
         </div>
 
