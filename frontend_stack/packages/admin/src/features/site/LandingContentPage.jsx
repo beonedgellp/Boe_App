@@ -35,6 +35,10 @@ function formatPublishedAt(value) {
   });
 }
 
+const PREVIEW_URL = import.meta.env.VITE_BEO_LANDING_PREVIEW_URL || 'http://localhost:3110/preview';
+const PREVIEW_ORIGIN = new URL(PREVIEW_URL, window.location.href).origin;
+const PREVIEW_READY_TIMEOUT_MS = 4000;
+
 export default function LandingContentPage() {
   const {
     draft, setSection, dirtySections, versionMeta, loading, error, publishing, publish, reload,
@@ -43,16 +47,34 @@ export default function LandingContentPage() {
   const [reason, setReason] = useState('');
   const [showJson, setShowJson] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewTimedOut, setPreviewTimedOut] = useState(false);
   const iframeRef = useRef(null);
   const { addToast } = useToast();
 
   useEffect(() => {
-    if (!iframeRef.current || !draft) return;
+    if (!showPreview || previewReady) return undefined;
+    function onPreviewMessage(event) {
+      if (event.origin === PREVIEW_ORIGIN && event.data?.type === 'LANDING_PREVIEW_READY') {
+        setPreviewReady(true);
+        setPreviewTimedOut(false);
+      }
+    }
+    window.addEventListener('message', onPreviewMessage);
+    const timer = setTimeout(() => setPreviewTimedOut(true), PREVIEW_READY_TIMEOUT_MS);
+    return () => {
+      window.removeEventListener('message', onPreviewMessage);
+      clearTimeout(timer);
+    };
+  }, [showPreview, previewReady]);
+
+  useEffect(() => {
+    if (!iframeRef.current || !draft || !previewReady) return;
     iframeRef.current.contentWindow?.postMessage(
       { type: 'LANDING_PREVIEW_CONFIG', config: draft },
-      'http://localhost:3110'
+      PREVIEW_ORIGIN
     );
-  }, [draft]);
+  }, [draft, previewReady]);
 
   const warnings = useMemo(() => (draft ? lintLandingConfig(draft) : []), [draft]);
   const isDirty = dirtySections.size > 0;
@@ -163,9 +185,15 @@ export default function LandingContentPage() {
               <span><I icon={Monitor} size={14} /> Live preview</span>
               <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
             </div>
+            {previewTimedOut && !previewReady && (
+              <div className="ash-preview-offline" role="status">
+                <p>Preview unavailable. The landing page is not responding at {PREVIEW_URL}.</p>
+                <p>Start it from the landing worktree with npm run dev, then reopen this panel.</p>
+              </div>
+            )}
             <iframe
               ref={iframeRef}
-              src="http://localhost:3110/preview"
+              src={PREVIEW_URL}
               title="Landing page preview"
               className="ash-preview-frame"
             />
