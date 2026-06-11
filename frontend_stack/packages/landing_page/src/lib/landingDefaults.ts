@@ -124,6 +124,14 @@ export const landingDefaults = {
   leadForm: leadFormDefaults,
 } as const;
 
+type Widen<T> =
+  T extends string ? string :
+  T extends number ? number :
+  T extends boolean ? boolean :
+  T extends readonly (infer U)[] ? Widen<U>[] :
+  T extends object ? { [K in keyof T]: Widen<T[K]> } :
+  T;
+
 export type MetaDefaults = typeof metaDefaults;
 export type NavDefaults = typeof navDefaults;
 export type HeroDefaults = typeof heroDefaults;
@@ -135,13 +143,13 @@ export type NewsDefaults = typeof newsDefaults;
 export type LeadFormDefaults = typeof leadFormDefaults;
 
 export type LandingConfig = {
-  meta?: Partial<MetaDefaults>;
-  nav?: Partial<NavDefaults>;
-  hero?: Partial<HeroDefaults>;
-  explore?: Partial<ExploreDefaults>;
-  socialProof?: Partial<SocialProofDefaults>;
-  premium?: Partial<PremiumDefaults>;
-  learningMethod?: Partial<LearningMethodDefaults>;
-  news?: Partial<NewsDefaults>;
-  leadForm?: Partial<LeadFormDefaults>;
+  meta?: Partial<Widen<MetaDefaults>>;
+  nav?: Partial<Widen<NavDefaults>>;
+  hero?: Partial<Widen<HeroDefaults>>;
+  explore?: Partial<Widen<ExploreDefaults>>;
+  socialProof?: Partial<Widen<SocialProofDefaults>>;
+  premium?: Partial<Widen<PremiumDefaults>>;
+  learningMethod?: Partial<Widen<LearningMethodDefaults>>;
+  news?: Partial<Widen<NewsDefaults>>;
+  leadForm?: Partial<Widen<LeadFormDefaults>>;
 };
