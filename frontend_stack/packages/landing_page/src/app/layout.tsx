@@ -1,20 +1,25 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './components.css';
-import { site } from '../content/site';
+import { fetchLandingConfig } from '../lib/landingConfig';
+import { metaDefaults } from '../lib/landingDefaults';
 import { AuthProvider } from '../components/AuthProvider';
 import { ThemeProvider } from '../components/ThemeProvider';
 
-export const metadata: Metadata = {
-  title: `${site.name} - ${site.descriptor}`,
-  description: site.longDescriptor,
-  openGraph: {
-    title: `${site.name} - Financial education made clear`,
-    description: site.longDescriptor,
-    type: 'website',
-  },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await fetchLandingConfig();
+  const meta = config?.meta ?? metaDefaults;
+  return {
+    title: `${meta.siteName} - ${meta.descriptor}`,
+    description: meta.longDescriptor,
+    openGraph: {
+      title: `${meta.siteName} - Financial education made clear`,
+      description: meta.longDescriptor,
+      type: 'website',
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: '#fbfaf6',

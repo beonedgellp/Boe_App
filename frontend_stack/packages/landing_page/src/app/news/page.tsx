@@ -1,13 +1,17 @@
 import Link from 'next/link';
+import { fetchLandingConfig } from '../../lib/landingConfig';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import Reveal from '../../components/Reveal';
-import { newsDigests } from '../../content/news';
+import { newsDefaults } from '../../lib/landingDefaults';
 
-export default function NewsPage() {
+export default async function NewsPage() {
+  const config = await fetchLandingConfig();
+  const digests = config?.news?.digests ?? newsDefaults.digests;
+
   return (
     <>
-      <Nav />
+      <Nav nav={config?.nav} siteName={config?.meta?.siteName} />
       <main>
         <section className="section">
           <div className="container">
@@ -19,7 +23,7 @@ export default function NewsPage() {
               </p>
             </div>
             <div className="grid grid--3">
-              {newsDigests.map((item) => (
+              {digests.map((item) => (
                 <Reveal as="div" key={item.id} className="card stagger-item">
                   <span className="digest__tag">{item.tag}</span>
                   <h3 className="digest__title">{item.title}</h3>
@@ -38,7 +42,7 @@ export default function NewsPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer meta={config?.meta} nav={config?.nav} />
     </>
   );
 }
