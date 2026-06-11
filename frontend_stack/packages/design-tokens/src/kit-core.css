@@ -1,0 +1,175 @@
+/* Shared UI kit base — extends tokens-core.css */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--be-ivory);
+  color: var(--be-ink);
+  font-family: var(--be-font-sans);
+}
+
+/* Buttons ------------------------------------------------------------------ */
+.be-btn {
+  font: 500 14px/1 var(--be-font-sans);
+  padding: 12px 18px;
+  border-radius: var(--be-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    background 200ms var(--be-ease),
+    color 200ms var(--be-ease),
+    border-color 200ms var(--be-ease),
+    opacity 200ms var(--be-ease),
+    transform 160ms var(--be-ease-out);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.be-btn:active { transform: scale(0.97); }
+
+.be-btn-primary { background: var(--be-ink); color: var(--be-ivory); }
+.be-btn-primary:hover { background: var(--be-ink-2); }
+
+.be-btn-gold { background: var(--be-gold); color: var(--be-ivory); }
+.be-btn-gold:hover { background: var(--be-gold-2); }
+
+.be-btn-secondary { background: transparent; color: var(--be-ink); border-color: var(--be-border-strong); }
+.be-btn-secondary:hover { background: var(--be-ivory-2); }
+
+.be-btn-ghost { background: transparent; color: var(--be-ink); }
+.be-btn-ghost:hover { background: var(--be-ivory-2); }
+
+.be-btn-danger { background: transparent; color: var(--be-red); border: 1px solid rgba(180,58,46,0.3); }
+
+.be-btn[disabled],
+.be-btn.is-disabled {
+  opacity: var(--be-opacity-disabled);
+  pointer-events: none;
+}
+
+.be-btn.is-loading {
+  position: relative;
+  color: transparent !important;
+}
+.be-btn.is-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: be-spin 600ms linear infinite;
+}
+
+.be-btn-sm { font-size: 12px; padding: 8px 12px; }
+.be-btn-lg { font-size: 15px; padding: 14px 22px; }
+.be-btn-block { width: 100%; justify-content: center; }
+
+/* Input ------------------------------------------------------------------ */
+.be-input {
+  font: 400 14px var(--be-font-sans);
+  padding: 11px 12px;
+  background: var(--be-bone);
+  border: var(--be-border-1);
+  border-radius: var(--be-radius-sm);
+  color: var(--be-ink);
+  width: 100%;
+  transition: border-color 200ms var(--be-ease), box-shadow 200ms var(--be-ease);
+}
+.be-input:focus { outline: none; border: 1.5px solid var(--be-ink); padding: 10.5px 11.5px; }
+.be-input.is-error { border-color: var(--be-red); }
+.be-input.is-error:focus { border-color: var(--be-red); box-shadow: 0 0 0 3px var(--be-red-soft); }
+.be-input:disabled { opacity: var(--be-opacity-disabled); background: var(--be-ivory-2); }
+
+.be-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.be-field label { font-size: 12px; color: var(--be-slate); }
+.be-field .be-field-error { font-size: 12px; color: var(--be-red); margin-top: 2px; }
+
+/* Card ------------------------------------------------------------------- */
+.be-card {
+  background: var(--be-bone);
+  border: var(--be-border-1);
+  border-radius: var(--be-radius-md);
+  box-shadow: var(--be-shadow-1), var(--be-shadow-card-bevel);
+  padding: 22px;
+  transition: transform 200ms var(--be-ease-out), box-shadow 200ms var(--be-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .be-card:hover { transform: translateY(-2px); box-shadow: var(--be-shadow-2); }
+}
+
+.be-card:active { transform: scale(0.98); }
+
+.be-card-flat {
+  background: var(--be-bone);
+  border: var(--be-border-1);
+  border-radius: var(--be-radius-md);
+  padding: 22px;
+}
+
+/* Badges ----------------------------------------------------------------- */
+.be-badge {
+  font: 500 10px/1 var(--be-font-sans);
+  letter-spacing: var(--be-tracking-eyebrow);
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: var(--be-radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.be-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+.be-badge-active { background: var(--be-green-soft); color: var(--be-green); }
+.be-badge-active .be-badge-dot { background: var(--be-green); }
+.be-badge-paused { background: var(--be-amber-soft); color: var(--be-amber); }
+.be-badge-paused .be-badge-dot { background: var(--be-amber); }
+.be-badge-failed { background: var(--be-red-soft); color: var(--be-red); }
+.be-badge-failed .be-badge-dot { background: var(--be-red); }
+.be-badge-neutral { background: rgba(92,100,112,0.12); color: var(--be-slate); }
+.be-badge-neutral .be-badge-dot { background: var(--be-slate); }
+.be-badge-gold { background: var(--be-gold-soft); color: var(--be-gold-2); }
+
+/* Eyebrow ---------------------------------------------------------------- */
+.be-eyebrow {
+  font: 500 11px/1 var(--be-font-sans);
+  letter-spacing: var(--be-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--be-slate);
+}
+
+/* Disclosure ------------------------------------------------------------- */
+.be-disclosure {
+  font-size: 11px;
+  color: var(--be-slate);
+  line-height: 1.5;
+  font-family: var(--be-font-mono);
+}
+
+/* Tabular ---------------------------------------------------------------- */
+.be-num, .be-money {
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.be-money { font-weight: 500; letter-spacing: var(--be-tracking-tight); }
+.be-gain { color: var(--be-green); }
+.be-loss { color: var(--be-red); }
+.be-pending { color: var(--be-amber); }
+
+/* Divider ---------------------------------------------------------------- */
+.be-rule { height: 1px; background: var(--be-border); border: none; margin: 0; }
+
+/* Spin keyframe (used by button loading) --------------------------------- */
+@keyframes be-spin {
+  to { transform: rotate(360deg); }
+}

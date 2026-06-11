@@ -4,16 +4,16 @@
 .apk-row-skel { height: 56px; margin: 12px 0; }
 .apk-payment-card { padding: 16px; }
 .apk-payment-card--urgent {
-  border-left: 4px solid var(--be-amber);
-  padding-left: 12px;
+  border: 1px solid var(--be-amber);
+  background: var(--be-amber-soft);
 }
 .apk-payment-card--failed {
-  border-left: 4px solid var(--be-red);
-  padding-left: 12px;
+  border: 1px solid var(--be-red);
+  background: var(--be-red-soft);
 }
 .apk-payment-card--approval {
-  border-left: 4px solid var(--be-green);
-  padding-left: 12px;
+  border: 1px solid var(--be-green);
+  background: var(--be-green-soft);
 }
 .apk-row-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; min-width: 0; }
 .apk-row-head > div { min-width: 0; }
@@ -68,7 +68,7 @@
 /* Notification row */
 .apk-notif { padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: flex-start; cursor: pointer; }
 .apk-notif + .apk-notif { border-top: 1px solid var(--be-border); }
-.apk-notif.is-unread { border-left: 4px solid var(--be-gold); padding-left: 12px; }
+.apk-notif.is-unread { background: var(--be-gold-soft); }
 .apk-notif-title { font-size: 14px; font-weight: 500; }
 .apk-notif-body { font-size: 13px; color: var(--be-slate); margin-top: 2px; line-height: 1.45; }
 .apk-notif-ts { font-size: 11px; color: var(--be-slate-2); }

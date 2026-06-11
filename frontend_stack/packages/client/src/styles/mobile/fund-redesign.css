@@ -25,8 +25,8 @@
    Explore card (.apk-fc)
    ========================================================================== */
 .apk-fc { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
-.apk-fc--active { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
-.apk-fc--active:active { transform: translateY(1px); }
+.apk-fc--active { cursor: pointer; transition: transform 160ms var(--be-ease-out), box-shadow 200ms var(--be-ease-out); }
+.apk-fc--active:active { transform: scale(0.98); }
 
 .apk-fc-top { display: flex; align-items: flex-start; gap: 10px; }
 .apk-fc-mono {

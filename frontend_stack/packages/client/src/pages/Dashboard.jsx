@@ -10,6 +10,7 @@ import { useAppConfig } from '../hooks/useAppConfig.js';
 import { isComponentEnabled, visibleQuickActions } from '@beonedge/shared/appConfig.js';
 import { fmtMoney, fmtDate } from '../utils/format.js';
 import MoneyValue from '@beonedge/shared/components/MoneyValue.jsx';
+import { Skeleton, EmptyState, FadeIn } from '@beonedge/shared';
 import { isExecutionRoute, isPendingApprovalUser } from '../utils/approval.js';
 
 function greeting() {
@@ -75,29 +76,36 @@ export default function Dashboard() {
     }
   }
 
+  const quickActions = visibleQuickActions(appConfig);
+
   return (
     <div className="apk-screen">
-      <div>
-        <div className="apk-greet-eyebrow">{greeting()}</div>
-        <h1 className="apk-greet-name">{firstName || 'Investor'}</h1>
-      </div>
+      <FadeIn direction="up" distance={12} duration={500}>
+        <div className="apk-greet">
+          <div className="apk-greet-eyebrow">{greeting()}</div>
+          <h1 className="apk-greet-name">{firstName || 'Investor'}</h1>
+          <div className="apk-greet-line" aria-hidden="true" />
+        </div>
+      </FadeIn>
 
       {isPendingApproval && (
-        <div className="apk-approval-panel">
-          <div className="apk-approval-card">
-            <div className="apk-approval-icon"><ShieldCheck size={20} strokeWidth={1.6} /></div>
-            <div>
-              <strong>Approval request sent to admin.</strong>
-              <p>Explore strategies and dashboard data while investment actions stay locked.</p>
+        <FadeIn direction="up" distance={10} duration={400} delay={100}>
+          <div className="apk-approval-panel">
+            <div className="be-card apk-approval-card">
+              <div className="apk-approval-icon"><ShieldCheck size={20} strokeWidth={1.6} /></div>
+              <div>
+                <strong>Approval request sent to admin.</strong>
+                <p>Explore strategies and dashboard data while investment actions stay locked.</p>
+              </div>
             </div>
           </div>
-        </div>
+        </FadeIn>
       )}
 
       <div className="apk-dashboard-grid">
-        <div className="apk-dashboard-left">
-          {/* Portfolio card */}
-          {isComponentEnabled(appConfig, 'dashboard', 'portfolio_summary') && (
+        {/* Portfolio */}
+        {isComponentEnabled(appConfig, 'dashboard', 'portfolio_summary') && (
+          <FadeIn direction="up" distance={16} duration={500} delay={150}>
             <div className="apk-grid-portfolio">
               {portfolio ? (
                 <div className="be-card apk-portfolio" onClick={() => navigate('/app/portfolio')}>
@@ -123,44 +131,47 @@ export default function Dashboard() {
               ) : (
                 <div className="be-card apk-portfolio">
                   <div className="apk-portfolio-skeleton">
-                    <div className="apk-skel" style={{ height: 10, width: '30%' }} />
-                    <div className="apk-skel" style={{ height: 48, width: '55%', marginTop: 4 }} />
-                    <div className="apk-skel" style={{ height: 14, width: '40%' }} />
+                    <Skeleton variant="text" width="30%" height={10} />
+                    <Skeleton variant="text" width="55%" height={48} />
+                    <Skeleton variant="text" width="40%" height={14} />
                     <div className="apk-portfolio-grid" style={{ marginTop: 4 }}>
                       <div>
-                        <div className="apk-skel" style={{ height: 10, width: '60%' }} />
-                        <div className="apk-skel" style={{ height: 18, width: '70%', marginTop: 6 }} />
+                        <Skeleton variant="text" width="60%" height={10} />
+                        <Skeleton variant="text" width="70%" height={18} delay={80} />
                       </div>
                       <div>
-                        <div className="apk-skel" style={{ height: 10, width: '50%' }} />
-                        <div className="apk-skel" style={{ height: 18, width: '60%', marginTop: 6 }} />
+                        <Skeleton variant="text" width="50%" height={10} />
+                        <Skeleton variant="text" width="60%" height={18} delay={80} />
                       </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </FadeIn>
+        )}
 
-          {/* Quick actions */}
-          {isComponentEnabled(appConfig, 'dashboard', 'quick_actions') && (
+        {/* Quick actions — bento grid */}
+        {isComponentEnabled(appConfig, 'dashboard', 'quick_actions') && quickActions.length > 0 && (
+          <FadeIn direction="up" distance={16} duration={500} delay={200}>
             <div className="apk-grid-quick">
-              <div className="apk-quick">
-                {visibleQuickActions(appConfig).map((action) => {
+              <div className="apk-bento">
+                {quickActions.map((action, index) => {
                   const Icon = ACTION_ICONS[action.icon] || Compass;
                   const isLocked = isPendingApproval && isExecutionQuickAction(action);
                   const route = isLocked ? APPROVAL_REQUIRED_ROUTE : action.route;
                   const label = isLocked ? `${action.label} - approval required` : action.label;
+                  const isPrimary = index === 0;
                   return (
                     <button
                       key={action.id}
-                      className={`apk-quick-btn${isLocked ? ' apk-quick-btn-locked' : ''}`}
+                      className={`apk-quick-btn${isLocked ? ' apk-quick-btn-locked' : ''}${isPrimary ? ' apk-quick-btn--primary' : ''}`}
                       onClick={() => navigate(route)}
                       aria-label={label}
                       title={isLocked ? 'Approval required' : action.label}
                     >
                       <span className="apk-quick-icon-wrap">
-                        <Icon size={20} strokeWidth={1.5} />
+                        <Icon size={isPrimary ? 24 : 20} strokeWidth={1.5} />
                         {isLocked && <Lock className="apk-quick-lock" size={12} strokeWidth={2} aria-hidden="true" />}
                       </span>
                       <span>{action.label}</span>
@@ -170,10 +181,58 @@ export default function Dashboard() {
                 })}
               </div>
             </div>
-          )}
+          </FadeIn>
+        )}
 
-          {/* Research context */}
-          {isComponentEnabled(appConfig, 'dashboard', 'research_context') && research.length > 0 && (
+        {/* Active SIPs */}
+        {isComponentEnabled(appConfig, 'dashboard', 'active_sips') && (
+          <div className="apk-grid-sips">
+            <FadeIn direction="up" distance={10} duration={400} delay={250}>
+              <div className="apk-section-head">
+                <div className="be-eyebrow">{copy.activeSipsTitle}</div>
+                <a className="apk-link" onClick={() => navigate('/app/portfolio')}>{copy.viewAllLabel}</a>
+              </div>
+            </FadeIn>
+            {activeSips.length === 0 ? (
+              <FadeIn direction="up" distance={10} duration={400} delay={300}>
+                <EmptyState
+                  icon={<TrendingUp size={22} strokeWidth={1.5} />}
+                  title={copy.noActiveTitle}
+                  description={copy.noActiveBody}
+                  action={
+                    <button className="be-btn be-btn-primary" onClick={() => navigate('/app/explore')}>
+                      {copy.noActiveCta}
+                    </button>
+                  }
+                />
+              </FadeIn>
+            ) : (
+              activeSips.map((o, i) => (
+                <FadeIn key={o.id} direction="up" distance={12} duration={400} delay={300 + i * 60}>
+                  <div className="be-card apk-sip" onClick={() => navigate(`/app/funds/${o.fundId}`)}>
+                    <div className="apk-sip-head">
+                      <div>
+                        <div className="apk-sip-name">{fundsById[o.fundId]?.name || 'BeOnEdge Strategy'}</div>
+                        <div className="apk-sip-meta">SIP · {fmtMoney(o.amount, { source: o.source || 'mock', asOf: o.asOf || o.createdAt || new Date().toISOString() })} on day {o.debitDay} · UPI AutoPay</div>
+                      </div>
+                      <span className={'be-badge ' + sipBadgeClass(o.status)}>
+                        <span className="be-badge-dot" />{sipBadgeLabel(o.status)}
+                      </span>
+                    </div>
+                    <div className="apk-sip-row">
+                      <div className="apk-sip-amt be-money"><MoneyValue amount={o.amount} source={o.source || 'mock'} asOf={o.asOf || o.createdAt || new Date().toISOString()} /></div>
+                      <div className="apk-sip-next">Next debit · {fmtDate(o.nextDueDate)}</div>
+                    </div>
+                  </div>
+                </FadeIn>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Research context */}
+        {isComponentEnabled(appConfig, 'dashboard', 'research_context') && research.length > 0 && (
+          <FadeIn direction="up" distance={10} duration={400} delay={350}>
             <div className="apk-grid-research">
               <div className="apk-section-head">
                 <div className="be-eyebrow">{copy.researchTitle}</div>
@@ -190,47 +249,11 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </FadeIn>
+        )}
 
-        <div className="apk-dashboard-right">
-          {/* Active SIPs */}
-          {isComponentEnabled(appConfig, 'dashboard', 'active_sips') && (
-            <div className="apk-grid-sips">
-              <div className="apk-section-head">
-                <div className="be-eyebrow">{copy.activeSipsTitle}</div>
-                <a className="apk-link" onClick={() => navigate('/app/portfolio')}>{copy.viewAllLabel}</a>
-              </div>
-              {activeSips.length === 0 ? (
-                <div className="be-card apk-sip-empty">
-                  <div className="apk-sip-empty-icon"><TrendingUp size={22} strokeWidth={1.5} /></div>
-                  <h4>{copy.noActiveTitle}</h4>
-                  <p>{copy.noActiveBody}</p>
-                  <button className="be-btn be-btn-primary" onClick={() => navigate('/app/explore')}>{copy.noActiveCta}</button>
-                </div>
-              ) : (
-                activeSips.map((o) => (
-                  <div key={o.id} className="be-card apk-sip" onClick={() => navigate(`/app/funds/${o.fundId}`)}>
-                    <div className="apk-sip-head">
-                      <div>
-                        <div className="apk-sip-name">{fundsById[o.fundId]?.name || 'BeOnEdge Strategy'}</div>
-                        <div className="apk-sip-meta">SIP · {fmtMoney(o.amount, { source: o.source || 'mock', asOf: o.asOf || o.createdAt || new Date().toISOString() })} on day {o.debitDay} · UPI AutoPay</div>
-                      </div>
-                      <span className={'be-badge ' + sipBadgeClass(o.status)}>
-                        <span className="be-badge-dot" />{sipBadgeLabel(o.status)}
-                      </span>
-                    </div>
-                    <div className="apk-sip-row">
-                      <div className="apk-sip-amt be-money"><MoneyValue amount={o.amount} source={o.source || 'mock'} asOf={o.asOf || o.createdAt || new Date().toISOString()} /></div>
-                      <div className="apk-sip-next">Next debit · {fmtDate(o.nextDueDate)}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Notifications */}
+        {/* Notifications */}
+        <FadeIn direction="up" distance={10} duration={400} delay={400}>
           <div className="apk-grid-notifications">
             <div className="be-card apk-notifications">
               <div className="apk-section-head" style={{ padding: '0 0 8px' }}>
@@ -242,7 +265,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </FadeIn>
       </div>
 
       {isComponentEnabled(appConfig, 'dashboard', 'risk_disclosure') && (
