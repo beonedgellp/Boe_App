@@ -44,6 +44,12 @@
     width: 100%;
     order: 3;
   }
+  .adm-fund-editor-subnav {
+    padding: 10px 16px;
+  }
+  .adm-fund-editor-section[id] {
+    scroll-margin-top: 96px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -131,5 +137,27 @@
   }
   .adm-review-panel {
     width: 100%;
+  }
+}
+@media (max-width: 760px) {
+  .adm-fund-editor-header {
+    position: relative;
+  }
+  .adm-fund-editor-subnav {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    padding: 8px 16px;
+  }
+  .adm-fund-editor-subnav-link {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .adm-fund-editor-section[id] {
+    scroll-margin-top: 56px;
+  }
+  .adm-sector-row,
+  .adm-investment-row {
+    min-width: max-content;
   }
 }

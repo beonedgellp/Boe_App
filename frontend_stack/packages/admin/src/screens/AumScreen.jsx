@@ -28,8 +28,7 @@ import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
-import { fmtInt } from '../helpers/formatters.js';
-import { clone } from '../helpers/formatters.js';
+import { fmtInt, clone, initials } from '../helpers/formatters.js';
 import AumAllocationsTab from './AumAllocationsTab.jsx';
 import AumCapitalTab from './AumCapitalTab.jsx';
 import AumRedemptionsTab from './AumRedemptionsTab.jsx';
@@ -173,6 +172,11 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
     setSelectedFundId(null);
     setFormError('');
     setLifecycleConfirm(null);
+  }
+
+  function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function updateField(key) {
@@ -388,6 +392,25 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
             </div>
           </div>
 
+          <nav className="adm-fund-editor-subnav" aria-label="Fund editor sections">
+            {[
+              { id: 'basic', label: 'Basic', icon: FileText },
+              { id: 'lifecycle', label: 'Lifecycle', icon: Activity },
+              { id: 'sectors', label: 'Sectors', icon: PieChart },
+              { id: 'display', label: 'Display', icon: Star },
+              { id: 'preview', label: 'Preview', icon: Eye },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="adm-fund-editor-subnav-link"
+                onClick={() => scrollToSection(item.id)}
+              >
+                <I icon={item.icon} size={14} /> {item.label}
+              </button>
+            ))}
+          </nav>
+
           <form id="fund-editor-form" onSubmit={handleSubmit} className="adm-fund-editor-layout">
             <div className="adm-fund-editor-main">
               {formError && (
@@ -397,27 +420,12 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
               )}
 
               {/* Section 1: Basic Information */}
-              <div className="adm-fund-editor-section">
+              <section id="basic" className="adm-fund-editor-section">
                 <div className="adm-fund-editor-section-title"><I icon={FileText} size={16} /> Basic Information</div>
                 <div className="adm-form-grid">
                   <label className="adm-field">
                     <span>Fund Name *</span>
                     <input type="text" required value={form.name} onChange={updateField('name')} />
-                  </label>
-                  <label className="adm-field">
-                    <span>Lifecycle Stage</span>
-                    <select value={form.lifecycleStage} onChange={(e) => applyLifecycleChange(e.target.value)}>
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                      <option value="active">Active</option>
-                      <option value="paused">Paused</option>
-                      <option value="closed">Closed</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                  </label>
-                  <label className="adm-field adm-field-wide">
-                    <span>Tagline</span>
-                    <input type="text" value={form.tagline} onChange={updateField('tagline')} />
                   </label>
                   <label className="adm-field">
                     <span>User Status</span>
@@ -426,6 +434,10 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                       <option value="coming_soon">Coming Soon</option>
                     </select>
                     <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>Auto-derived from lifecycle stage</small>
+                  </label>
+                  <label className="adm-field adm-field-wide">
+                    <span>Tagline</span>
+                    <input type="text" value={form.tagline} onChange={updateField('tagline')} />
                   </label>
                   <label className="adm-field">
                     <span>Total Pool Size (INR)</span>
@@ -511,10 +523,10 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     </div>
                   );
                 })()}
-              </div>
+              </section>
 
               {/* Section 2: Lifecycle Workflow */}
-              <div className="adm-fund-editor-section">
+              <section id="lifecycle" className="adm-fund-editor-section">
                 <div className="adm-fund-editor-section-title"><I icon={Activity} size={16} /> Lifecycle Workflow</div>
                 <div className="adm-lifecycle-bar">
                   {LIFECYCLE_STAGES.map((stage, idx) => (
@@ -535,15 +547,17 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                 <div className="adm-lifecycle-desc">
                   <strong>{form.lifecycleStage.charAt(0).toUpperCase() + form.lifecycleStage.slice(1)}:</strong> {STAGE_DESCRIPTIONS[form.lifecycleStage]}
                 </div>
-              </div>
+              </section>
 
-              {/* Section 3: Sector Distribution */}
-              <div className="adm-fund-editor-section">
+              {/* Section 3: Sectors & Investments */}
+              <section id="sectors" className="adm-fund-editor-section">
                 <div className="adm-fund-editor-section-title" style={{ justifyContent: 'space-between' }}>
-                  <span><I icon={PieChart} size={16} /> Sector Distribution</span>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-  
-                  </div>
+                  <span><I icon={PieChart} size={16} /> Sectors & Investments</span>
+                  {selectedFund?.analytics && (
+                    <span className="adm-cell-meta">
+                      ₹{(selectedFund.analytics.totalInvested ?? 0).toLocaleString()} deployed of ₹{(selectedFund.totalPoolSize ?? poolSizeNum).toLocaleString()} pool
+                    </span>
+                  )}
                 </div>
 
                 {selectedFund?.analytics?.sectorValid === false && (
@@ -585,19 +599,10 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addSector}><I icon={Plus} size={14} /> Add Sector</button>
                   <span className={`be-eyebrow ${sectorTotal === 100 ? 'adm-tone-green' : 'adm-tone-red'}`}>Total: {sectorTotal}%</span>
                 </div>
-              </div>
 
-              {/* Section 4: Investment Distribution */}
-              <div className="adm-fund-editor-section">
-                <div className="adm-fund-editor-section-title" style={{ justifyContent: 'space-between' }}>
-                  <span><I icon={Briefcase} size={16} /> Investment Distribution</span>
-                  {selectedFund?.analytics && (
-                    <span className="adm-cell-meta">
-                      ₹{(selectedFund.analytics.totalInvested ?? 0).toLocaleString()} deployed of ₹{(selectedFund.totalPoolSize ?? poolSizeNum).toLocaleString()} pool
-                    </span>
-                  )}
-                </div>
+                <div className="adm-fund-editor-section-divider" />
 
+                <div className="adm-fund-editor-section-subtitle"><I icon={Briefcase} size={14} /> Investment Distribution</div>
                 <div className="adm-editor-list">
                   {form.investments.map((inv, index) => {
                     const pct = poolSizeNum > 0 ? ((Number(inv.amount) || 0) / poolSizeNum * 100).toFixed(2) : '0.00';
@@ -619,16 +624,18 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                 </div>
                 <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addInvestment}><I icon={Plus} size={14} /> Add Investment</button>
                 <p style={{ fontSize: 12, color: 'var(--be-slate)', marginTop: 8 }}>Actual amounts are admin-only and never exposed to clients.</p>
-              </div>
+              </section>
 
-              {/* Session 4: display profile, performance vs Nifty, asset split, ratios */}
-              <AumDisplayFields form={form} setForm={setForm} />
+              {/* Section 4: Display Profile */}
+              <div id="display" className="adm-fund-editor-section-group">
+                <AumDisplayFields form={form} setForm={setForm} />
+              </div>
             </div>
 
             <div className="adm-fund-editor-side">
-              {/* Section 5: Visibility Controls */}
-              <div className="adm-fund-editor-section">
-                <div className="adm-fund-editor-section-title"><I icon={Eye} size={16} /> Visibility Controls</div>
+              {/* Section 5: Visibility & Preview */}
+              <section id="preview" className="adm-fund-editor-section">
+                <div className="adm-fund-editor-section-title"><I icon={Eye} size={16} /> Visibility & Preview</div>
                 <div className="adm-visibility-group">
                   <label className="adm-chart-toggle">
                     <input type="checkbox" checked={form.chartConfig.showSectorDistribution} onChange={updateChartConfig('showSectorDistribution')} />
@@ -656,11 +663,10 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   </label>
                 </div>
                 <p className="adm-cell-meta" style={{ marginTop: 8 }}>Users will only see what you enable above.</p>
-              </div>
 
-              {/* Section 5b: Client Preview */}
-              <div className="adm-fund-editor-section">
-                <div className="adm-fund-editor-section-title"><I icon={Eye} size={16} /> Client Preview</div>
+                <div className="adm-fund-editor-section-divider" />
+
+                <div className="adm-fund-editor-section-subtitle"><I icon={Eye} size={14} /> Client Preview</div>
                 <div style={{ fontSize: 12, color: 'var(--be-slate)', marginBottom: 10 }}>
                   This is how clients will see your fund card:
                 </div>
@@ -750,7 +756,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     </div>
                   );
                 })()}
-              </div>
+              </section>
 
               {/* Section 6: Audit Trail */}
               {editorMode === 'edit' && selectedFund && (

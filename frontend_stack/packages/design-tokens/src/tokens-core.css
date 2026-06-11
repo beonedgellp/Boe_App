@@ -132,11 +132,23 @@
   --be-container-admin:     1320px;
   --be-container-reading:   720px;
 
+  --be-sidebar-w:        240px;
+  --be-page-pad-x:       var(--be-space-8);   /* 32px */
+  --be-page-pad-y:       var(--be-space-6);   /* 24px */
+  --be-page-pad-b:       var(--be-space-10);  /* 40px */
+  --be-section-gap:      var(--be-space-6);   /* 24px */
+  --be-card-pad:         var(--be-space-5);   /* 20px */
+  --be-card-gap:         var(--be-space-4);   /* 16px */
+  --be-content-max:      var(--be-container-admin);
+
   --be-nav-h-web:        60px;
   --be-appbar-h:         52px;
   --be-bottomnav-h:      64px;
 
   /* Z-index scale (semantic) ----------------------------------------------- */
+  --be-z-topbar:         10;   /* admin shell sticky header */
+  --be-z-overlay:        30;   /* admin drawer overlay */
+  --be-z-drawer:         40;   /* admin drawer panel */
   --be-z-dropdown:       100;
   --be-z-sticky:         200;
   --be-z-modal-backdrop: 300;
@@ -153,6 +165,8 @@
   --be-bp-sm: 375px;
   --be-bp-md: 430px;
   --be-bp-lg: 768px;
+  --be-bp-sidebar-collapse: 1100px;
+  --be-bp-mobile: 768px;
 
   /* Icon sizes ------------------------------------------------------------- */
   --be-icon-xs: 12px;

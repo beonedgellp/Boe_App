@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { UserCheck, CreditCard, Globe, LifeBuoy, ArrowRight } from 'lucide-react';
 import { useLegacyAdminData } from '../context/LegacyAdminDataContext.jsx';
+import { Page, ContentGrid, Section } from '../layout/primitives/index.js';
 import I from '../components/I.jsx';
 
 const QUICK_LINKS = [
@@ -46,23 +47,24 @@ export default function OverviewPage() {
   const stats = overview.stats || {};
 
   return (
-    <div className="ash-page">
-      <section className="ash-stat-grid" aria-label="Key counts">
-        {loading ? (
-          Array.from({ length: 4 }, (_, index) => <div key={index} className="ash-stat ash-skel-block" aria-hidden="true" />)
-        ) : (
-          <>
-            <StatCard label="Pending approvals" value={stats.pendingApprovals ?? counts.approvals ?? 0} hint="Sign-ups waiting on review" />
-            <StatCard label="Registered users" value={counts.users ?? 0} hint="Learner and client accounts" />
-            <StatCard label="Payments in queue" value={counts.payments ?? 0} hint="Awaiting reconciliation" />
-            <StatCard label="Open support tickets" value={counts.support ?? 0} hint="Unresolved conversations" />
-          </>
-        )}
-      </section>
+    <Page>
+      <Section aria-label="Key counts">
+        <ContentGrid cols={4} minColWidth="200px">
+          {loading ? (
+            Array.from({ length: 4 }, (_, index) => <div key={index} className="ash-stat ash-skel-block" aria-hidden="true" />)
+          ) : (
+            <>
+              <StatCard label="Pending approvals" value={stats.pendingApprovals ?? counts.approvals ?? 0} hint="Sign-ups waiting on review" />
+              <StatCard label="Registered users" value={counts.users ?? 0} hint="Learner and client accounts" />
+              <StatCard label="Payments in queue" value={counts.payments ?? 0} hint="Awaiting reconciliation" />
+              <StatCard label="Open support tickets" value={counts.support ?? 0} hint="Unresolved conversations" />
+            </>
+          )}
+        </ContentGrid>
+      </Section>
 
-      <section aria-label="Quick links">
-        <h2 className="ash-section-title">Where to next</h2>
-        <div className="ash-quicklink-grid">
+      <Section title="Where to next" aria-label="Quick links">
+        <ContentGrid cols={2} minColWidth="280px">
           {QUICK_LINKS.map((link) => (
             <Link key={link.path} to={link.path} className="ash-quicklink">
               <I icon={link.icon} size={18} />
@@ -73,8 +75,8 @@ export default function OverviewPage() {
               <I icon={ArrowRight} size={15} className="ash-quicklink-arrow" />
             </Link>
           ))}
-        </div>
-      </section>
-    </div>
+        </ContentGrid>
+      </Section>
+    </Page>
   );
 }

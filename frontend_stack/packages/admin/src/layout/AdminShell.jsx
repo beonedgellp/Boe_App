@@ -22,7 +22,7 @@ function ShellFrame() {
     <div className="ash-app" data-screen-label="Admin Console">
       <Sidebar user={user} counts={overview.counts || {}} />
       <main className="ash-main">
-        <TopBar title={meta.title} breadcrumbs={meta.crumbs} onLogout={handleLogout} />
+        <TopBar title={meta.title} breadcrumbs={meta.crumbs} crumbPaths={meta.crumbPaths} onLogout={handleLogout} />
         {loadNote && <div className="ash-load-note" role="status">{loadNote}</div>}
         <Outlet />
       </main>

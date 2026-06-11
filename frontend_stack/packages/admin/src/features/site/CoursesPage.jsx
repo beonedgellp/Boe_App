@@ -4,6 +4,7 @@ import useAdminCollection from '../../hooks/useAdminCollection.js';
 import { formatRupeesFromPaise } from '../../helpers/currency.js';
 import { StatusBadge, StatusFilterChips } from './fields.jsx';
 import CourseEditorDrawer from './CourseEditorDrawer.jsx';
+import DataTable from '../../components/DataTable.jsx';
 import I from '../../components/I.jsx';
 
 const STATUS_FILTERS = [
@@ -54,63 +55,60 @@ export default function CoursesPage() {
           <StatusFilterChips value={statusFilter} onChange={setStatusFilter} options={STATUS_FILTERS} />
         </div>
 
-        <div className="ash-table-wrap">
-          <table className="ash-table">
-            <thead>
-              <tr>
-                <th>Course</th>
-                <th>Level</th>
-                <th>Format</th>
-                <th>Price</th>
-                <th>Order</th>
-                <th>Status</th>
-                <th>Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && Array.from({ length: 4 }, (_, index) => (
-                <tr key={index} aria-hidden="true">
-                  <td colSpan={7}><div className="ash-skel" /></td>
-                </tr>
-              ))}
-              {!loading && visible.map((course) => (
-                <tr
-                  key={course.id}
-                  className="is-clickable"
-                  tabIndex={0}
-                  onClick={() => setEditing(course)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') setEditing(course); }}
-                >
-                  <td>
-                    <div className="ash-cell-main">{course.name}</div>
-                    <div className="ash-cell-sub ash-cell-mono">{course.slug}</div>
-                  </td>
-                  <td>{course.level}</td>
-                  <td>{course.format}</td>
-                  <td className="ash-cell-num">{course.pricePaise ? formatRupeesFromPaise(course.pricePaise) : 'Free'}</td>
-                  <td className="ash-cell-num">{course.sortOrder ?? 0}</td>
-                  <td><StatusBadge status={course.status} /></td>
-                  <td className="ash-cell-sub">{formatDate(course.updatedAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!loading && visible.length === 0 && !error && (
-            <div className="ash-empty ash-empty-table">
-              <div className="ash-empty-title">
-                {statusFilter === 'all' ? 'No courses yet' : `No ${statusFilter} courses`}
+        <DataTable
+          columns={[
+            {
+              key: 'course',
+              title: 'Course',
+              render: (course) => (
+                <>
+                  <div className="ash-cell-main">{course.name}</div>
+                  <div className="ash-cell-sub ash-cell-mono">{course.slug}</div>
+                </>
+              ),
+            },
+            { key: 'level', title: 'Level', render: (course) => course.level },
+            { key: 'format', title: 'Format', render: (course) => course.format },
+            {
+              key: 'price',
+              title: 'Price',
+              className: 'ash-cell-num',
+              render: (course) => (course.pricePaise ? formatRupeesFromPaise(course.pricePaise) : 'Free'),
+            },
+            {
+              key: 'order',
+              title: 'Order',
+              className: 'ash-cell-num',
+              render: (course) => course.sortOrder ?? 0,
+            },
+            { key: 'status', title: 'Status', render: (course) => <StatusBadge status={course.status} /> },
+            {
+              key: 'updated',
+              title: 'Updated',
+              render: (course) => <span className="ash-cell-sub">{formatDate(course.updatedAt)}</span>,
+            },
+          ]}
+          rows={visible}
+          loading={loading}
+          empty={
+            visible.length === 0 && !error ? (
+              <div className="ash-empty ash-empty-table">
+                <div className="ash-empty-title">
+                  {statusFilter === 'all' ? 'No courses yet' : `No ${statusFilter} courses`}
+                </div>
+                <p className="ash-empty-desc">
+                  Courses you create here start as drafts. Publish one and it appears on the public site immediately.
+                </p>
+                {statusFilter === 'all' && (
+                  <button type="button" className="ash-btn ash-btn-primary" onClick={() => setEditing(NEW_COURSE)}>
+                    Create the first course
+                  </button>
+                )}
               </div>
-              <p className="ash-empty-desc">
-                Courses you create here start as drafts. Publish one and it appears on the public site immediately.
-              </p>
-              {statusFilter === 'all' && (
-                <button type="button" className="ash-btn ash-btn-primary" onClick={() => setEditing(NEW_COURSE)}>
-                  Create the first course
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+            ) : undefined
+          }
+          onRowClick={(course) => setEditing(course)}
+        />
       </div>
 
       <CourseEditorDrawer
