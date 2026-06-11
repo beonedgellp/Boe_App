@@ -1,9 +1,8 @@
+import { fetchLandingConfig } from '../../lib/landingConfig';
+import { metaDefaults, socialProofDefaults, learningMethodDefaults } from '../../lib/landingDefaults';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import Reveal from '../../components/Reveal';
-import { learningSteps } from '../../content/benefits';
-import { stats, testimonials, instructorNote } from '../../content/socialProof';
-import { site } from '../../content/site';
 
 const values = [
   {
@@ -47,19 +46,26 @@ const founders = [
   },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const config = await fetchLandingConfig();
+  const meta = config?.meta ?? metaDefaults;
+  const stats = config?.socialProof?.stats ?? socialProofDefaults.stats;
+  const testimonials = config?.socialProof?.testimonials ?? socialProofDefaults.testimonials;
+  const instructorNote = config?.socialProof?.instructorNote ?? socialProofDefaults.instructorNote;
+  const learningSteps = config?.learningMethod?.steps ?? learningMethodDefaults.steps;
+
   return (
     <>
-      <Nav />
+      <Nav nav={config?.nav} siteName={meta.siteName} />
       <main>
         {/* Mission + Stats */}
         <section className="section">
           <div className="container">
             <div className="section__head">
-              <span className="eyebrow">About {site.name}</span>
+              <span className="eyebrow">About {meta.siteName}</span>
               <h1 className="section__title">Clarity beats complexity</h1>
               <p className="section__lead">
-                {site.longDescriptor} We teach practical money skills - budgeting,
+                {meta.longDescriptor} We teach practical money skills - budgeting,
                 saving, debt management, and news literacy - without jargon or
                 product pitches. Our only goal is to help you understand money
                 well enough to make your own decisions with confidence.
@@ -162,7 +168,7 @@ export default function AboutPage() {
             <div className="grid grid--3">
               {testimonials.map((item) => (
                 <Reveal as="div" key={item.id} className="card stagger-item">
-                  <p className="quote">“{item.quote}”</p>
+                  <p className="quote">"{item.quote}"</p>
                   <p className="quote__by">
                     <strong>{item.name}</strong> · {item.role}
                   </p>
@@ -172,7 +178,7 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer meta={config?.meta} nav={config?.nav} />
     </>
   );
 }

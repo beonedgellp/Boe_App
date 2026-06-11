@@ -3,25 +3,37 @@
 import { useState, type FormEvent } from 'react';
 import { validateLead, type LeadErrors } from '../lib/validation';
 import { submitLead } from '../lib/onboarding';
-import { interestOptions } from '../content/plans';
+import { leadFormDefaults } from '../lib/landingDefaults';
+import type { LeadFormDefaults } from '../lib/landingDefaults';
 
-// Course/membership-interest capture. Framed as education interest, NOT
-// onboarding for investment, KYC, account opening, or portfolio access.
 type Status =
   | { kind: 'idle' }
   | { kind: 'submitting' }
   | { kind: 'success' }
   | { kind: 'error'; message: string };
 
-const initialValues = {
-  name: '',
-  email: '',
-  phone: '',
-  interest: interestOptions[0],
-  message: '',
-};
+export default function LeadForm({
+  leadForm = leadFormDefaults,
+}: {
+  leadForm?: Partial<LeadFormDefaults>;
+}) {
+  const resolved = {
+    eyebrow: leadForm?.eyebrow ?? leadFormDefaults.eyebrow,
+    title: leadForm?.title ?? leadFormDefaults.title,
+    lead: leadForm?.lead ?? leadFormDefaults.lead,
+    submitLabel: leadForm?.submitLabel ?? leadFormDefaults.submitLabel,
+    successMessage: leadForm?.successMessage ?? leadFormDefaults.successMessage,
+    interestOptions: leadForm?.interestOptions ?? leadFormDefaults.interestOptions,
+  };
 
-export default function LeadForm() {
+  const initialValues = {
+    name: '',
+    email: '',
+    phone: '',
+    interest: resolved.interestOptions[0],
+    message: '',
+  };
+
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<LeadErrors>({});
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -62,13 +74,9 @@ export default function LeadForm() {
       <div className="container">
         <div className="lead">
           <div>
-            <span className="eyebrow">Get learning details</span>
-            <h2 className="section__title">Tell us what you want to learn</h2>
-            <p className="section__lead">
-              Share your details and we’ll send course and premium membership
-              information. No pressure, just clear information to help you
-              start learning.
-            </p>
+            <span className="eyebrow">{resolved.eyebrow}</span>
+            <h2 className="section__title">{resolved.title}</h2>
+            <p className="section__lead">{resolved.lead}</p>
           </div>
 
           <form onSubmit={onSubmit} noValidate aria-label="Course interest form">
@@ -82,9 +90,7 @@ export default function LeadForm() {
                 onChange={(e) => update('name', e.target.value)}
                 aria-invalid={Boolean(errors.name)}
               />
-              {errors.name ? (
-                <span className="field__error">{errors.name}</span>
-              ) : null}
+              {errors.name ? <span className="field__error">{errors.name}</span> : null}
             </div>
 
             <div className={`field ${errors.email ? 'field--error' : ''}`}>
@@ -98,9 +104,7 @@ export default function LeadForm() {
                 onChange={(e) => update('email', e.target.value)}
                 aria-invalid={Boolean(errors.email)}
               />
-              {errors.email ? (
-                <span className="field__error">{errors.email}</span>
-              ) : null}
+              {errors.email ? <span className="field__error">{errors.email}</span> : null}
             </div>
 
             <div className={`field ${errors.phone ? 'field--error' : ''}`}>
@@ -114,9 +118,7 @@ export default function LeadForm() {
                 onChange={(e) => update('phone', e.target.value)}
                 aria-invalid={Boolean(errors.phone)}
               />
-              {errors.phone ? (
-                <span className="field__error">{errors.phone}</span>
-              ) : null}
+              {errors.phone ? <span className="field__error">{errors.phone}</span> : null}
             </div>
 
             <div className="field">
@@ -127,7 +129,7 @@ export default function LeadForm() {
                 value={values.interest}
                 onChange={(e) => update('interest', e.target.value)}
               >
-                {interestOptions.map((option) => (
+                {resolved.interestOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -151,14 +153,13 @@ export default function LeadForm() {
               className="btn btn--primary btn--block"
               disabled={submitting}
             >
-              {submitting ? 'Sending…' : 'Request course details'}
+              {submitting ? 'Sending…' : resolved.submitLabel}
             </button>
 
             <div aria-live="polite">
               {status.kind === 'success' ? (
                 <p className="form__status form__status--success">
-                  Thanks. We’ve received your request and will be in touch by
-                  email.
+                  {resolved.successMessage}
                 </p>
               ) : null}
               {status.kind === 'error' ? (
