@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { navDefaults } from '../lib/landingDefaults';
+import { navDefaults, metaDefaults } from '../lib/landingDefaults';
 import type { NavDefaults } from '../lib/landingDefaults';
 import { useAuth } from './AuthProvider';
 import ThemeToggle from './ThemeToggle';
@@ -13,7 +13,7 @@ function displayName(user: { firstName?: string; name?: string; username?: strin
 
 export default function Nav({
   nav = navDefaults,
-  siteName = navDefaults.signUp.label,
+  siteName = metaDefaults.siteName,
 }: {
   nav?: Partial<NavDefaults>;
   siteName?: string;
