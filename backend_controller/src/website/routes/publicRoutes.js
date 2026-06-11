@@ -1,6 +1,7 @@
 import { Routes } from '#shared/routes/constants.js';
 import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
+import { getPublishedLandingConfig } from '#shared/services/landingConfigService.js';
 import { listFunds, toClientFunds } from '#shared/services/fundCatalogService.js';
 import { listCourses } from '#shared/services/courseService.js';
 import { listPlans } from '#shared/services/planService.js';
@@ -65,6 +66,12 @@ export function registerPublicRoutes(router) {
     auth: false,
     description: 'Published mobile app component and content configuration.',
   }, ({ config }) => getPublishedAppConfig(config));
+
+  router.get(Routes.GET_V1_PUBLIC_LANDING_CONFIG, {
+    group: 'public',
+    auth: false,
+    description: 'Published landing page content configuration.',
+  }, ({ config }) => getPublishedLandingConfig(config));
 
   router.get(Routes.GET_V1_PUBLIC_DISCLOSURES, {
     group: 'public',
