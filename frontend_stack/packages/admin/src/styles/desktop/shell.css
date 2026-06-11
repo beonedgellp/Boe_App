@@ -724,57 +724,69 @@
   .ash-icon-btn:active,
   .ash-quicklink:active { transform: none; }
 }
-/* Tooltip */
-.ash-tooltip-wrap {
-  position: relative;
-  display: inline-flex;
-  vertical-align: middle;
-  margin-left: 0.35rem;
-}
 
-.ash-tooltip-trigger {
+/* -------------------------------------------------- preview panel */
+.ash-content-layout:has(.ash-preview-panel) {
+  grid-template-columns: 220px minmax(0, 520px) 1fr;
+}
+.ash-content-layout:has(.ash-preview-panel) .ash-content-editor {
+  max-width: 520px;
+}
+.ash-preview-panel {
+  position: sticky;
+  top: 16px;
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 720px;
+  height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--be-border);
+  border-radius: 12px;
+  background: var(--be-surface);
+  overflow: hidden;
+}
+.ash-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--be-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--be-text-primary);
+}
+.ash-preview-header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ash-preview-frame {
+  flex: 1 1 0;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+.ash-preview-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--be-border);
+  background: var(--be-surface);
+  color: var(--be-text-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-tertiary);
-  cursor: help;
-  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 50;
 }
-
-.ash-tooltip-trigger:hover,
-.ash-tooltip-trigger:focus {
-  color: var(--text-primary);
+.ash-preview-toggle:hover {
+  background: var(--be-surface-raised);
 }
-
-.ash-tooltip {
-  position: absolute;
-  z-index: 100;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 260px;
-  padding: 0.5rem 0.75rem;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--text-primary);
-  pointer-events: none;
-}
-
-.ash-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 5px;
-  border-style: solid;
-  border-color: var(--surface-raised) transparent transparent transparent;
+@media (max-width: 1100px) {
+  .ash-preview-panel { display: none; }
 }
