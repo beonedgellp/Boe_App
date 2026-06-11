@@ -142,6 +142,130 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
   );
 }
 
+// Label + href pair for CTAs and nav links.
+export function LinkField({ label, value, onChange, hrefHelp }) {
+  const link = value || { label: '', href: '' };
+  return (
+    <div className="ash-field">
+      <span className="ash-label">{label}</span>
+      <div className="ash-form-row">
+        <input
+          className="ash-input"
+          value={link.label ?? ''}
+          placeholder="Label"
+          aria-label={`${label} label`}
+          onChange={(event) => onChange({ ...link, label: event.target.value })}
+        />
+        <input
+          className="ash-input"
+          value={link.href ?? ''}
+          placeholder="/courses"
+          aria-label={`${label} destination`}
+          onChange={(event) => onChange({ ...link, href: event.target.value })}
+        />
+      </div>
+      <span className="ash-help">{hrefHelp || 'Destination must start with /, #, or https://'}</span>
+    </div>
+  );
+}
+
+// Editable list of objects (testimonials, tiles, steps). `itemFields`
+// describes the inputs per row; `newItem` builds an empty entry.
+export function ObjectListEditor({ label, items, onChange, itemFields, newItem, max, addLabel = 'Add item', itemTitle }) {
+  const list = Array.isArray(items) ? items : [];
+
+  function updateAt(index, field, value) {
+    onChange(list.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+  }
+
+  function removeAt(index) {
+    onChange(list.filter((_, i) => i !== index));
+  }
+
+  function move(index, delta) {
+    const target = index + delta;
+    if (target < 0 || target >= list.length) return;
+    const next = [...list];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    onChange(next);
+  }
+
+  return (
+    <div className="ash-field">
+      <span className="ash-label">{label}</span>
+      <div className="ash-objlist">
+        {list.map((item, index) => (
+          <div className="ash-objlist-item" key={index}>
+            <div className="ash-objlist-head">
+              <span className="ash-objlist-title">{itemTitle ? itemTitle(item, index) : `Item ${index + 1}`}</span>
+              <span className="ash-objlist-controls">
+                <button type="button" className="ash-icon-btn" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up">
+                  <I icon={ArrowUp} size={13} />
+                </button>
+                <button type="button" className="ash-icon-btn" onClick={() => move(index, 1)} disabled={index === list.length - 1} aria-label="Move down">
+                  <I icon={ArrowDown} size={13} />
+                </button>
+                <button type="button" className="ash-icon-btn" onClick={() => removeAt(index)} aria-label="Remove item">
+                  <I icon={Trash2} size={13} />
+                </button>
+              </span>
+            </div>
+            {itemFields.map((field) => (
+              field.type === 'textarea' ? (
+                <textarea
+                  key={field.key}
+                  className="ash-textarea"
+                  rows={2}
+                  value={item[field.key] ?? ''}
+                  placeholder={field.placeholder || field.label}
+                  aria-label={field.label}
+                  onChange={(event) => updateAt(index, field.key, event.target.value)}
+                />
+              ) : field.type === 'select' ? (
+                <select
+                  key={field.key}
+                  className="ash-select"
+                  value={item[field.key] ?? ''}
+                  aria-label={field.label}
+                  onChange={(event) => updateAt(index, field.key, event.target.value)}
+                >
+                  {field.options.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  key={field.key}
+                  className="ash-input"
+                  type={field.type === 'number' ? 'number' : 'text'}
+                  value={item[field.key] ?? ''}
+                  placeholder={field.placeholder || field.label}
+                  aria-label={field.label}
+                  onChange={(event) => updateAt(
+                    index,
+                    field.key,
+                    field.type === 'number' ? Number(event.target.value) : event.target.value,
+                  )}
+                />
+              )
+            ))}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="ash-btn ash-btn-ghost ash-btn-sm"
+          onClick={() => onChange([...list, newItem()])}
+          disabled={max !== undefined && list.length >= max}
+        >
+          <I icon={Plus} size={13} />
+          {addLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const STATUS_BADGE_CLASS = {
   published: 'ash-badge-published',
   draft: 'ash-badge-draft',
