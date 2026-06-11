@@ -73,10 +73,10 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Pending Queue</span>
-            <h3 className="adm-card-title">Awaiting approval</h3>
+            <h2 className="adm-card-title">Awaiting approval</h2>
           </div>
           <div className="adm-card-actions">
-            <button className="be-btn be-btn-secondary be-btn-sm">Export CSV</button>
+            <button className="be-btn be-btn-secondary be-btn-sm" disabled title="Export CSV is coming soon">Export CSV</button>
           </div>
         </div>
 
@@ -85,6 +85,7 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
             <I icon={Search} size={14} />
             <input
               type="text"
+              aria-label="Search approvals by name or email"
               placeholder="Search by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -92,7 +93,7 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
           </div>
           <div className="adm-filter">
             <I icon={Filter} size={14} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter by status">
               <option value="all">All pending</option>
               <option value="pending_review">Pending review</option>
               <option value="draft">Draft</option>
@@ -115,15 +116,15 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
             <tbody>
               {loading && visibleRows.length === 0 && (
                 <>
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
+                  <SkeletonTableRow columnCount={5} />
+                  <SkeletonTableRow columnCount={5} />
+                  <SkeletonTableRow columnCount={5} />
+                  <SkeletonTableRow columnCount={5} />
+                  <SkeletonTableRow columnCount={5} />
                 </>
               )}
               {!loading && visibleRows.length === 0 && (
-                <EmptyTableRow colSpan={6}>
+                <EmptyTableRow colSpan={5}>
                   {rows.length === 0
                     ? "No pending approvals. Great job!"
                     : "No records match the current filter."}
@@ -160,7 +161,10 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
       </div>
       {rows.length === 0 && !loading && (
         <div className="adm-empty-hint">
-          Looking for approved users? <a onClick={onNavigateToUsers}>View User Details</a>
+          Looking for approved users?{' '}
+          <button type="button" className="ash-btn ash-btn-primary" onClick={onNavigateToUsers}>
+            View User Details
+          </button>
         </div>
       )}
     </div>

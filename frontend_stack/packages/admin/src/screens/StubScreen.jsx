@@ -31,7 +31,7 @@ function StubScreen({ title }) {
     <div className="adm-screen">
       <div className="adm-card" style={{padding:48,textAlign:'center'}}>
         <span className="be-eyebrow">Stub</span>
-        <h3 className="adm-card-title">{title}</h3>
+        <h2 className="adm-card-title">{title}</h2>
         <p style={{color:'var(--be-slate)',marginTop:8}}>This screen is a placeholder. Wire up real data when the corresponding service is ready.</p>
       </div>
     </div>

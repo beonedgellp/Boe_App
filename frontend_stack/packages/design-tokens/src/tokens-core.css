@@ -18,20 +18,20 @@
   --be-bone:       #FFFCF6;
   --be-slate:      #5C6470;
   --be-slate-2:    #8A929D;
-  --be-slate-soft: rgba(92, 100, 112, 0.12);
-  --be-slate-rule: rgba(92, 100, 112, 0.16);
-  --be-slate-rule-strong: rgba(92, 100, 112, 0.28);
+  --be-slate-soft: color-mix(in srgb, var(--be-slate) 12%, transparent);
+  --be-slate-rule: color-mix(in srgb, var(--be-slate) 16%, transparent);
+  --be-slate-rule-strong: color-mix(in srgb, var(--be-slate) 28%, transparent);
   --be-gold:       #B5894A;
   --be-gold-2:     #9C7339;
-  --be-gold-soft:  rgba(181, 137, 74, 0.12);
+  --be-gold-soft:  color-mix(in srgb, var(--be-gold) 12%, transparent);
 
   /* Financial signal colors — only for money state ------------------------- */
   --be-green:      #1F7A4D;
-  --be-green-soft: rgba(31, 122, 77, 0.10);
+  --be-green-soft: color-mix(in srgb, var(--be-green) 10%, transparent);
   --be-red:        #B43A2E;
-  --be-red-soft:   rgba(180, 58, 46, 0.10);
+  --be-red-soft:   color-mix(in srgb, var(--be-red) 10%, transparent);
   --be-amber:      #A8741C;
-  --be-amber-soft: rgba(168, 116, 28, 0.12);
+  --be-amber-soft: color-mix(in srgb, var(--be-amber) 12%, transparent);
 
   /* Semantic surface roles ------------------------------------------------- */
   --be-bg:           var(--be-ivory);
@@ -44,6 +44,14 @@
   --be-accent:       var(--be-gold);
   --be-border:       var(--be-slate-rule);
   --be-border-strong: var(--be-slate-rule-strong);
+  --be-surface:      var(--be-bg-elevated);
+
+  /* Text on colored soft backgrounds — ensures accessible contrast --------- */
+  --be-text-on-amber: var(--be-ink);
+  --be-text-on-gold:  var(--be-ink);
+  --be-text-on-green: var(--be-ink);
+  --be-text-on-red:   var(--be-ink);
+  --be-text-on-slate: var(--be-ink);
 
   /* Typography ------------------------------------------------------------- */
   --be-font-display: 'Fraunces Variable', 'Fraunces', 'Source Serif 4', Georgia, 'Times New Roman', serif;
@@ -106,9 +114,9 @@
   --be-border-focus: 1.5px solid var(--be-ink);
 
   /* Shadows ---------------------------------------------------------------- */
-  --be-shadow-1: 0 1px 2px rgba(14,17,22,0.06), 0 1px 1px rgba(14,17,22,0.04);
-  --be-shadow-2: 0 8px 24px rgba(14,17,22,0.12), 0 2px 6px rgba(14,17,22,0.06);
-  --be-shadow-card-bevel: inset 0 1px 0 rgba(255,255,255,0.6);
+  --be-shadow-1: 0 1px 2px color-mix(in srgb, var(--be-ink) 6%, transparent), 0 1px 1px color-mix(in srgb, var(--be-ink) 4%, transparent);
+  --be-shadow-2: 0 8px 24px color-mix(in srgb, var(--be-ink) 12%, transparent), 0 2px 6px color-mix(in srgb, var(--be-ink) 6%, transparent);
+  --be-shadow-card-bevel: inset 0 1px 0 color-mix(in srgb, var(--be-bone) 60%, transparent);
 
   /* Motion ----------------------------------------------------------------- */
   /* Legacy easings (kept for backward compat) */
@@ -295,6 +303,88 @@ a:hover { text-decoration-color: var(--be-fg); }
 
 /* Selection ---------------------------------------------------------------- */
 ::selection { background: var(--be-gold-soft); color: var(--be-fg); }
+
+/* Dark mode palette — available via data-theme="dark" or OS preference ------
+ * Not forced by default; consumers can opt in with <html data-theme="dark">.
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    /* Surfaces and text */
+    --be-bg:           var(--be-ink);
+    --be-bg-elevated:  var(--be-ink-2);
+    --be-bg-inverse:   var(--be-ivory);
+    --be-fg:           var(--be-ivory);
+    --be-fg-muted:     var(--be-slate-2);
+    --be-fg-faint:     var(--be-slate);
+    --be-fg-inverse:   var(--be-ink);
+    --be-border:       color-mix(in srgb, var(--be-slate) 30%, transparent);
+    --be-border-strong: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+    --be-border-focus: 1.5px solid var(--be-ivory);
+    --be-surface:      var(--be-bg-elevated);
+
+    /* Soft backgrounds tuned for dark surfaces */
+    --be-slate-soft:  color-mix(in srgb, var(--be-slate-2) 18%, transparent);
+    --be-slate-rule:  color-mix(in srgb, var(--be-slate) 24%, transparent);
+    --be-slate-rule-strong: color-mix(in srgb, var(--be-slate-2) 38%, transparent);
+    --be-gold-soft:   color-mix(in srgb, var(--be-gold) 18%, transparent);
+    --be-green-soft:  color-mix(in srgb, var(--be-green) 14%, transparent);
+    --be-red-soft:    color-mix(in srgb, var(--be-red) 14%, transparent);
+    --be-amber-soft:  color-mix(in srgb, var(--be-amber) 18%, transparent);
+
+    /* Shadows */
+    --be-shadow-1: 0 1px 2px color-mix(in srgb, #000 22%, transparent), 0 1px 1px color-mix(in srgb, #000 14%, transparent);
+    --be-shadow-2: 0 8px 24px color-mix(in srgb, #000 36%, transparent), 0 2px 6px color-mix(in srgb, #000 20%, transparent);
+    --be-shadow-card-bevel: inset 0 1px 0 color-mix(in srgb, var(--be-ivory) 10%, transparent);
+
+    /* Text on soft colored backgrounds */
+    --be-text-on-amber: var(--be-ivory);
+    --be-text-on-gold:  var(--be-ivory);
+    --be-text-on-green: var(--be-ivory);
+    --be-text-on-red:   var(--be-ivory);
+    --be-text-on-slate: var(--be-ivory);
+  }
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces and text */
+  --be-bg:           var(--be-ink);
+  --be-bg-elevated:  var(--be-ink-2);
+  --be-bg-inverse:   var(--be-ivory);
+  --be-fg:           var(--be-ivory);
+  --be-fg-muted:     var(--be-slate-2);
+  --be-fg-faint:     var(--be-slate);
+  --be-fg-inverse:   var(--be-ink);
+  --be-border:       color-mix(in srgb, var(--be-slate) 30%, transparent);
+  --be-border-strong: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+  --be-border-focus: 1.5px solid var(--be-ivory);
+  --be-surface:      var(--be-bg-elevated);
+
+  /* Soft backgrounds tuned for dark surfaces */
+  --be-slate-soft:  color-mix(in srgb, var(--be-slate-2) 18%, transparent);
+  --be-slate-rule:  color-mix(in srgb, var(--be-slate) 24%, transparent);
+  --be-slate-rule-strong: color-mix(in srgb, var(--be-slate-2) 38%, transparent);
+  --be-gold-soft:   color-mix(in srgb, var(--be-gold) 18%, transparent);
+  --be-green-soft:  color-mix(in srgb, var(--be-green) 14%, transparent);
+  --be-red-soft:    color-mix(in srgb, var(--be-red) 14%, transparent);
+  --be-amber-soft:  color-mix(in srgb, var(--be-amber) 18%, transparent);
+
+  /* Shadows */
+  --be-shadow-1: 0 1px 2px color-mix(in srgb, #000 22%, transparent), 0 1px 1px color-mix(in srgb, #000 14%, transparent);
+  --be-shadow-2: 0 8px 24px color-mix(in srgb, #000 36%, transparent), 0 2px 6px color-mix(in srgb, #000 20%, transparent);
+  --be-shadow-card-bevel: inset 0 1px 0 color-mix(in srgb, var(--be-ivory) 10%, transparent);
+
+  /* Text on soft colored backgrounds */
+  --be-text-on-amber: var(--be-ivory);
+  --be-text-on-gold:  var(--be-ivory);
+  --be-text-on-green: var(--be-ivory);
+  --be-text-on-red:   var(--be-ivory);
+  --be-text-on-slate: var(--be-ivory);
+}
 
 /* Reduced motion — crossfade instead of zero motion ------------------------ */
 @media (prefers-reduced-motion: reduce) {

@@ -62,6 +62,19 @@ export default function UserDetailsListScreen({ onUserDetail }) {
     }
   }
 
+  function SortHeader({ label, column, className }) {
+    const active = sortKey === column;
+    return (
+      <th className={className} aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+        <button type="button" onClick={() => toggleSort(column)}>
+          {label}
+          {active && <span aria-hidden="true">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>}
+          <span className="adm-sr-only">{active ? (sortDir === 'asc' ? ' sorted ascending' : ' sorted descending') : ' not sorted'}</span>
+        </button>
+      </th>
+    );
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
@@ -70,7 +83,7 @@ export default function UserDetailsListScreen({ onUserDetail }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Client Directory</span>
-            <h3 className="adm-card-title">Approved Users</h3>
+            <h2 className="adm-card-title">Approved Users</h2>
           </div>
           <div className="adm-card-actions">
             <span className="adm-cell-meta">{fmtInt(total)} total</span>
@@ -102,15 +115,9 @@ export default function UserDetailsListScreen({ onUserDetail }) {
           <table>
             <thead>
               <tr>
-                <th className="adm-col-user" onClick={() => toggleSort('name')} style={{ cursor: 'pointer' }}>
-                  User {sortKey === 'name' && (sortDir === 'asc' ? '▲' : '▼')}
-                </th>
-                <th className="adm-col-date" onClick={() => toggleSort('createdAt')} style={{ cursor: 'pointer' }}>
-                  Signed up {sortKey === 'createdAt' && (sortDir === 'asc' ? '▲' : '▼')}
-                </th>
-                <th className="adm-col-date" onClick={() => toggleSort('approvedAt')} style={{ cursor: 'pointer' }}>
-                  Approved {sortKey === 'approvedAt' && (sortDir === 'asc' ? '▲' : '▼')}
-                </th>
+                <SortHeader label="User" column="name" className="adm-col-user" />
+                <SortHeader label="Signed up" column="createdAt" className="adm-col-date" />
+                <SortHeader label="Approved" column="approvedAt" className="adm-col-date" />
                 <th className="adm-col-status">Status</th>
                 <th className="adm-col-role">Role</th>
                 <th className="adm-col-actions"></th>
@@ -119,11 +126,11 @@ export default function UserDetailsListScreen({ onUserDetail }) {
             <tbody>
               {loading && sortedUsers.length === 0 && (
                 <>
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
-                  <SkeletonTableRow />
+                  <SkeletonTableRow columnCount={6} />
+                  <SkeletonTableRow columnCount={6} />
+                  <SkeletonTableRow columnCount={6} />
+                  <SkeletonTableRow columnCount={6} />
+                  <SkeletonTableRow columnCount={6} />
                 </>
               )}
               {!loading && sortedUsers.length === 0 && (

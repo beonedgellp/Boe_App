@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import logo from '@beonedge/shared/assets/logo.svg';
@@ -7,6 +7,19 @@ import { initials, displayRole } from '../helpers/formatters.js';
 import I from '../components/I.jsx';
 
 const OPEN_GROUPS_KEY = 'boe.admin.nav.openGroups';
+const MOBILE_BREAKPOINT = 768;
+
+function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 function readOpenGroups() {
   try {
@@ -27,7 +40,7 @@ function persistOpenGroups(next) {
   }
 }
 
-function SidebarGroup({ domain, counts, isOpen, onToggle }) {
+function SidebarGroup({ domain, counts, isOpen, onToggle, isMobile }) {
   const isSingleItem = domain.items.length === 1;
 
   if (isSingleItem) {
@@ -41,16 +54,18 @@ function SidebarGroup({ domain, counts, isOpen, onToggle }) {
 
   return (
     <div className="ash-nav-group">
-      <button
-        type="button"
-        className="ash-nav-group-toggle"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-      >
-        <span>{domain.label}</span>
-        <I icon={ChevronDown} size={13} className={`ash-nav-chevron ${isOpen ? '' : 'is-collapsed'}`} />
-      </button>
-      {isOpen && domain.items.map((item) => (
+      {!isMobile && (
+        <button
+          type="button"
+          className="ash-nav-group-toggle"
+          aria-expanded={isOpen}
+          onClick={onToggle}
+        >
+          <span>{domain.label}</span>
+          <I icon={ChevronDown} size={13} className={`ash-nav-chevron ${isOpen ? '' : 'is-collapsed'}`} />
+        </button>
+      )}
+      {(isOpen || isMobile) && domain.items.map((item) => (
         <SidebarItem key={item.path} item={item} counts={counts} />
       ))}
     </div>
@@ -73,6 +88,7 @@ function SidebarItem({ item, counts }) {
 
 export default function Sidebar({ user, counts = {} }) {
   const [openGroups, setOpenGroups] = useState(readOpenGroups);
+  const isMobile = useIsMobile();
 
   function toggleGroup(domainId) {
     setOpenGroups((prev) => {
@@ -102,6 +118,7 @@ export default function Sidebar({ user, counts = {} }) {
             counts={counts}
             isOpen={openGroups[domain.id] !== false}
             onToggle={() => toggleGroup(domain.id)}
+            isMobile={isMobile}
           />
         ))}
       </nav>

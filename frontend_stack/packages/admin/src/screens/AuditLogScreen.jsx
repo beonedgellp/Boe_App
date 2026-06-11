@@ -62,9 +62,9 @@ function AuditLogScreen({ rows = [], loading = false }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Compliance</span>
-            <h3 className="adm-card-title">Audit log</h3>
+            <h2 className="adm-card-title">Audit log</h2>
           </div>
-          <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
+          <div className="adm-card-actions">
             <div className="adm-search">
               <I icon={Search} size={14} />
               <input
@@ -86,9 +86,9 @@ function AuditLogScreen({ rows = [], loading = false }) {
         {loading && <div className="adm-skeleton">Loading audit logs...</div>}
 
         {!loading && filtered.length === 0 && (
-          <div style={{ padding: 32, textAlign: 'center', color: 'var(--be-slate)' }}>
+          <div className="adm-empty-state adm-empty-state--lg">
             <I icon={History} size={32} />
-            <p style={{ marginTop: 12 }}>No audit log entries match the current filters.</p>
+            <p>No audit log entries match the current filters.</p>
           </div>
         )}
 
@@ -124,8 +124,8 @@ function AuditLogScreen({ rows = [], loading = false }) {
                       <tr className="adm-detail-row">
                         <td colSpan={7}>
                           {entries.filter((r) => expandedId === r.id).map((r) => (
-                            <div key={r.id} style={{ padding: 12, background: 'var(--be-surface)', borderRadius: 8, fontSize: 12, fontFamily: 'monospace' }}>
-                              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                            <div key={r.id} className="adm-code-block">
+                              <pre>
                                 {JSON.stringify({ before: r.before, after: r.after, ip: r.ipAddress, ua: r.userAgent }, null, 2)}
                               </pre>
                             </div>

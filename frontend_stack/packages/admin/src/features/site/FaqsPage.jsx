@@ -69,8 +69,15 @@ export default function FaqsPage() {
                   key={faq.id}
                   className="is-clickable"
                   tabIndex={0}
+                  role="button"
+                  aria-label={`Edit FAQ ${faq.question}`}
                   onClick={() => setEditing(faq)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') setEditing(faq); }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setEditing(faq);
+                    }
+                  }}
                 >
                   <td>
                     <div className="ash-cell-main">{faq.question}</div>

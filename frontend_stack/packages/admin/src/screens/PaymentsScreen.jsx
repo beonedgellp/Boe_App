@@ -118,11 +118,18 @@ function PaymentDecisionPanel({
 
   return (
     <div className="adm-review-overlay" onClick={onClose}>
-      <form className="adm-review-panel adm-payment-panel" onSubmit={submit} onClick={(event) => event.stopPropagation()}>
+      <form
+        className="adm-review-panel adm-payment-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-decision-title"
+        onSubmit={submit}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="adm-review-head">
           <div>
             <span className="be-eyebrow">{isApprove ? 'Payment approval' : 'Payment rejection'}</span>
-            <h2>{row.fundName || 'Fund pool'}</h2>
+            <h2 id="payment-decision-title">{row.fundName || 'Fund pool'}</h2>
           </div>
           <button type="button" className="adm-icon-btn" onClick={onClose} disabled={busy}>
             <span aria-hidden="true" style={{ fontSize: 20 }}>&times;</span>
@@ -257,7 +264,7 @@ function PaymentsScreen({
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Transactions</span>
-            <h3 className="adm-card-title">Payment approval queue</h3>
+            <h2 className="adm-card-title">Payment approval queue</h2>
           </div>
           <div className="adm-payment-count">{filteredRows.length} / {rows.length}</div>
         </div>

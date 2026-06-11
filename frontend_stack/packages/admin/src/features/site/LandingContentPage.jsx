@@ -198,6 +198,7 @@ export default function LandingContentPage() {
         src={PREVIEW_URL}
         title="Landing page preview"
         className="ash-preview-frame"
+        sandbox="allow-scripts allow-same-origin"
       />
     </div>
   ) : null;

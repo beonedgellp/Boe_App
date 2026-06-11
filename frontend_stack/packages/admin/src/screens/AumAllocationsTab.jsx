@@ -28,6 +28,7 @@ import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
+import { fmtMoney } from '@beonedge/shared/format.js';
 
 function AumAllocationsTab({ funds }) {
   const [selectedFund, setSelectedFund] = useState(null);
@@ -73,10 +74,10 @@ function AumAllocationsTab({ funds }) {
           <div className="adm-card-head">
             <div>
               <span className="be-eyebrow">Allocations</span>
-              <h3 className="adm-card-title">Manage fund allocations</h3>
+              <h2 className="adm-card-title">Manage fund allocations</h2>
             </div>
           </div>
-          <p style={{ fontSize: 13, color: 'var(--be-slate)', padding: '0 18px 14px' }}>
+          <p className="adm-card-hint">
             Select a fund to allocate cash to investments or unallocate back to cash.
           </p>
           <div className="adm-table-scroll">
@@ -91,7 +92,7 @@ function AumAllocationsTab({ funds }) {
                   const fcash = (f.totalPoolSize || 0) - (fa.totalInvested || 0);
                   return (
                     <tr key={f.id}>
-                      <td><span style={{fontFamily:'var(--be-font-serif)',fontSize:15,fontWeight:600}}>{f.name}</span></td>
+                      <td><span className="adm-fund-name">{f.name}</span></td>
                       <td className="be-money">{f.totalPoolSize ?? 0}</td>
                       <td className="be-money">{fa.totalInvested ?? 0}</td>
                       <td className="be-money" style={{ color: fcash < 0 ? 'var(--be-red)' : 'var(--be-green)' }}>{fcash}</td>
@@ -107,41 +108,41 @@ function AumAllocationsTab({ funds }) {
           </div>
         </div>
       ) : (
-        <div className="adm-fund-editor-layout" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <div className="adm-fund-editor-layout adm-fund-editor-layout--equal">
           <div className="adm-fund-editor-main">
             <div className="adm-fund-editor-section">
               <div className="adm-fund-editor-section-title"><I icon={PieChart} size={16} /> {fund.name} — Allocation</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
-                <div className="adm-stat" style={{ padding: 14 }}>
+              <div className="adm-metric-grid adm-m-b-4">
+                <div className="adm-stat adm-stat--sm">
                   <div className="be-eyebrow">Pool Size</div>
                   <div className="adm-stat-value be-money">{fmtMoney(fund.totalPoolSize)}</div>
                 </div>
-                <div className="adm-stat" style={{ padding: 14 }}>
+                <div className="adm-stat adm-stat--sm">
                   <div className="be-eyebrow">Allocated</div>
                   <div className="adm-stat-value be-money">{fmtMoney(analytics.totalInvested)}</div>
                 </div>
-                <div className="adm-stat" style={{ padding: 14, borderColor: cash < 0 ? 'var(--be-red)' : 'var(--be-border)' }}>
+                <div className="adm-stat adm-stat--sm" style={{ borderColor: cash < 0 ? 'var(--be-red)' : 'var(--be-border)' }}>
                   <div className="be-eyebrow">Cash Available</div>
                   <div className="adm-stat-value be-money" style={{ color: cash < 0 ? 'var(--be-red)' : 'var(--be-green)' }}>{fmtMoney(cash)}</div>
                 </div>
               </div>
 
-              <div className="be-eyebrow" style={{ marginBottom: 8 }}>Current Investments</div>
+              <div className="be-eyebrow adm-m-b-2">Current Investments</div>
               {fund.investments?.length === 0 && <div className="adm-empty-state">No investments yet.</div>}
               {fund.investments?.map(inv => {
                 const pct = fund.totalPoolSize > 0 ? ((inv.amount || 0) / fund.totalPoolSize * 100).toFixed(1) : '0.0';
                 const sector = fund.sectors?.find(s => s.id === inv.sectorId);
                 return (
-                  <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--be-border)' }}>
+                  <div key={inv.id} className="adm-investment-list-row">
                     <div>
-                      <div style={{ fontWeight: 500, fontSize: 14 }}>{inv.companyName || 'Unnamed'}</div>
-                      <div style={{ fontSize: 12, color: 'var(--be-slate)' }}>
-                        {sector ? <><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: sector.color, marginRight: 4 }} />{sector.name}</> : 'No sector'}
+                      <div className="adm-cell-main">{inv.companyName || 'Unnamed'}</div>
+                      <div className="adm-cell-sub">
+                        {sector ? <><span className="adm-distribution-preview__swatch" style={{ background: sector.color }} />{sector.name}</> : 'No sector'}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div className="be-money" style={{ fontWeight: 600 }}>₹{(inv.amount || 0).toLocaleString()}</div>
-                      <div className="be-num" style={{ fontSize: 12, color: 'var(--be-slate)' }}>{pct}% of pool</div>
+                    <div className="adm-text-right">
+                      <div className="be-money adm-text-semibold">₹{(inv.amount || 0).toLocaleString()}</div>
+                      <div className="be-num adm-cell-sub">{pct}% of pool</div>
                     </div>
                   </div>
                 );
@@ -152,7 +153,7 @@ function AumAllocationsTab({ funds }) {
           <div className="adm-fund-editor-side">
             <div className="adm-fund-editor-section">
               <div className="adm-fund-editor-section-title">Allocation Actions</div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <div className="adm-action-row">
                 <button className={`be-btn be-btn-sm ${actionMode === 'allocate' ? 'be-btn-primary' : 'be-btn-secondary'}`} onClick={() => { setActionMode('allocate'); setSelectedInvestment(''); }}>
                   <I icon={Plus} size={14} /> Allocate
                 </button>
@@ -165,7 +166,7 @@ function AumAllocationsTab({ funds }) {
               {actionMode && (
                 <form onSubmit={handleSubmit}>
                   {message && (
-                    <div className={`adm-validation-banner adm-validation-banner--${message.type}`} style={{ marginBottom: 10 }}>
+                    <div className={`adm-validation-banner adm-validation-banner--${message.type} adm-m-b-2`}>
                       <I icon={AlertTriangle} size={14} /> {message.text}
                     </div>
                   )}
@@ -182,7 +183,7 @@ function AumAllocationsTab({ funds }) {
                     <span>Amount (INR)</span>
                     <input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} required />
                     {actionMode === 'allocate' && (
-                      <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>Available cash: ₹{cash.toLocaleString()}</small>
+                      <small className="adm-help-text">Available cash: ₹{cash.toLocaleString()}</small>
                     )}
                   </label>
                   <label className="adm-field">

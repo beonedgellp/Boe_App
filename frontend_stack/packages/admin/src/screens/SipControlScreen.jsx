@@ -116,7 +116,7 @@ export default function SipControlScreen() {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">SIP Control Queue</span>
-            <h3 className="adm-card-title">SIP Control Requests</h3>
+            <h2 className="adm-card-title">SIP Control Requests</h2>
           </div>
         </div>
 

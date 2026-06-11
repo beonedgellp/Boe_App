@@ -35,9 +35,9 @@ function HoldingsScreen({ funds = [], loading = false }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Portfolio</span>
-            <h3 className="adm-card-title">Holdings by fund</h3>
+            <h2 className="adm-card-title">Holdings by fund</h2>
           </div>
-          <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
+          <div className="adm-card-actions">
             <div className="adm-search">
               <I icon={Search} size={14} />
               <input
@@ -61,8 +61,8 @@ function HoldingsScreen({ funds = [], loading = false }) {
             {filtered.map((f) => (
               <tr key={f.id}>
                 <td>
-                  <div style={{ fontWeight: 600 }}>{f.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--be-slate)' }}>{f.tagline || '—'}</div>
+                  <div className="adm-cell-main">{f.name}</div>
+                  <div className="adm-cell-sub">{f.tagline || '—'}</div>
                 </td>
                 <td>
                   <span className={`be-badge be-badge-${f.lifecycleStage === 'active' ? 'active' : f.lifecycleStage === 'paused' ? 'paused' : 'neutral'}`}>
@@ -82,12 +82,12 @@ function HoldingsScreen({ funds = [], loading = false }) {
             {selectedFund && filtered.find((f) => f.id === selectedFund.id) && (
               <tr className="adm-detail-row">
                 <td colSpan={6}>
-                  <div style={{ padding: 16, background: 'var(--be-surface)', borderRadius: 8 }}>
-                    <h4 style={{ margin: '0 0 12px' }}>{selectedFund.name} — Holdings</h4>
+                  <div className="adm-detail-panel">
+                    <h4 className="adm-detail-title">{selectedFund.name} — Holdings</h4>
                     {selectedFund.sectors && selectedFund.sectors.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <h5 style={{ margin: '0 0 8px', fontSize: 12, textTransform: 'uppercase', color: 'var(--be-slate)' }}>Sectors</h5>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <div className="adm-detail-section">
+                        <h5 className="adm-detail-section-title">Sectors</h5>
+                        <div className="adm-detail-tags">
                           {selectedFund.sectors.map((s, i) => (
                             <span key={i} className="be-badge be-badge-neutral">{s.name}: {s.percentage}%</span>
                           ))}
@@ -95,7 +95,7 @@ function HoldingsScreen({ funds = [], loading = false }) {
                       </div>
                     )}
                     {selectedFund.investments && selectedFund.investments.length > 0 ? (
-                      <table className="adm-table" style={{ fontSize: 12 }}>
+                      <table className="adm-table adm-table-sm">
                         <thead><tr><th>Company</th><th>Sector</th><th>Amount</th></tr></thead>
                         <tbody>
                           {selectedFund.investments.map((inv) => (
@@ -108,7 +108,7 @@ function HoldingsScreen({ funds = [], loading = false }) {
                         </tbody>
                       </table>
                     ) : (
-                      <p style={{ color: 'var(--be-slate)' }}>No investment holdings recorded for this fund.</p>
+                      <p className="adm-text-muted">No investment holdings recorded for this fund.</p>
                     )}
                   </div>
                 </td>

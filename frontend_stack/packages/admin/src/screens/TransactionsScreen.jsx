@@ -94,7 +94,7 @@ function TransactionsScreen({ funds = [] }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Transactions</span>
-            <h3 className="adm-card-title">All client transactions</h3>
+            <h2 className="adm-card-title">All client transactions</h2>
           </div>
           <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
             <div className="adm-search">

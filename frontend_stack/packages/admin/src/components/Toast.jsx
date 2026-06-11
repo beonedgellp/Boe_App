@@ -37,10 +37,10 @@ function ToastItem({ toast, onDismiss }) {
   const tone = TONES[toast.type] || TONES.success;
 
   return (
-    <div className={`adm-toast ${tone}`} role="alert">
+    <div className={`adm-toast ${tone}`} role="status">
       <I icon={Icon} size={16} />
       <span className="adm-toast-msg">{toast.message}</span>
-      <button className="adm-toast-close" onClick={() => onDismiss?.(toast.id)} aria-label="Dismiss">
+      <button type="button" className="adm-toast-close" onClick={() => onDismiss?.(toast.id)} aria-label="Dismiss notification">
         <I icon={X} size={14} />
       </button>
     </div>

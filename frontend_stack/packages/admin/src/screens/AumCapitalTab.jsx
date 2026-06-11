@@ -28,6 +28,7 @@ import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
+import { fmtMoney } from '@beonedge/shared/format.js';
 
 function AumCapitalTab({ funds }) {
   const [selectedFund, setSelectedFund] = useState('');
@@ -80,7 +81,7 @@ function AumCapitalTab({ funds }) {
 
   return (
     <div className="adm-fund-pools">
-      <div className="adm-fund-editor-layout" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <div className="adm-fund-editor-layout adm-fund-editor-layout--equal">
         <div className="adm-fund-editor-main">
           <div className="adm-fund-editor-section">
             <div className="adm-fund-editor-section-title"><I icon={TrendingUp} size={16} /> Capital Flow History</div>
@@ -96,8 +97,8 @@ function AumCapitalTab({ funds }) {
                       <td><span style={{ color: txTypeColor[tx.type] || 'var(--be-slate)', fontWeight: 500, fontSize: 12 }}>{txTypeLabel[tx.type] || tx.type}</span></td>
                       <td>{funds.find(f => f.id === tx.fundId)?.name || tx.fundId.slice(0, 8)}</td>
                       <td className="be-money">₹{(tx.amount || 0).toLocaleString()}</td>
-                      <td style={{ fontSize: 12 }}>{tx.source} → {tx.target}</td>
-                      <td style={{ fontSize: 12, color: 'var(--be-slate)' }}>{tx.reason || '—'}</td>
+                      <td className="adm-cell-sub">{tx.source} → {tx.target}</td>
+                      <td className="adm-cell-sub">{tx.reason || '—'}</td>
                       <td className="adm-cell-meta">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : '—'}</td>
                     </tr>
                   ))}
@@ -121,21 +122,21 @@ function AumCapitalTab({ funds }) {
             </label>
 
             {fund && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                <div className="adm-stat" style={{ padding: 12 }}>
+              <div className="adm-metric-grid--2 adm-m-b-3">
+                <div className="adm-stat adm-stat--sm">
                   <div className="be-eyebrow">Pool Size</div>
-                  <div className="adm-stat-value be-money" style={{ fontSize: 20 }}>{fmtMoney(fund.totalPoolSize)}</div>
+                  <div className="adm-stat-value adm-stat-value--sm be-money">{fmtMoney(fund.totalPoolSize)}</div>
                 </div>
-                <div className="adm-stat" style={{ padding: 12 }}>
+                <div className="adm-stat adm-stat--sm">
                   <div className="be-eyebrow">Cash</div>
-                  <div className="adm-stat-value be-money" style={{ fontSize: 20, color: 'var(--be-green)' }}>
+                  <div className="adm-stat-value adm-stat-value--sm be-money" style={{ color: 'var(--be-green)' }}>
                     {fmtMoney((fund.totalPoolSize || 0) - (fund.analytics?.totalInvested || 0))}
                   </div>
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <div className="adm-action-row">
               <button className={`be-btn be-btn-sm ${actionMode === 'inflow' ? 'be-btn-primary' : 'be-btn-secondary'}`} onClick={() => setActionMode('inflow')}>
                 <I icon={Plus} size={14} /> Add Capital
               </button>
@@ -147,7 +148,7 @@ function AumCapitalTab({ funds }) {
             {actionMode && fund && (
               <form onSubmit={handleSubmit}>
                 {message && (
-                  <div className={`adm-validation-banner adm-validation-banner--${message.type}`} style={{ marginBottom: 10 }}>
+                  <div className={`adm-validation-banner adm-validation-banner--${message.type} adm-m-b-2`}>
                     <I icon={AlertTriangle} size={14} /> {message.text}
                   </div>
                 )}

@@ -78,8 +78,15 @@ export default function PlansPage() {
                   key={plan.id}
                   className="is-clickable"
                   tabIndex={0}
+                  role="button"
+                  aria-label={`Edit plan ${plan.name}`}
                   onClick={() => setEditing(plan)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') setEditing(plan); }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setEditing(plan);
+                    }
+                  }}
                 >
                   <td>
                     <div className="ash-cell-main">

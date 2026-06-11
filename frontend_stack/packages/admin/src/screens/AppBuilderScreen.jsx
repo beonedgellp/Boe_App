@@ -39,6 +39,7 @@ function AppBuilderScreen() {
   const [selectedProductId, setSelectedProductId] = useState(config.mobile.products[0]?.id || '');
   const [saved, setSaved] = useState('');
   const [loadingConfig, setLoadingConfig] = useState(false);
+  const tabRefs = useRef([]);
 
   const selectedProduct = config.mobile.products.find((product) => product.id === selectedProductId) || config.mobile.products[0];
   const screen = config.mobile.screens[screenId];
@@ -90,47 +91,69 @@ function AppBuilderScreen() {
 
   function setComponentEnabled(targetScreen, componentId, enabled) {
     updateConfig((next) => {
-      const components = next.mobile.screens[targetScreen].components;
-      const existing = components.find((item) => item.id === componentId);
-      if (existing) existing.enabled = enabled;
-      else components.push({ id: componentId, enabled });
+      const screen = next.mobile.screens[targetScreen];
+      const components = screen.components;
+      const existingIndex = components.findIndex((item) => item.id === componentId);
+      const nextComponents = existingIndex >= 0
+        ? components.map((item, index) => (index === existingIndex ? { ...item, enabled } : item))
+        : [...components, { id: componentId, enabled }];
+      next.mobile.screens[targetScreen] = { ...screen, components: nextComponents };
     });
   }
 
   function updateScreenCopy(key, value) {
     updateConfig((next) => {
-      next.mobile.screens[screenId].copy[key] = value;
+      const screen = next.mobile.screens[screenId];
+      next.mobile.screens[screenId] = { ...screen, copy: { ...screen.copy, [key]: value } };
     });
   }
 
   function updateDashboardAction(index, field, value) {
     updateConfig((next) => {
-      next.mobile.screens.dashboard.quickActions[index][field] = value;
+      const dashboard = next.mobile.screens.dashboard;
+      next.mobile.screens.dashboard = {
+        ...dashboard,
+        quickActions: dashboard.quickActions.map((action, i) =>
+          i === index ? { ...action, [field]: value } : action
+        ),
+      };
     });
   }
 
   function addDashboardAction() {
     updateConfig((next) => {
-      next.mobile.screens.dashboard.quickActions.push({
-        id: `action_${Date.now()}`,
-        label: 'New action',
-        icon: 'Compass',
-        route: '/app/explore',
-        enabled: true,
-      });
+      const dashboard = next.mobile.screens.dashboard;
+      next.mobile.screens.dashboard = {
+        ...dashboard,
+        quickActions: [
+          ...dashboard.quickActions,
+          {
+            id: `action_${Date.now()}`,
+            label: 'New action',
+            icon: 'Compass',
+            route: '/app/explore',
+            enabled: true,
+          },
+        ],
+      };
     });
   }
 
   function removeDashboardAction(index) {
     updateConfig((next) => {
-      next.mobile.screens.dashboard.quickActions.splice(index, 1);
+      const dashboard = next.mobile.screens.dashboard;
+      next.mobile.screens.dashboard = {
+        ...dashboard,
+        quickActions: dashboard.quickActions.filter((_, i) => i !== index),
+      };
     });
   }
 
   function updateProduct(field, value) {
     updateConfig((next) => {
-      const product = next.mobile.products.find((item) => item.id === selectedProduct.id);
-      product[field] = value;
+      next.mobile.products = next.mobile.products.map((product) =>
+        product.id === selectedProduct.id ? { ...product, [field]: value } : product
+      );
     });
   }
 
@@ -139,48 +162,59 @@ function AppBuilderScreen() {
   }
 
   function updateProductList(listName, index, field, value) {
+    const nextValue = field === 'pct' ? (value === '' ? null : Number(value)) : value;
     updateConfig((next) => {
-      const product = next.mobile.products.find((item) => item.id === selectedProduct.id);
-      product[listName][index][field] = field === 'pct' ? (value === '' ? null : Number(value)) : value;
+      next.mobile.products = next.mobile.products.map((product) =>
+        product.id === selectedProduct.id
+          ? { ...product, [listName]: product[listName].map((row, i) => (i === index ? { ...row, [field]: nextValue } : row)) }
+          : product
+      );
     });
   }
 
   function addProductListItem(listName, item) {
     updateConfig((next) => {
-      const product = next.mobile.products.find((entry) => entry.id === selectedProduct.id);
-      product[listName].push(item);
+      next.mobile.products = next.mobile.products.map((product) =>
+        product.id === selectedProduct.id
+          ? { ...product, [listName]: [...product[listName], item] }
+          : product
+      );
     });
   }
 
   function removeProductListItem(listName, index) {
     updateConfig((next) => {
-      const product = next.mobile.products.find((entry) => entry.id === selectedProduct.id);
-      product[listName].splice(index, 1);
+      next.mobile.products = next.mobile.products.map((product) =>
+        product.id === selectedProduct.id
+          ? { ...product, [listName]: product[listName].filter((_, i) => i !== index) }
+          : product
+      );
     });
   }
 
   function addProduct() {
     const id = `product_${Date.now()}`;
+    const newProduct = {
+      id,
+      name: 'New BeOnEdge Strategy',
+      tagline: 'Configure this strategy before publishing.',
+      objective: 'Configure objective from the admin panel.',
+      categoryEyebrow: 'BeOnEdge strategy',
+      status: 'coming_soon',
+      riskLabel: 'moderate',
+      minSip: null,
+      minLumpsum: null,
+      minDurationMonths: null,
+      lockInText: 'Configured before launch',
+      allocation: [],
+      topHoldings: [],
+      disclosureVersion: 'draft',
+      methodology: 'Pending publication.',
+      fees: [],
+      horizon: '3 yr+',
+    };
     updateConfig((next) => {
-      next.mobile.products.push({
-        id,
-        name: 'New BeOnEdge Strategy',
-        tagline: 'Configure this strategy before publishing.',
-        objective: 'Configure objective from the admin panel.',
-        categoryEyebrow: 'BeOnEdge strategy',
-        status: 'coming_soon',
-        riskLabel: 'moderate',
-        minSip: null,
-        minLumpsum: null,
-        minDurationMonths: null,
-        lockInText: 'Configured before launch',
-        allocation: [],
-        topHoldings: [],
-        disclosureVersion: 'draft',
-        methodology: 'Pending publication.',
-        fees: [],
-        horizon: '3 yr+',
-      });
+      next.mobile.products = [...next.mobile.products, newProduct];
     });
     setSelectedProductId(id);
   }
@@ -210,30 +244,37 @@ function AppBuilderScreen() {
     updateConfig((next) => {
       next.mobile.products = remaining.length > 0 ? remaining : [fallback];
     });
+    // Fallback is already a fresh object; selectedProductId must follow the new reference.
     setSelectedProductId(fallback.id);
   }
 
   function updateResearch(index, field, value) {
     updateConfig((next) => {
-      next.mobile.researchContext[index][field] = value;
+      next.mobile.researchContext = next.mobile.researchContext.map((row, i) =>
+        i === index ? { ...row, [field]: value } : row
+      );
     });
   }
 
   function addResearchRow() {
     updateConfig((next) => {
-      next.mobile.researchContext.push({ label: 'New allocation row', value: '0%', note: 'Admin configured.' });
+      next.mobile.researchContext = [
+        ...next.mobile.researchContext,
+        { label: 'New allocation row', value: '0%', note: 'Admin configured.' },
+      ];
     });
   }
 
   function removeResearchRow(index) {
     updateConfig((next) => {
-      next.mobile.researchContext.splice(index, 1);
+      next.mobile.researchContext = next.mobile.researchContext.filter((_, i) => i !== index);
     });
   }
 
   function updateArraySetting(section, key, value) {
     updateConfig((next) => {
-      next.mobile.screens.invest[section][key] = csvNumbers(value);
+      const target = next.mobile.screens.invest[section];
+      next.mobile.screens.invest[section] = { ...target, [key]: csvNumbers(value) };
     });
   }
 
@@ -242,7 +283,7 @@ function AppBuilderScreen() {
       <div className="adm-builder-head">
         <div>
           <span className="be-eyebrow">Mobile app configuration</span>
-          <h3 className="adm-card-title">Control app components, charts, and Explore content</h3>
+          <h2 className="adm-card-title">Control app components, charts, and Explore content</h2>
         </div>
         <div className="adm-card-actions">
           {(loadingConfig || saved) && <span className="adm-save-note">{loadingConfig ? 'Loading backend config...' : saved}</span>}
@@ -256,12 +297,37 @@ function AppBuilderScreen() {
           <div className="adm-card-head">
             <div>
               <span className="be-eyebrow">Add or remove</span>
-              <h3 className="adm-card-title">App components</h3>
+              <h2 className="adm-card-title">App components</h2>
             </div>
-            <div className="adm-builder-tabs">
-              {Object.entries(SCREEN_LABELS).map(([id, label]) => (
-                <button key={id} className={screenId === id ? 'is-active' : ''} onClick={() => setScreenId(id)}>{label}</button>
-              ))}
+            <div className="adm-builder-tabs" role="tablist" aria-label="App screens">
+              {Object.entries(SCREEN_LABELS).map(([id, label], index, entries) => {
+                const isActive = screenId === id;
+                function handleTabKey(event) {
+                  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    const delta = event.key === 'ArrowRight' ? 1 : -1;
+                    const nextIndex = (index + delta + entries.length) % entries.length;
+                    const nextId = entries[nextIndex][0];
+                    setScreenId(nextId);
+                    tabRefs.current[nextIndex]?.focus();
+                  }
+                }
+                return (
+                  <button
+                    key={id}
+                    ref={(el) => { tabRefs.current[index] = el; }}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    className={isActive ? 'is-active' : ''}
+                    onClick={() => setScreenId(id)}
+                    onKeyDown={handleTabKey}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="adm-component-list">
@@ -297,7 +363,7 @@ function AppBuilderScreen() {
 
         <div className="adm-card">
           <span className="be-eyebrow">Dashboard shortcuts</span>
-          <h3 className="adm-card-title">Quick actions</h3>
+          <h2 className="adm-card-title">Quick actions</h2>
           <div className="adm-editor-list">
             {config.mobile.screens.dashboard.quickActions.map((action, index) => (
               <div className="adm-editor-row" key={action.id}>
@@ -334,7 +400,7 @@ function AppBuilderScreen() {
           <div className="adm-card-head">
             <div>
               <span className="be-eyebrow">Explore and charts</span>
-              <h3 className="adm-card-title">Strategy content</h3>
+              <h2 className="adm-card-title">Strategy content</h2>
             </div>
             <div className="adm-card-actions">
               <select className="adm-select" value={selectedProduct.id} onChange={(event) => setSelectedProductId(event.target.value)}>
@@ -362,8 +428,20 @@ function AppBuilderScreen() {
             <div>
               <span className="be-eyebrow">Investment controls</span>
               <div className="adm-form-grid">
-                <label className="adm-field"><span>Fund detail chart periods</span><input value={(config.mobile.screens.fundDetail.charts.periods || []).join(', ')} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.periods = event.target.value.split(',').map((item) => item.trim()).filter(Boolean); })} /></label>
-                <label className="adm-field"><span>Default period</span><input value={config.mobile.screens.fundDetail.charts.defaultPeriod || ''} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.defaultPeriod = event.target.value; })} /></label>
+                <label className="adm-field"><span>Fund detail chart periods</span><input value={(config.mobile.screens.fundDetail.charts.periods || []).join(', ')} onChange={(event) => updateConfig((next) => {
+                  const fundDetail = next.mobile.screens.fundDetail;
+                  next.mobile.screens.fundDetail = {
+                    ...fundDetail,
+                    charts: { ...fundDetail.charts, periods: event.target.value.split(',').map((item) => item.trim()).filter(Boolean) },
+                  };
+                })} /></label>
+                <label className="adm-field"><span>Default period</span><input value={config.mobile.screens.fundDetail.charts.defaultPeriod || ''} onChange={(event) => updateConfig((next) => {
+                  const fundDetail = next.mobile.screens.fundDetail;
+                  next.mobile.screens.fundDetail = {
+                    ...fundDetail,
+                    charts: { ...fundDetail.charts, defaultPeriod: event.target.value },
+                  };
+                })} /></label>
                 <label className="adm-field"><span>SIP presets</span><input value={(config.mobile.screens.invest.sip.amountPresets || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'amountPresets', event.target.value)} /></label>
                 <label className="adm-field"><span>SIP durations</span><input value={(config.mobile.screens.invest.sip.durationMonths || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'durationMonths', event.target.value)} /></label>
                 <label className="adm-field"><span>Debit days</span><input value={(config.mobile.screens.invest.sip.debitDays || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'debitDays', event.target.value)} /></label>
@@ -376,7 +454,7 @@ function AppBuilderScreen() {
             <div>
               <div className="adm-card-head adm-card-head-tight">
                 <span className="be-eyebrow">Allocation chart</span>
-                <button className="be-btn be-btn-secondary be-btn-sm" onClick={() => addProductListItem('allocation', { name: 'New allocation', pct: 0, color: '#5C6470' })}><I icon={Plus} size={14}/>Add</button>
+                <button className="be-btn be-btn-secondary be-btn-sm" onClick={() => addProductListItem('allocation', { name: 'New allocation', pct: 0, color: 'var(--be-slate)' })}><I icon={Plus} size={14}/>Add</button>
               </div>
               <div className="adm-editor-list">
                 {selectedProduct.allocation.map((row, index) => (

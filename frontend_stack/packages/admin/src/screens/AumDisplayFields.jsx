@@ -77,7 +77,7 @@ export default function AumDisplayFields({ form, setForm }) {
   function addAsset() {
     setForm((s) => ({
       ...s,
-      assetAllocation: [...(s.assetAllocation || []), { id: `asset_${Date.now()}`, label: '', percentage: 0, color: '#1F7A4D' }],
+      assetAllocation: [...(s.assetAllocation || []), { id: `asset_${Date.now()}`, label: '', percentage: 0, color: 'var(--be-green)' }],
     }));
   }
   function setAsset(index, field, value) {
@@ -154,7 +154,7 @@ export default function AumDisplayFields({ form, setForm }) {
         </div>
         <div className="adm-editor-list">
           {series.map((row, index) => (
-            <div className="adm-series-row" key={index} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr auto', gap: 8 }}>
+            <div className="adm-series-row" key={index}>
               <input type="date" value={row.date || ''} onChange={(e) => setSeriesRow(index, 'date', e.target.value)} />
               <input type="number" step="0.01" value={row.fund ?? ''} onChange={(e) => setSeriesRow(index, 'fund', e.target.value)} placeholder="Fund" />
               <input type="number" step="0.01" value={row.nifty ?? ''} onChange={(e) => setSeriesRow(index, 'nifty', e.target.value)} placeholder="Nifty" />

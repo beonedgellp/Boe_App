@@ -49,7 +49,7 @@ function MandatesScreen({ rows = [], stats = {}, onUserDetail }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Mandates</span>
-            <h3 className="adm-card-title">Active register</h3>
+            <h2 className="adm-card-title">Active register</h2>
           </div>
           <div className="adm-card-actions">
             <button className="be-btn be-btn-secondary be-btn-sm">Filter status</button>

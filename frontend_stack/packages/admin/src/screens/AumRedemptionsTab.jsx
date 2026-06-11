@@ -90,7 +90,7 @@ function AumRedemptionsTab({ onUserDetail }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Withdrawal Requests</span>
-            <h3 className="adm-card-title">User redemption requests</h3>
+            <h2 className="adm-card-title">User redemption requests</h2>
           </div>
           <div className="adm-card-actions">
             <div className="adm-filter">

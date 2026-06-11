@@ -63,7 +63,7 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }) {
       });
       setReplyText('');
       setSelectedTicket(null);
-      window.location.reload();
+      // Let the parent route refetch instead of reloading the whole page.
     } catch (err) {
       setReplyError(err?.message || 'Reply failed.');
     } finally {
@@ -84,13 +84,14 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Customer Support</span>
-            <h3 className="adm-card-title">Support tickets</h3>
+            <h2 className="adm-card-title">Support tickets</h2>
           </div>
-          <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
+          <div className="adm-card-actions">
             <div className="adm-search">
               <I icon={Search} size={14} />
               <input
                 type="text"
+                aria-label="Search tickets"
                 placeholder="Search subject, category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -119,7 +120,13 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }) {
                 <td className="be-num adm-cell-meta">{String(r.createdAt || '').slice(0, 10)}</td>
                 <td className="adm-cell-actions">
                   <button className="be-btn be-btn-ghost be-btn-sm" onClick={() => onUserDetail?.(r)}>User</button>
-                  <button className="be-btn be-btn-ghost be-btn-sm" onClick={() => setSelectedTicket(selectedTicket?.id === r.id ? null : r)}>
+                  <button
+                    className="be-btn be-btn-ghost be-btn-sm"
+                    onClick={() => setSelectedTicket(selectedTicket?.id === r.id ? null : r)}
+                    aria-expanded={selectedTicket?.id === r.id}
+                    aria-controls={`ticket-reply-${r.id}`}
+                    aria-label={selectedTicket?.id === r.id ? 'Hide reply form' : 'Reply to ticket'}
+                  >
                     <I icon={MessageCircle} size={14} />
                   </button>
                 </td>
@@ -128,22 +135,26 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }) {
             {selectedTicket && filtered.find((r) => r.id === selectedTicket.id) && (
               <tr className="adm-detail-row">
                 <td colSpan={6}>
-                  <div style={{ padding: 16, background: 'var(--be-surface)', borderRadius: 8 }}>
-                    <h4 style={{ margin: '0 0 8px' }}>Reply to ticket</h4>
-                    <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--be-slate)' }}>
+                  <div
+                    id={`ticket-reply-${selectedTicket.id}`}
+                    className="adm-detail-panel"
+                    role="region"
+                    aria-label={`Reply to ${selectedTicket.subject || 'ticket'}`}
+                  >
+                    <h4 className="adm-detail-title">Reply to ticket</h4>
+                    <p className="adm-detail-meta">
                       Ticket: {selectedTicket.subject} · {selectedTicket.category}
                     </p>
                     <textarea
-                      className="be-input"
+                      className="be-input adm-detail-textarea"
                       rows={3}
                       placeholder="Type your reply..."
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       disabled={replyBusy}
-                      style={{ width: '100%', marginBottom: 8 }}
                     />
-                    {replyError && <div className="be-error" style={{ marginBottom: 8 }}>{replyError}</div>}
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    {replyError && <div className="be-error adm-m-b-2">{replyError}</div>}
+                    <div className="adm-detail-actions">
                       <button
                         className="be-btn be-btn-primary be-btn-sm"
                         disabled={replyBusy || !replyText.trim()}

@@ -4,8 +4,8 @@
 
 body {
   margin: 0;
-  background: var(--be-ivory);
-  color: var(--be-ink);
+  background: var(--be-bg);
+  color: var(--be-fg);
   font-family: var(--be-font-sans);
 }
 

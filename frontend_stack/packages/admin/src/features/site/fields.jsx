@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import I from '../../components/I.jsx';
 import HelpTooltip from '../../components/HelpTooltip.jsx';
@@ -6,50 +7,66 @@ import HelpTooltip from '../../components/HelpTooltip.jsx';
 // inputs; help text is optional; error text renders below the input.
 
 export function TextField({ label, value, onChange, placeholder, help, error, required, type = 'text', disabled, tooltip }) {
+  const inputId = useId();
+  const helpId = useId();
+  const errorId = useId();
+  const describedBy = [help && !error ? helpId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
+
   return (
     <div className="ash-field">
-      <label className="ash-label">
+      <label className="ash-label" htmlFor={inputId}>
         {label}
         {required && <span aria-hidden="true"> *</span>}
         {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       <input
+        id={inputId}
         type={type}
         className={`ash-input ${error ? 'is-invalid' : ''}`}
         value={value ?? ''}
         placeholder={placeholder}
         disabled={disabled}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
       />
-      {help && !error && <span className="ash-help">{help}</span>}
-      {error && <span className="ash-error-text">{error}</span>}
+      {help && !error && <span id={helpId} className="ash-help">{help}</span>}
+      {error && <span id={errorId} className="ash-error-text">{error}</span>}
     </div>
   );
 }
 
 export function TextAreaField({ label, value, onChange, placeholder, help, error, required, rows = 3, disabled, tooltip }) {
+  const inputId = useId();
+  const helpId = useId();
+  const errorId = useId();
+  const describedBy = [help && !error ? helpId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
+
   return (
     <div className="ash-field">
-      <label className="ash-label">
+      <label className="ash-label" htmlFor={inputId}>
         {label}
         {required && <span aria-hidden="true"> *</span>}
         {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       <textarea
+        id={inputId}
         className={`ash-textarea ${error ? 'is-invalid' : ''}`}
         value={value ?? ''}
         placeholder={placeholder}
         rows={rows}
         disabled={disabled}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
       />
-      {help && !error && <span className="ash-help">{help}</span>}
-      {error && <span className="ash-error-text">{error}</span>}
+      {help && !error && <span id={helpId} className="ash-help">{help}</span>}
+      {error && <span id={errorId} className="ash-error-text">{error}</span>}
     </div>
   );
 }
 
-export function SelectField({ label, value, onChange, options, help, disabled, tooltip }) {
+export function SelectField({ label, value, onChange, options, help, error, disabled, tooltip }) {
   return (
     <div className="ash-field">
       <label className="ash-label">
@@ -57,16 +74,18 @@ export function SelectField({ label, value, onChange, options, help, disabled, t
         {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       <select
-        className="ash-select"
+        className={`ash-select ${error ? 'is-invalid' : ''}`}
         value={value ?? ''}
         disabled={disabled}
+        aria-invalid={Boolean(error)}
         onChange={(event) => onChange(event.target.value)}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
-      {help && <span className="ash-help">{help}</span>}
+      {help && !error && <span className="ash-help">{help}</span>}
+      {error && <span className="ash-error-text">{error}</span>}
     </div>
   );
 }

@@ -190,7 +190,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
   function addSector() {
     setForm(s => ({
       ...s,
-      sectors: [...s.sectors, { id: `sec_${Date.now()}`, name: '', percentage: 0, color: '#4F46E5' }]
+      sectors: [...s.sectors, { id: `sec_${Date.now()}`, name: '', percentage: 0, color: 'var(--be-gold)' }]
     }));
   }
 
@@ -414,7 +414,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
           <form id="fund-editor-form" onSubmit={handleSubmit} className="adm-fund-editor-layout">
             <div className="adm-fund-editor-main">
               {formError && (
-                <div className="adm-validation-banner adm-validation-banner--error" style={{ marginBottom: 0 }}>
+                <div className="adm-validation-banner adm-validation-banner--error adm-m-b-0">
                   <I icon={AlertTriangle} size={14} /> {formError}
                 </div>
               )}
@@ -433,7 +433,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                       <option value="active">Active</option>
                       <option value="coming_soon">Coming Soon</option>
                     </select>
-                    <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>Auto-derived from lifecycle stage</small>
+                    <small className="adm-help-text">Auto-derived from lifecycle stage</small>
                   </label>
                   <label className="adm-field adm-field-wide">
                     <span>Tagline</span>
@@ -446,17 +446,17 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   <label className="adm-field">
                     <span>Initial Investment (INR)</span>
                     <input type="number" min="0" value={form.initialInvestment} onChange={updateNumberField('initialInvestment')} />
-                    <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>Starting capital when fund launched</small>
+                    <small className="adm-help-text">Starting capital when fund launched</small>
                   </label>
                   <label className="adm-field">
                     <span>Current Value (INR)</span>
                     <input type="number" min="0" value={form.currentValue} onChange={updateNumberField('currentValue')} />
-                    <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>Current total fund value</small>
+                    <small className="adm-help-text">Current total fund value</small>
                   </label>
                   <label className="adm-field">
                     <span>Launch Date</span>
                     <input type="date" value={form.launchDate} onChange={updateField('launchDate')} />
-                    <small style={{ color: 'var(--be-slate)', fontSize: 11 }}>When the fund started operations</small>
+                    <small className="adm-help-text">When the fund started operations</small>
                   </label>
                   <label className="adm-field">
                     <span>Min SIP</span>
@@ -477,7 +477,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                       <option value="low">Conservative (Low)</option>
                     </select>
                     {form.riskLabel && (
-                      <small style={{ color: 'var(--be-slate)', fontSize: 11, marginTop: 4, display: 'block' }}>
+                      <small className="adm-help-text adm-help-text--block">
                         Client sees: <strong>{(() => { const map = { high: 'Growth', moderate_high: 'Growth', moderate: 'Balanced', low_moderate: 'Balanced', low: 'Conservative' }; return map[form.riskLabel] || 'Balanced'; })()}</strong>
                       </small>
                     )}
@@ -498,24 +498,24 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     : 0;
                   if (initial === 0 && current === 0 && !hasAge) return null;
                   return (
-                    <div style={{ marginTop: 14, padding: '12px 14px', background: 'var(--be-bone)', borderRadius: 'var(--be-radius-sm)', border: '1px solid var(--be-border)' }}>
-                      <span className="be-eyebrow" style={{ display: 'block', marginBottom: 8 }}>Auto-computed Metrics</span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                    <div className="adm-metrics-preview">
+                      <span className="be-eyebrow">Auto-computed Metrics</span>
+                      <div className="adm-metrics-grid">
                         <div>
-                          <div style={{ fontSize: 11, color: 'var(--be-slate)' }}>Total Return</div>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: totalReturn >= 0 ? 'var(--be-green)' : 'var(--be-red)', fontFamily: 'var(--be-font-mono)' }}>
+                          <div className="adm-metric-label">Total Return</div>
+                          <div className={`adm-metric-value ${totalReturn >= 0 ? 'adm-metric-value--gain' : 'adm-metric-value--loss'}`}>
                             {totalReturn > 0 ? '+' : ''}{totalReturn.toFixed(1)}%
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, color: 'var(--be-slate)' }}>Fund Age</div>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--be-ink)', fontFamily: 'var(--be-font-mono)' }}>
+                          <div className="adm-metric-label">Fund Age</div>
+                          <div className="adm-metric-value">
                             {hasAge ? `${Math.floor(ageYears)}y ${Math.floor((ageDays % 365) / 30)}mo` : '—'}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, color: 'var(--be-slate)' }}>Annualized Return</div>
-                          <div style={{ fontSize: 18, fontWeight: 600, color: annualized >= 0 ? 'var(--be-green)' : 'var(--be-red)', fontFamily: 'var(--be-font-mono)' }}>
+                          <div className="adm-metric-label">Annualized Return</div>
+                          <div className={`adm-metric-value ${annualized >= 0 ? 'adm-metric-value--gain' : 'adm-metric-value--loss'}`}>
                             {annualized > 0 ? '+' : ''}{annualized.toFixed(1)}%
                           </div>
                         </div>
@@ -551,7 +551,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
 
               {/* Section 3: Sectors & Investments */}
               <section id="sectors" className="adm-fund-editor-section">
-                <div className="adm-fund-editor-section-title" style={{ justifyContent: 'space-between' }}>
+                <div className="adm-fund-editor-section-title adm-fund-editor-section-title--between">
                   <span><I icon={PieChart} size={16} /> Sectors & Investments</span>
                   {selectedFund?.analytics && (
                     <span className="adm-cell-meta">
@@ -577,25 +577,25 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                 </div>
                 {/* Live sector distribution preview */}
                 {form.sectors.length > 0 && (
-                  <div style={{ margin: '12px 0', padding: '10px 12px', background: 'var(--be-bone)', borderRadius: 'var(--be-radius-sm)', border: `1px solid ${sectorTotal === 100 ? 'var(--be-border)' : 'var(--be-red)'}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span className="be-eyebrow" style={{ fontSize: 10 }}>Distribution preview</span>
-                      <span className={`be-eyebrow ${sectorTotal === 100 ? '' : 'adm-tone-red'}`} style={{ fontSize: 10 }}>
+                  <div className={`adm-distribution-preview ${sectorTotal === 100 ? 'adm-distribution-preview--valid' : 'adm-distribution-preview--invalid'}`}>
+                    <div className="adm-distribution-preview__head">
+                      <span className="be-eyebrow adm-text-2xs">Distribution preview</span>
+                      <span className={`be-eyebrow adm-text-2xs ${sectorTotal === 100 ? '' : 'adm-tone-red'}`}>
                         {sectorTotal === 100 ? '100%' : `${sectorTotal}% — must equal 100%`}
                       </span>
                     </div>
                     <SectorMiniBar sectors={form.sectors} height={8} />
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 12px', marginTop: 8 }}>
+                    <div className="adm-distribution-preview__legend">
                       {form.sectors.map((s, i) => (
-                        <span key={s.id || i} style={{ fontSize: 11, color: 'var(--be-slate)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, display: 'inline-block' }} />
+                        <span key={s.id || i} className="adm-distribution-preview__legend-item">
+                          <span className="adm-distribution-preview__swatch" style={{ background: s.color }} />
                           {s.name || 'Unnamed'} {s.percentage}%
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <div className="adm-action-row adm-action-row--between">
                   <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addSector}><I icon={Plus} size={14} /> Add Sector</button>
                   <span className={`be-eyebrow ${sectorTotal === 100 ? 'adm-tone-green' : 'adm-tone-red'}`}>Total: {sectorTotal}%</span>
                 </div>
@@ -616,14 +616,14 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                             <option key={s.id} value={s.id}>{s.name || 'Unnamed'}</option>
                           ))}
                         </select>
-                        <span className="adm-cell-meta" style={{ textAlign: 'right', minWidth: 60 }}>{pct}%</span>
+                        <span className="adm-cell-meta adm-text-right adm-min-w-60">{pct}%</span>
                         <button type="button" className="adm-icon-btn" onClick={() => removeInvestment(index)} aria-label="Remove investment"><I icon={Trash2} size={14} /></button>
                       </div>
                     );
                   })}
                 </div>
                 <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addInvestment}><I icon={Plus} size={14} /> Add Investment</button>
-                <p style={{ fontSize: 12, color: 'var(--be-slate)', marginTop: 8 }}>Actual amounts are admin-only and never exposed to clients.</p>
+                <p className="adm-help-text adm-m-t-2">Actual amounts are admin-only and never exposed to clients.</p>
               </section>
 
               {/* Section 4: Display Profile */}
@@ -662,12 +662,12 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     <span>Show advanced ratios</span>
                   </label>
                 </div>
-                <p className="adm-cell-meta" style={{ marginTop: 8 }}>Users will only see what you enable above.</p>
+                <p className="adm-cell-meta adm-m-t-2">Users will only see what you enable above.</p>
 
                 <div className="adm-fund-editor-section-divider" />
 
                 <div className="adm-fund-editor-section-subtitle"><I icon={Eye} size={14} /> Client Preview</div>
-                <div style={{ fontSize: 12, color: 'var(--be-slate)', marginBottom: 10 }}>
+                <div className="adm-help-text adm-m-b-2">
                   This is how clients will see your fund card:
                 </div>
                 {(() => {
@@ -685,74 +685,74 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   const minSip = form.minSip === '' ? 0 : Number(form.minSip);
                   const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };
                   return (
-                    <div style={{ background: 'var(--be-bone)', border: `2px solid ${isActive ? 'var(--be-gold)' : 'var(--be-border-strong)'}`, borderRadius: 'var(--be-radius-md)', padding: 14, cursor: 'default', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className={`adm-fund-preview ${isActive ? 'adm-fund-preview--active' : ''}`}>
                       {/* Top row */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <span style={{ flex: '0 0 auto', width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--be-green-soft)', color: 'var(--be-green)', fontWeight: 700, fontSize: 13, letterSpacing: '.3px' }}>{initials(form.name || 'FU')}</span>
-                        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                          <h4 style={{ fontFamily: 'var(--be-font-serif)', fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.25 }}>{form.name || 'Untitled Fund'}</h4>
-                          {metaBits.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--be-slate)', marginTop: 3, lineHeight: 1.3 }}>{metaBits.join(' · ')}</div>}
+                      <div className="adm-fund-preview__head">
+                        <span className={`adm-fund-preview__icon ${isActive ? 'adm-fund-preview__icon--active' : 'adm-fund-preview__icon--soon'}`}>{initials(form.name || 'FU')}</span>
+                        <div className="adm-fund-preview__title-block">
+                          <h4 className="adm-fund-preview__title">{form.name || 'Untitled Fund'}</h4>
+                          {metaBits.length > 0 && <div className="adm-fund-preview__meta">{metaBits.join(' · ')}</div>}
                         </div>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, padding: '4px 10px', borderRadius: 999, background: isActive ? 'var(--be-green-soft)' : 'var(--be-slate-soft)', color: isActive ? 'var(--be-green)' : 'var(--be-slate)' }}>{isActive ? 'Active' : 'Coming Soon'}</span>
+                        <span className={`adm-fund-preview__status ${isActive ? 'adm-fund-preview__status--active' : 'adm-fund-preview__status--soon'}`}>{isActive ? 'Active' : 'Coming Soon'}</span>
                       </div>
 
                       {/* Performance */}
                       {headline ? (
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'var(--be-font-mono, monospace)', fontSize: 22, fontWeight: 700, lineHeight: 1, color: Number(perf.annualizedReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{headline}</span>
-                          {perf.selectedPeriod && <span style={{ fontSize: 11, color: 'var(--be-slate)' }}>{perf.selectedPeriod} annualised</span>}
-                          {oneDay && <span style={{ fontSize: 12, fontFamily: 'var(--be-font-mono, monospace)', marginLeft: 'auto', whiteSpace: 'nowrap', color: Number(perf.oneDayReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{oneDay} <span style={{ color: 'var(--be-slate-2)' }}>1D</span></span>}
+                        <div className="adm-fund-preview__performance">
+                          <span className={`adm-fund-preview__headline ${Number(perf.annualizedReturnPct) >= 0 ? 'adm-fund-preview__headline--gain' : 'adm-fund-preview__headline--loss'}`}>{headline}</span>
+                          {perf.selectedPeriod && <span className="adm-fund-preview__period">{perf.selectedPeriod} annualised</span>}
+                          {oneDay && <span className={`adm-fund-preview__oneday ${Number(perf.oneDayReturnPct) >= 0 ? 'adm-fund-preview__oneday--gain' : 'adm-fund-preview__oneday--loss'}`}>{oneDay} <span className="adm-text-muted">1D</span></span>}
                         </div>
                       ) : (
-                        form.tagline && <p style={{ fontSize: 12.5, color: 'var(--be-slate)', margin: 0 }}>{form.tagline}</p>
+                        form.tagline && <p className="adm-fund-preview__tagline">{form.tagline}</p>
                       )}
 
                       {/* Mini chart placeholder */}
                       {hasChart && (
-                        <div style={{ position: 'relative', padding: '8px 0', background: 'var(--be-slate-soft)', borderRadius: 'var(--be-radius-sm)', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>📈 Mini comparison chart ({series.length} points)</span>
-                          {niftyPct && <span style={{ position: 'absolute', right: 8, top: 4, fontSize: 11, color: 'var(--be-slate)' }}>Nifty <span style={{ color: 'var(--be-ink)', fontFamily: 'var(--be-font-mono, monospace)' }}>{niftyPct}</span></span>}
+                        <div className="adm-fund-preview__chart">
+                          <span className="adm-fund-preview__chart-label">📈 Mini comparison chart ({series.length} points)</span>
+                          {niftyPct && <span className="adm-fund-preview__nifty">Nifty <span className="adm-text-semibold">{niftyPct}</span></span>}
                         </div>
                       )}
 
                       {/* Metric grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '9px 14px', paddingTop: 11, borderTop: '1px solid var(--be-border)' }}>
+                      <div className="adm-fund-preview__metrics">
                         {nav.value != null && Number.isFinite(Number(nav.value)) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                            <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
-                            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(nav.value)}</span>
+                          <div className="adm-fund-preview__metric">
+                            <span className="adm-fund-preview__metric-label">NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
+                            <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(nav.value)}</span>
                           </div>
                         )}
                         {rating.value != null && Number.isFinite(Number(rating.value)) && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                            <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Rating</span>
-                            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{rating.value}<span style={{ color: 'var(--be-gold)', marginLeft: 1 }}>★</span></span>
+                          <div className="adm-fund-preview__metric">
+                            <span className="adm-fund-preview__metric-label">Rating</span>
+                            <span className="adm-fund-preview__metric-value">{rating.value}<span className="adm-star">★</span></span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Min SIP</span>
-                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(minSip)}</span>
+                        <div className="adm-fund-preview__metric">
+                          <span className="adm-fund-preview__metric-label">Min SIP</span>
+                          <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(minSip)}</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Fund size</span>
-                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(poolSize)}</span>
+                        <div className="adm-fund-preview__metric">
+                          <span className="adm-fund-preview__metric-label">Fund size</span>
+                          <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(poolSize)}</span>
                         </div>
                       </div>
 
                       {/* Sector fallback */}
                       {!headline && !hasChart && form.sectors.length > 0 && (
-                        <SectorMiniBar sectors={form.sectors.filter(s => s.percentage > 0)} height={6} style={{ marginTop: 2 }} />
+                        <SectorMiniBar sectors={form.sectors.filter(s => s.percentage > 0)} height={6} className="adm-sector-mini-bar--tight" />
                       )}
 
                       {/* Footer */}
-                      <div style={{ marginTop: 2 }}>
+                      <div className="adm-fund-preview__footer">
                         {isActive ? (
-                          <span style={{ color: 'var(--be-green)', fontWeight: 600, fontSize: 13 }}>View details →</span>
+                          <span className="adm-fund-preview__cta adm-fund-preview__cta--active">View details →</span>
                         ) : (
-                          <span style={{ fontSize: 13, color: 'var(--be-slate)' }}>Notify me when open</span>
+                          <span className="adm-fund-preview__cta adm-fund-preview__cta--muted">Notify me when open</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--be-slate-2)', lineHeight: 1.3 }}>Past performance is not indicative of future returns.</div>
+                      <div className="adm-fund-preview__disclaimer">Past performance is not indicative of future returns.</div>
                     </div>
                   );
                 })()}
@@ -825,15 +825,15 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
           {/* Delete confirmation modal */}
           {deleteConfirm && (
             <div className="adm-review-overlay" role="presentation" onMouseDown={() => !submitting && setDeleteConfirm(null)}>
-              <section className="adm-review-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+              <section className="adm-review-panel" role="dialog" aria-modal="true" aria-labelledby="aum-delete-title" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="adm-review-head">
                   <div>
                     <span className="be-eyebrow">Confirm deletion</span>
-                    <h2>Delete &ldquo;{deleteConfirm.name}&rdquo;?</h2>
+                    <h2 id="aum-delete-title">Delete &ldquo;{deleteConfirm.name}&rdquo;?</h2>
                   </div>
                   <button className="adm-icon-btn" onClick={() => setDeleteConfirm(null)} aria-label="Close" disabled={submitting}><I icon={X}/></button>
                 </div>
-                <p style={{ fontSize: 13, color: 'var(--be-slate)' }}>This action cannot be undone. The fund pool will be permanently removed.</p>
+                <p className="adm-text-muted">This action cannot be undone. The fund pool will be permanently removed.</p>
                 <div className="adm-review-actions">
                   <button className="be-btn be-btn-secondary" onClick={() => setDeleteConfirm(null)} disabled={submitting}>Cancel</button>
                   <button className="be-btn be-btn-danger" onClick={handleDelete} disabled={submitting}>
@@ -847,27 +847,27 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
           {/* Lifecycle confirmation modal */}
           {lifecycleConfirm && (
             <div className="adm-review-overlay" role="presentation" onMouseDown={() => setLifecycleConfirm(null)}>
-              <section className="adm-review-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+              <section className="adm-review-panel" role="dialog" aria-modal="true" aria-labelledby="aum-lifecycle-title" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="adm-review-head">
                   <div>
                     <span className="be-eyebrow">Confirm stage change</span>
-                    <h2>Change lifecycle stage?</h2>
+                    <h2 id="aum-lifecycle-title">Change lifecycle stage?</h2>
                   </div>
                   <button className="adm-icon-btn" onClick={() => setLifecycleConfirm(null)} aria-label="Close"><I icon={X}/></button>
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--be-slate)' }}>
-                  <p style={{ margin: '0 0 10px' }}>
+                <div className="adm-text-muted">
+                  <p className="adm-m-b-2">
                     You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
                     This may affect visibility for users.
                   </p>
                   {lifecycleConfirm === 'active' && (() => {
                     const warnings = getChartWarnings();
                     return warnings.length > 0 ? (
-                      <div className="adm-validation-banner adm-validation-banner--warning" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
+                      <div className="adm-validation-banner adm-validation-banner--warning adm-validation-banner--start adm-m-b-2">
                         <I icon={AlertTriangle} size={14} />
                         <div>
                           <strong>Chart data incomplete</strong>
-                          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                          <ul className="adm-warning-list">
                             {warnings.map((w, i) => <li key={i}>{w}</li>)}
                           </ul>
                         </div>
@@ -919,7 +919,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
             <div className="adm-card-head">
               <div>
                 <span className="be-eyebrow">Recent Activity</span>
-                <h3 className="adm-card-title">Fund audit trail</h3>
+                <h2 className="adm-card-title">Fund audit trail</h2>
               </div>
               <button className="be-btn be-btn-primary be-btn-sm" onClick={openCreate}><I icon={Plus} size={14}/> Create New Fund Pool</button>
             </div>
@@ -960,7 +960,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
             <div className="adm-card-head">
               <div>
                 <span className="be-eyebrow">Funds</span>
-                <h3 className="adm-card-title">All funds</h3>
+                <h2 className="adm-card-title">All funds</h2>
               </div>
               <div className="adm-card-actions">
                 <button className="be-btn be-btn-primary be-btn-sm" onClick={openCreate}><I icon={Plus} size={14}/> Create New Fund Pool</button>
@@ -1003,10 +1003,10 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   {filteredFunds.map(f => (
                     <tr key={f.id || f.name}>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <span style={{fontFamily:'var(--be-font-serif)',fontSize:15,fontWeight:600}}>{f.name}</span>
+                        <div className="adm-fund-name-cell">
+                          <span className="adm-fund-name">{f.name}</span>
                           {f.sectors?.length > 0 && (
-                            <SectorMiniBar sectors={f.sectors} height={5} style={{ maxWidth: 200 }} />
+                            <SectorMiniBar sectors={f.sectors} height={5} className="adm-sector-mini-bar--table" />
                           )}
                         </div>
                       </td>
@@ -1041,7 +1041,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
               </div>
               <button className="adm-icon-btn" onClick={() => setDeleteConfirm(null)} aria-label="Close" disabled={submitting}><I icon={X}/></button>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--be-slate)' }}>This action cannot be undone. The fund pool will be permanently removed.</p>
+            <p className="adm-text-muted">This action cannot be undone. The fund pool will be permanently removed.</p>
             <div className="adm-review-actions">
               <button className="be-btn be-btn-secondary" onClick={() => setDeleteConfirm(null)} disabled={submitting}>Cancel</button>
               <button className="be-btn be-btn-danger" onClick={handleDelete} disabled={submitting}>
@@ -1063,19 +1063,19 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
               </div>
               <button className="adm-icon-btn" onClick={() => setLifecycleConfirm(null)} aria-label="Close"><I icon={X}/></button>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--be-slate)' }}>
-              <p style={{ margin: '0 0 10px' }}>
+            <div className="adm-text-muted">
+              <p className="adm-m-b-2">
                 You are about to move this fund from <strong>{form.lifecycleStage}</strong> to <strong>{lifecycleConfirm}</strong>.
                 This may affect visibility for users.
               </p>
               {lifecycleConfirm === 'active' && (() => {
                 const warnings = getChartWarnings();
                 return warnings.length > 0 ? (
-                  <div className="adm-validation-banner adm-validation-banner--warning" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
+                  <div className="adm-validation-banner adm-validation-banner--warning adm-validation-banner--start adm-m-b-2">
                     <I icon={AlertTriangle} size={14} />
                     <div>
                       <strong>Chart data incomplete</strong>
-                      <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                      <ul className="adm-warning-list">
                         {warnings.map((w, i) => <li key={i}>{w}</li>)}
                       </ul>
                     </div>
@@ -1096,15 +1096,15 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
       {/* Client preview modal */}
       {previewFund && (
         <div className="adm-review-overlay" role="presentation" onMouseDown={() => setPreviewFund(null)}>
-          <section className="adm-review-panel" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+          <section className="adm-review-panel adm-review-panel--narrow" role="dialog" aria-modal="true" aria-labelledby="aum-preview-title" onMouseDown={(e) => e.stopPropagation()}>
             <div className="adm-review-head">
               <div>
                 <span className="be-eyebrow">Client preview</span>
-                <h2>{previewFund.name}</h2>
+                <h2 id="aum-preview-title">{previewFund.name}</h2>
               </div>
               <button className="adm-icon-btn" onClick={() => setPreviewFund(null)} aria-label="Close"><I icon={X}/></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="adm-detail-panel-stack">
               {(() => {
                 const isActive = previewFund.status === 'active';
                 const perf = previewFund.performanceSummary || {};
@@ -1120,78 +1120,78 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                 const minSip = previewFund.minSip ?? 0;
                 const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div className={`adm-fund-preview ${isActive ? 'adm-fund-preview--active' : ''}`}>
                     {/* Top row */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <span style={{ flex: '0 0 auto', width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--be-green-soft)', color: 'var(--be-green)', fontWeight: 700, fontSize: 13, letterSpacing: '.3px' }}>{initials(previewFund.name || 'FU')}</span>
-                      <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                        <h4 style={{ fontFamily: 'var(--be-font-serif)', fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.25 }}>{previewFund.name || 'Untitled Fund'}</h4>
-                        {metaBits.length > 0 && <div style={{ fontSize: 11.5, color: 'var(--be-slate)', marginTop: 3, lineHeight: 1.3 }}>{metaBits.join(' · ')}</div>}
+                    <div className="adm-fund-preview__head">
+                      <span className={`adm-fund-preview__icon ${isActive ? 'adm-fund-preview__icon--active' : 'adm-fund-preview__icon--soon'}`}>{initials(previewFund.name || 'FU')}</span>
+                      <div className="adm-fund-preview__title-block">
+                        <h4 className="adm-fund-preview__title">{previewFund.name || 'Untitled Fund'}</h4>
+                        {metaBits.length > 0 && <div className="adm-fund-preview__meta">{metaBits.join(' · ')}</div>}
                       </div>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, padding: '4px 10px', borderRadius: 999, background: isActive ? 'var(--be-green-soft)' : 'var(--be-slate-soft)', color: isActive ? 'var(--be-green)' : 'var(--be-slate)' }}>{isActive ? 'Active' : 'Coming Soon'}</span>
+                      <span className={`adm-fund-preview__status ${isActive ? 'adm-fund-preview__status--active' : 'adm-fund-preview__status--soon'}`}>{isActive ? 'Active' : 'Coming Soon'}</span>
                     </div>
 
                     {/* Performance */}
                     {headline ? (
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: 'var(--be-font-mono, monospace)', fontSize: 22, fontWeight: 700, lineHeight: 1, color: Number(perf.annualizedReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{headline}</span>
-                        {perf.selectedPeriod && <span style={{ fontSize: 11, color: 'var(--be-slate)' }}>{perf.selectedPeriod} annualised</span>}
-                        {oneDay && <span style={{ fontSize: 12, fontFamily: 'var(--be-font-mono, monospace)', marginLeft: 'auto', whiteSpace: 'nowrap', color: Number(perf.oneDayReturnPct) >= 0 ? 'var(--be-green)' : 'var(--be-red)' }}>{oneDay} <span style={{ color: 'var(--be-slate-2)' }}>1D</span></span>}
+                      <div className="adm-fund-preview__performance">
+                        <span className={`adm-fund-preview__headline ${Number(perf.annualizedReturnPct) >= 0 ? 'adm-fund-preview__headline--gain' : 'adm-fund-preview__headline--loss'}`}>{headline}</span>
+                        {perf.selectedPeriod && <span className="adm-fund-preview__period">{perf.selectedPeriod} annualised</span>}
+                        {oneDay && <span className={`adm-fund-preview__oneday ${Number(perf.oneDayReturnPct) >= 0 ? 'adm-fund-preview__oneday--gain' : 'adm-fund-preview__oneday--loss'}`}>{oneDay} <span className="adm-text-muted">1D</span></span>}
                       </div>
                     ) : (
-                      previewFund.tagline && <p style={{ fontSize: 12.5, color: 'var(--be-slate)', margin: 0 }}>{previewFund.tagline}</p>
+                      previewFund.tagline && <p className="adm-fund-preview__tagline">{previewFund.tagline}</p>
                     )}
 
                     {/* Mini chart placeholder */}
                     {hasChart && (
-                      <div style={{ position: 'relative', padding: '8px 0', background: 'var(--be-slate-soft)', borderRadius: 'var(--be-radius-sm)', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>📈 Mini comparison chart ({series.length} points)</span>
-                        {niftyPct && <span style={{ position: 'absolute', right: 8, top: 4, fontSize: 11, color: 'var(--be-slate)' }}>Nifty <span style={{ color: 'var(--be-ink)', fontFamily: 'var(--be-font-mono, monospace)' }}>{niftyPct}</span></span>}
+                      <div className="adm-fund-preview__chart">
+                        <span className="adm-fund-preview__chart-label">📈 Mini comparison chart ({series.length} points)</span>
+                        {niftyPct && <span className="adm-fund-preview__nifty">Nifty <span className="adm-text-semibold">{niftyPct}</span></span>}
                       </div>
                     )}
 
                     {/* Metric grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '9px 14px', paddingTop: 11, borderTop: '1px solid var(--be-border)' }}>
+                    <div className="adm-fund-preview__metrics">
                       {nav.value != null && Number.isFinite(Number(nav.value)) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
-                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(nav.value)}</span>
+                        <div className="adm-fund-preview__metric">
+                          <span className="adm-fund-preview__metric-label">NAV{nav.asOf ? ` · ${nav.asOf}` : ''}</span>
+                          <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(nav.value)}</span>
                         </div>
                       )}
                       {rating.value != null && Number.isFinite(Number(rating.value)) && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                          <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Rating</span>
-                          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{rating.value}<span style={{ color: 'var(--be-gold)', marginLeft: 1 }}>★</span></span>
+                        <div className="adm-fund-preview__metric">
+                          <span className="adm-fund-preview__metric-label">Rating</span>
+                          <span className="adm-fund-preview__metric-value">{rating.value}<span className="adm-star">★</span></span>
                         </div>
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                        <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Min SIP</span>
-                        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(minSip)}</span>
+                      <div className="adm-fund-preview__metric">
+                        <span className="adm-fund-preview__metric-label">Min SIP</span>
+                        <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(minSip)}</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                        <span style={{ fontSize: 10, color: 'var(--be-slate-2)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Fund size</span>
-                        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--be-ink)' }}>{fmtMoneyPreview(poolSize)}</span>
+                      <div className="adm-fund-preview__metric">
+                        <span className="adm-fund-preview__metric-label">Fund size</span>
+                        <span className="adm-fund-preview__metric-value">{fmtMoneyPreview(poolSize)}</span>
                       </div>
                     </div>
 
                     {/* Sector fallback */}
                     {!headline && !hasChart && (previewFund.sectors || []).length > 0 && (
-                      <SectorMiniBar sectors={previewFund.sectors.filter(s => s.percentage > 0)} height={6} style={{ marginTop: 2 }} />
+                      <SectorMiniBar sectors={previewFund.sectors.filter(s => s.percentage > 0)} height={6} className="adm-sector-mini-bar--tight" />
                     )}
 
                     {/* Footer */}
-                    <div style={{ marginTop: 2 }}>
+                    <div className="adm-fund-preview__footer">
                       {isActive ? (
-                        <span style={{ color: 'var(--be-green)', fontWeight: 600, fontSize: 13 }}>View details →</span>
+                        <span className="adm-fund-preview__cta adm-fund-preview__cta--active">View details →</span>
                       ) : (
-                        <span style={{ fontSize: 13, color: 'var(--be-slate)' }}>Notify me when open</span>
+                        <span className="adm-fund-preview__cta adm-fund-preview__cta--muted">Notify me when open</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 10.5, color: 'var(--be-slate-2)', lineHeight: 1.3 }}>Past performance is not indicative of future returns.</div>
+                    <div className="adm-fund-preview__disclaimer">Past performance is not indicative of future returns.</div>
                   </div>
                 );
               })()}
-              <div className="adm-review-actions" style={{ marginTop: 4 }}>
+              <div className="adm-review-actions">
                 <button className="be-btn be-btn-secondary" onClick={() => setPreviewFund(null)}>Close</button>
                 <button className="be-btn be-btn-primary" onClick={() => { setPreviewFund(null); openEdit(previewFund); }}>Edit this fund</button>
               </div>

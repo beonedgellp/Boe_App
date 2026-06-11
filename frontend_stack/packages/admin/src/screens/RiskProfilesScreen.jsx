@@ -34,14 +34,14 @@ export default function RiskProfilesScreen({ rows = [], loading = false, onUserD
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Risk Profiles</span>
-            <h3 className="adm-card-title">Client Risk Profiles</h3>
+            <h2 className="adm-card-title">Client Risk Profiles</h2>
           </div>
         </div>
 
         <div className="adm-toolbar">
           <div className="adm-search">
             <I icon={Search} size={14} />
-            <input type="text" placeholder="Search by name or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" aria-label="Search risk profiles by name or email" placeholder="Search by name or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
         </div>
 

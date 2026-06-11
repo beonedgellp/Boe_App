@@ -77,7 +77,7 @@ function UserDetailScreen({ userId, onClose }) {
     return (
       <div className="ash-card">
         <div className="ash-card-head">
-          <h3 className="ash-card-title"><I icon={icon} size={16} /> {title}</h3>
+          <h2 className="ash-card-title"><I icon={icon} size={16} /> {title}</h2>
         </div>
         <div
           style={{
@@ -102,7 +102,7 @@ function UserDetailScreen({ userId, onClose }) {
     return (
       <div className="ash-card">
         <div className="ash-card-head">
-          <h3 className="ash-card-title"><I icon={icon} size={16} /> {title}</h3>
+          <h2 className="ash-card-title"><I icon={icon} size={16} /> {title}</h2>
         </div>
         {rows.length === 0 ? (
           <div className="ash-empty">
@@ -124,7 +124,7 @@ function UserDetailScreen({ userId, onClose }) {
     return (
       <div className="ash-card">
         <div className="ash-card-head">
-          <h3 className="ash-card-title"><I icon={icon} size={16} /> {title}</h3>
+          <h2 className="ash-card-title"><I icon={icon} size={16} /> {title}</h2>
         </div>
         {items.length === 0 ? (
           <div className="ash-empty">
@@ -145,7 +145,7 @@ function UserDetailScreen({ userId, onClose }) {
     <>
       {onClose && (
         <div className="adm-review-head">
-          <div />
+          <h2 id="user-detail-title" className="adm-review-panel-title">User details</h2>
           <button className="adm-icon-btn" onClick={onClose} aria-label="Close"><I icon={X}/></button>
         </div>
       )}
@@ -358,6 +358,7 @@ function UserDetailScreen({ userId, onClose }) {
           className="adm-review-panel"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="user-detail-title"
           onMouseDown={(e) => e.stopPropagation()}
           style={{ maxWidth: 900, width: '90vw', maxHeight: '90vh', overflow: 'auto' }}
         >

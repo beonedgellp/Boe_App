@@ -13,14 +13,14 @@ import { initials } from '../helpers/formatters.js';
 
 function KycStatusBadge({ status }) {
   const map = {
-    not_started: { bg: 'var(--be-slate-soft)', color: 'var(--be-slate)', label: 'Not Started' },
-    pending: { bg: 'var(--be-amber-soft)', color: 'var(--be-amber)', label: 'Pending' },
-    in_review: { bg: 'var(--be-amber-soft)', color: 'var(--be-amber)', label: 'In Review' },
-    needs_more_information: { bg: 'var(--be-amber-soft)', color: 'var(--be-amber)', label: 'Needs Info' },
-    approved: { bg: 'var(--be-green-soft)', color: 'var(--be-green)', label: 'Approved' },
-    rejected: { bg: 'var(--be-red-soft)', color: 'var(--be-red)', label: 'Rejected' },
+    not_started: { bg: 'var(--be-slate-soft)', color: 'var(--be-text-on-slate)', label: 'Not Started' },
+    pending: { bg: 'var(--be-amber-soft)', color: 'var(--be-text-on-amber)', label: 'Pending' },
+    in_review: { bg: 'var(--be-amber-soft)', color: 'var(--be-text-on-amber)', label: 'In Review' },
+    needs_more_information: { bg: 'var(--be-amber-soft)', color: 'var(--be-text-on-amber)', label: 'Needs Info' },
+    approved: { bg: 'var(--be-green-soft)', color: 'var(--be-text-on-green)', label: 'Approved' },
+    rejected: { bg: 'var(--be-red-soft)', color: 'var(--be-text-on-red)', label: 'Rejected' },
   };
-  const s = map[String(status).toLowerCase()] || { bg: 'var(--be-slate-soft)', color: 'var(--be-slate)', label: status || '—' };
+  const s = map[String(status).toLowerCase()] || { bg: 'var(--be-slate-soft)', color: 'var(--be-text-on-slate)', label: status || '—' };
   return <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500, background: s.bg, color: s.color }}>{s.label}</span>;
 }
 
@@ -46,20 +46,26 @@ function KycReviewPanel({ row, onClose, onDecision, busy }) {
 
   return (
     <div className="adm-overlay" onClick={onClose}>
-      <div className="adm-overlay-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+      <div
+        className="adm-overlay-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="kyc-review-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="adm-overlay-head">
-          <h3>KYC Review</h3>
-          <button className="adm-icon-btn" onClick={onClose}><span style={{ fontSize: 20 }}>&times;</span></button>
+          <h2 id="kyc-review-title">KYC Review</h2>
+          <button className="adm-icon-btn" onClick={onClose} aria-label="Close"><span aria-hidden="true" className="adm-close-glyph">&times;</span></button>
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <div className="adm-user" style={{ marginBottom: 12 }}>
+        <div className="adm-m-b-4">
+          <div className="adm-user adm-m-b-3">
             <div className="adm-avatar adm-avatar-sm">{initials(row.name, 'CL')}</div>
             <div className="adm-user-info">
               <div className="adm-user-name">{row.name}</div>
               <div className="adm-cell-meta">{row.email}</div>
             </div>
           </div>
-          <div className="adm-review-grid" style={{ gap: 8 }}>
+          <div className="adm-review-grid adm-review-grid--tight">
             <div className="adm-review-field"><span>PAN last-4</span><strong>{row.panLast4 || '—'}</strong></div>
             <div className="adm-review-field"><span>Aadhaar last-4</span><strong>{row.aadhaarLast4 || '—'}</strong></div>
             <div className="adm-review-field"><span>KYC Status</span><strong><KycStatusBadge status={row.kycReviewStatus} /></strong></div>
@@ -67,8 +73,9 @@ function KycReviewPanel({ row, onClose, onDecision, busy }) {
           </div>
         </div>
         <div className="adm-field">
-          <label>Review note / rejection reason</label>
+          <label htmlFor="kyc-review-reason">Review note / rejection reason</label>
           <textarea
+            id="kyc-review-reason"
             className="be-input"
             rows={3}
             value={reason}
@@ -76,8 +83,8 @@ function KycReviewPanel({ row, onClose, onDecision, busy }) {
             placeholder={row.kycReviewStatus === 'rejected' ? 'Required for rejection' : 'Optional approval note'}
           />
         </div>
-        {error && <div className="adm-validation-banner adm-validation-banner--error" style={{ marginTop: 8 }}>{error}</div>}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+        {error && <div className="adm-validation-banner adm-validation-banner--error adm-m-t-2">{error}</div>}
+        <div className="adm-review-actions">
           <button className="be-btn be-btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
           <button className="be-btn be-btn-danger" onClick={() => handleDecision('reject')} disabled={busy}>
             <I icon={XCircle} size={14} /> Reject
@@ -147,18 +154,18 @@ export default function KycReviewScreen({ rows = [], stats = {}, loading = false
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">KYC Queue</span>
-            <h3 className="adm-card-title">KYC Review</h3>
+            <h2 className="adm-card-title">KYC Review</h2>
           </div>
         </div>
 
         <div className="adm-toolbar">
           <div className="adm-search">
             <I icon={Search} size={14} />
-            <input type="text" placeholder="Search by name or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" aria-label="Search KYC records by name or email" placeholder="Search by name or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className="adm-filter">
             <I icon={Filter} size={14} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter by KYC status">
               <option value="all">All statuses</option>
               <option value="not_started">Not Started</option>
               <option value="pending">Pending</option>

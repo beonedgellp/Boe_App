@@ -44,28 +44,28 @@ function EnvironmentScreen() {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">System</span>
-            <h3 className="adm-card-title">Environment</h3>
+            <h2 className="adm-card-title">Environment</h2>
           </div>
         </div>
 
         {loading && <div className="adm-skeleton">Loading environment config...</div>}
-        {error && <div className="be-error" style={{ margin: 16 }}>{error}</div>}
+        {error && <div className="be-error adm-m-t-4 adm-m-b-2">{error}</div>}
 
         {!loading && !error && config && (
-          <div style={{ padding: 16 }}>
-            <h4 style={{ margin: '0 0 12px', fontSize: 14 }}>Health checks</h4>
-            <div style={{ display: 'grid', gap: 8 }}>
+          <div className="adm-card-body">
+            <h4 className="adm-section-title">Health checks</h4>
+            <div className="adm-health-checks">
               {checks.map((c) => (
-                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: 'var(--be-surface)', borderRadius: 6 }}>
+                <div key={c.label} className="adm-health-check">
                   <I icon={c.ok ? CheckCircle2 : AlertTriangle} size={16} style={{ color: c.ok ? 'var(--be-green)' : 'var(--be-amber)' }} />
-                  <span style={{ flex: 1, fontWeight: 500 }}>{c.label}</span>
-                  <span style={{ color: 'var(--be-slate)', fontSize: 13 }}>{c.value}</span>
+                  <span className="adm-health-check-label">{c.label}</span>
+                  <span className="adm-health-check-value">{c.value}</span>
                 </div>
               ))}
             </div>
 
-            <h4 style={{ margin: '24px 0 12px', fontSize: 14 }}>Raw config</h4>
-            <pre style={{ background: 'var(--be-surface)', padding: 12, borderRadius: 8, fontSize: 12, overflow: 'auto', maxHeight: 400 }}>
+            <h4 className="adm-section-title adm-section-title--spaced">Raw config</h4>
+            <pre className="adm-code-block" style={{ maxHeight: 400 }}>
               {JSON.stringify(config, null, 2)}
             </pre>
           </div>

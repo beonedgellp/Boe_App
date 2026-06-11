@@ -45,7 +45,7 @@ function LedgerScreen({ rows = [], loading = false }) {
         <div className="adm-card-head">
           <div>
             <span className="be-eyebrow">Reconciliation</span>
-            <h3 className="adm-card-title">Ledger</h3>
+            <h2 className="adm-card-title">Ledger</h2>
           </div>
           <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
             <div className="adm-search">
