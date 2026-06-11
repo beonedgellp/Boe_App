@@ -4,9 +4,9 @@
   "private": true,
   "description": "Public finance-education landing page (Next.js App Router). Education-only surface — separate from the gated investing client app.",
   "scripts": {
-    "dev": "next dev -p 3110",
+    "dev": "next dev -p 3100",
     "build": "next build",
-    "start": "next start -p 3110",
+    "start": "next start -p 3100",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"

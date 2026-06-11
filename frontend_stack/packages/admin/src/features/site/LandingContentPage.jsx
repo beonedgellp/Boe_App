@@ -35,7 +35,7 @@ function formatPublishedAt(value) {
   });
 }
 
-const PREVIEW_URL = import.meta.env.VITE_BEO_LANDING_PREVIEW_URL || 'http://localhost:3110/preview';
+const PREVIEW_URL = import.meta.env.VITE_BEO_LANDING_PREVIEW_URL || 'http://localhost:3100/preview';
 const PREVIEW_ORIGIN = new URL(PREVIEW_URL, window.location.href).origin;
 const PREVIEW_READY_TIMEOUT_MS = 4000;
 
