@@ -42,12 +42,8 @@ export default function SignupForm() {
 
     setStatus({ kind: 'submitting' });
     try {
-      const user = await signup(values);
-      if (user.status === 'pending_review') {
-        router.push('/pending-approval');
-      } else {
-        router.push('/');
-      }
+      await signup(values);
+      router.push('/');
     } catch (err) {
       setStatus({
         kind: 'error',
