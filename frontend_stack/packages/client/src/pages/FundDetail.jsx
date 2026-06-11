@@ -14,6 +14,7 @@ import { isComponentEnabled } from '@beonedge/shared/appConfig.js';
 import { fmtMoney, fmtNum, fmtPct } from '../utils/format.js';
 import { formatReturnPct, formatNavDate, returnTone } from '../utils/fundDisplay.js';
 import MoneyValue from '@beonedge/shared/components/MoneyValue.jsx';
+import { FadeIn, Skeleton } from '@beonedge/shared';
 
 const RISK_LABELS = {
   low: 'Low', low_moderate: 'Low-Moderate', moderate: 'Moderate',
@@ -27,8 +28,6 @@ const LIFECYCLE_LABELS = {
   closed: 'Closed',
 };
 
-// BOE-friendly chart palette (green/gold/slate first, then supporting hues).
-// Used only when an admin slice has no explicit color.
 const DONUT_PALETTE = [
   '#1F7A4D', '#B5894A', '#5C6470', '#A8741C', '#4AA9D8',
   '#7A9E3A', '#C0563E', '#8A929D', '#3E7C8C', '#9C7339',
@@ -61,7 +60,6 @@ function AllocationLegend({ items }) {
   );
 }
 
-// Headline annualised return + fund-vs-Nifty chart + period chips.
 function PerformanceSection({ fund }) {
   const summary = fund.performanceSummary || {};
   const series = Array.isArray(fund.performanceSeries) ? fund.performanceSeries : [];
@@ -75,48 +73,49 @@ function PerformanceSection({ fund }) {
   const active = periods.find((p) => p.key === activeKey);
 
   return (
-    <div className="be-card apk-pf">
-      {headline && (
-        <div className="apk-pf-head">
-          <span className={`apk-pf-return apk-tone-${returnTone(summary.annualizedReturnPct)}`}>{headline}</span>
-          {summary.selectedPeriod && <span className="apk-pf-period">{summary.selectedPeriod} annualised</span>}
-          {oneDay && (
-            <span className={`apk-pf-oneday apk-tone-${returnTone(summary.oneDayReturnPct)}`}>
-              {oneDay} <span className="apk-pf-oneday-l">1D</span>
-            </span>
-          )}
-        </div>
-      )}
-      {hasSeries ? (
-        <LineComparisonChart series={series} width={340} height={150} padding={8} strokeWidth={2}
-          showLegend legendFundLabel="Fund" legendBenchmarkLabel="Nifty 50" />
-      ) : (
-        <div className="apk-pf-pending">Performance data pending.</div>
-      )}
-      {periods.length > 0 && (
-        <div className="apk-pf-chips" role="tablist" aria-label="Performance period">
-          {periods.map((p) => (
-            <button key={p.key} type="button" role="tab" aria-selected={activeKey === p.key}
-              className={`apk-pf-chip ${activeKey === p.key ? 'is-active' : ''}`}
-              onClick={() => setActiveKey(p.key)}>{p.label}</button>
-          ))}
-        </div>
-      )}
-      {active && (
-        <div className="apk-pf-chip-detail">
-          <span>Fund <strong className={`apk-tone-${returnTone(active.fundReturnPct)}`}>{formatReturnPct(active.fundReturnPct, { decimals: 2 })}</strong></span>
-          <span>Nifty 50 <strong>{formatReturnPct(active.niftyReturnPct, { decimals: 2, sign: false })}</strong></span>
-        </div>
-      )}
-      <p className="apk-pf-disclaimer">
-        Returns are admin-published and indicative. Investments are subject to market risk.
-        Past performance is not indicative of future returns.
-      </p>
-    </div>
+    <FadeIn direction="up" distance={14} duration={450}>
+      <div className="be-card apk-pf">
+        {headline && (
+          <div className="apk-pf-head">
+            <span className={`apk-pf-return apk-tone-${returnTone(summary.annualizedReturnPct)}`}>{headline}</span>
+            {summary.selectedPeriod && <span className="apk-pf-period">{summary.selectedPeriod} annualised</span>}
+            {oneDay && (
+              <span className={`apk-pf-oneday apk-tone-${returnTone(summary.oneDayReturnPct)}`}>
+                {oneDay} <span className="apk-pf-oneday-l">1D</span>
+              </span>
+            )}
+          </div>
+        )}
+        {hasSeries ? (
+          <LineComparisonChart series={series} width={340} height={150} padding={8} strokeWidth={2}
+            showLegend legendFundLabel="Fund" legendBenchmarkLabel="Nifty 50" />
+        ) : (
+          <div className="apk-pf-pending">Performance data pending.</div>
+        )}
+        {periods.length > 0 && (
+          <div className="apk-pf-chips" role="tablist" aria-label="Performance period">
+            {periods.map((p) => (
+              <button key={p.key} type="button" role="tab" aria-selected={activeKey === p.key}
+                className={`apk-pf-chip ${activeKey === p.key ? 'is-active' : ''}`}
+                onClick={() => setActiveKey(p.key)}>{p.label}</button>
+            ))}
+          </div>
+        )}
+        {active && (
+          <div className="apk-pf-chip-detail">
+            <span>Fund <strong className={`apk-tone-${returnTone(active.fundReturnPct)}`}>{formatReturnPct(active.fundReturnPct, { decimals: 2 })}</strong></span>
+            <span>Nifty 50 <strong>{formatReturnPct(active.niftyReturnPct, { decimals: 2, sign: false })}</strong></span>
+          </div>
+        )}
+        <p className="apk-pf-disclaimer">
+          Returns are admin-published and indicative. Investments are subject to market risk.
+          Past performance is not indicative of future returns.
+        </p>
+      </div>
+    </FadeIn>
   );
 }
 
-// Bottom holdings-analysis: asset split donut + sector donut + ratios grid.
 function HoldingsAnalysis({ fund }) {
   const assetAllocation = withPaletteColors(Array.isArray(fund.assetAllocation) ? fund.assetAllocation : []);
   const sectors = withPaletteColors(
@@ -132,42 +131,44 @@ function HoldingsAnalysis({ fund }) {
   const poolLabel = fund.totalPoolSize ? fmtMoney(fund.totalPoolSize) : '';
 
   return (
-    <div className="be-card apk-ha">
-      <div className="be-eyebrow">Holdings analysis</div>
+    <FadeIn direction="up" distance={14} duration={450}>
+      <div className="be-card apk-ha">
+        <div className="be-eyebrow">Holdings analysis</div>
 
-      {hasAsset && (
-        <div className="apk-ha-block">
-          <h4 className="apk-ha-title">Equity / Debt / Cash split</h4>
-          <DonutChart data={assetAllocation} size={184} thickness={28} centerLabel={poolLabel}
-            ariaLabel="Equity debt cash split" />
-          <AllocationLegend items={assetAllocation} />
-        </div>
-      )}
-
-      {hasSectors && (
-        <div className="apk-ha-block">
-          <h4 className="apk-ha-title">Equity sector allocation</h4>
-          <DonutChart data={sectors} size={184} thickness={28} ariaLabel="Equity sector allocation" />
-          <AllocationLegend items={sectors} />
-        </div>
-      )}
-
-      {hasRatios && (
-        <div className="apk-ha-block">
-          <h4 className="apk-ha-title">Advanced ratios</h4>
-          <div className="apk-ha-ratios">
-            {ratioRows.map((r) => (
-              <div key={r.key} className="apk-ha-ratio">
-                <span>{r.label}</span>
-                <strong className="be-num">{Number(ratios[r.key]).toFixed(2)}</strong>
-              </div>
-            ))}
+        {hasAsset && (
+          <div className="apk-ha-block">
+            <h4 className="apk-ha-title">Equity / Debt / Cash split</h4>
+            <DonutChart data={assetAllocation} size={184} thickness={28} centerLabel={poolLabel}
+              ariaLabel="Equity debt cash split" />
+            <AllocationLegend items={assetAllocation} />
           </div>
-        </div>
-      )}
+        )}
 
-      {fund.holdingsAsOf && <div className="apk-ha-asof">*Holdings as of {formatNavDate(fund.holdingsAsOf)}</div>}
-    </div>
+        {hasSectors && (
+          <div className="apk-ha-block">
+            <h4 className="apk-ha-title">Equity sector allocation</h4>
+            <DonutChart data={sectors} size={184} thickness={28} ariaLabel="Equity sector allocation" />
+            <AllocationLegend items={sectors} />
+          </div>
+        )}
+
+        {hasRatios && (
+          <div className="apk-ha-block">
+            <h4 className="apk-ha-title">Advanced ratios</h4>
+            <div className="apk-ha-ratios">
+              {ratioRows.map((r) => (
+                <div key={r.key} className="apk-ha-ratio">
+                  <span>{r.label}</span>
+                  <strong className="be-num">{Number(ratios[r.key]).toFixed(2)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {fund.holdingsAsOf && <div className="apk-ha-asof">*Holdings as of {formatNavDate(fund.holdingsAsOf)}</div>}
+      </div>
+    </FadeIn>
   );
 }
 
@@ -176,24 +177,26 @@ function FundDetailSkeleton() {
     <div className="apk-detail-stack">
       <div className="apk-detail-main">
         <div className="apk-detail-hero">
-          <div className="apk-skel" style={{ width: 120, height: 16, marginBottom: 12 }} />
-          <div className="apk-skel" style={{ width: '80%', height: 36, marginBottom: 8 }} />
-          <div className="apk-skel" style={{ width: '60%', height: 14 }} />
+          <Skeleton variant="text" width="30%" height={16} />
+          <Skeleton variant="text" width="80%" height={36} delay={40} />
+          <Skeleton variant="text" width="60%" height={14} delay={80} />
         </div>
-        <div className="be-card apk-skel" style={{ height: 120 }} />
-        <div className="be-card apk-skel" style={{ height: 340 }} />
-        <div className="be-card apk-skel" style={{ height: 240 }} />
-        <div className="be-card apk-skel" style={{ height: 180 }} />
-      </div>
-      <div className="apk-detail-side">
-        <div className="be-card apk-skel" style={{ height: 300 }} />
-        <div className="be-card apk-skel" style={{ height: 140 }} />
-        <div className="be-card apk-skel" style={{ height: 280 }} />
+        <div className="be-card" style={{ padding: 16 }}>
+          <Skeleton variant="text" width="40%" height={20} />
+          <Skeleton variant="text" width="100%" height={120} delay={40} />
+        </div>
+        <div className="be-card" style={{ padding: 16 }}>
+          <Skeleton variant="text" width="50%" height={20} />
+          <Skeleton variant="text" width="100%" height={80} delay={40} />
+        </div>
+        <div className="be-card" style={{ padding: 16 }}>
+          <Skeleton variant="text" width="40%" height={20} />
+          <Skeleton variant="text" width="100%" height={60} delay={40} />
+        </div>
       </div>
     </div>
   );
 }
-
 
 export default function FundDetail() {
   const { fundId } = useParams();
@@ -210,11 +213,8 @@ export default function FundDetail() {
     let cancelled = false;
     fundsApi.getFund(fundId).then((data) => {
       if (!cancelled) setFund(data);
-    }).catch((error) => {
-      if (!cancelled) {
-        // silently fail
-        setFund(null);
-      }
+    }).catch(() => {
+      if (!cancelled) setFund(null);
     });
     return () => { cancelled = true; };
   }, [fundId, appConfig.publishedAt]);
@@ -223,14 +223,12 @@ export default function FundDetail() {
     let cancelled = false;
     disclosureApi.getDisclosures().then((data) => {
       if (!cancelled) setDisclosures(data);
-    }).catch((error) => {
-      if (!cancelled) {
-        // silently fail
-        setDisclosures(null);
-      }
+    }).catch(() => {
+      if (!cancelled) setDisclosures(null);
     });
     return () => { cancelled = true; };
   }, [appConfig.publishedAt]);
+
   const projectedInvested = useMemo(() => {
     const n = Number(sipMonths) || 0;
     const amount = Number(sipAmount) || 0;
@@ -262,317 +260,323 @@ export default function FundDetail() {
   const largestSector = sectors.reduce((max, s) => (s.percentage > (max?.percentage || 0) ? s : max), null);
 
   const lifecycleLabel = LIFECYCLE_LABELS[fund.lifecycleStage] || LIFECYCLE_LABELS.published;
-  const heroBg = largestSector?.color ? `${largestSector.color}0D` : 'transparent'; // ~5% opacity hex
-
-
+  const heroBg = largestSector?.color ? `${largestSector.color}0D` : 'transparent';
 
   return (
     <>
       <AppBar title={fund.name} rightIcon={Share2} onRight={onShare} rightAriaLabel="Share" />
       <div className="apk-screen apk-fund-detail">
         {/* Hero */}
-        <div className="apk-detail-hero" style={{ background: `linear-gradient(135deg, ${heroBg} 0%, transparent 70%)` }}>
-          <button className="apk-back-link" onClick={() => navigate(-1)}>
-            <ArrowLeft size={16} strokeWidth={1.5} />
-            <span>Back to funds</span>
-          </button>
-          <div className="apk-detail-hero-top">
-            <div className="apk-detail-hero-text">
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                <div className="be-eyebrow">{fund.categoryEyebrow}</div>
-                <span className="apk-lifecycle-badge">{lifecycleLabel}</span>
-
+        <FadeIn direction="up" distance={16} duration={500}>
+          <div className="apk-detail-hero" style={{ background: `linear-gradient(135deg, ${heroBg} 0%, transparent 70%)` }}>
+            <button className="apk-back-link" onClick={() => navigate(-1)}>
+              <ArrowLeft size={16} strokeWidth={1.5} />
+              <span>Back to funds</span>
+            </button>
+            <div className="apk-detail-hero-top">
+              <div className="apk-detail-hero-text">
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <div className="be-eyebrow">{fund.categoryEyebrow}</div>
+                  <span className="apk-lifecycle-badge">{lifecycleLabel}</span>
+                </div>
+                <h1 className="apk-h apk-detail-hero-title">{fund.name}</h1>
+                <p className="apk-detail-hero-tagline">{fund.tagline}</p>
+                <div className="apk-detail-hero-trust">
+                  <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> SEBI Registered</span>
+                  <span className="apk-trust-sep">·</span>
+                  <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> Disclosure Compliant</span>
+                  <span className="apk-trust-sep">·</span>
+                  <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> Audited Holdings</span>
+                </div>
+                <p className="apk-detail-hero-quote">Investments are subject to market risks. Past performance is not indicative of future returns.</p>
               </div>
-              <h1 className="apk-h apk-detail-hero-title">{fund.name}</h1>
-              <p className="apk-detail-hero-tagline">{fund.tagline}</p>
-              <div className="apk-detail-hero-trust">
-                <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> SEBI Registered</span>
-                <span className="apk-trust-sep">·</span>
-                <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> Disclosure Compliant</span>
-                <span className="apk-trust-sep">·</span>
-                <span className="apk-trust-badge"><CheckCircle size={12} strokeWidth={2} /> Audited Holdings</span>
+              <div className="apk-detail-status">
+                {isActive ? (
+                  <span className="be-badge be-badge-active">
+                    <span className="be-badge-dot" />
+                    Active
+                  </span>
+                ) : (
+                  <span className="be-badge be-badge-gold">
+                    <span className="be-badge-dot" />
+                    Coming Soon
+                  </span>
+                )}
               </div>
-              <p className="apk-detail-hero-quote">Investments are subject to market risks. Past performance is not indicative of future returns.</p>
-            </div>
-            <div className="apk-detail-status">
-              {isActive ? (
-                <span className="be-badge be-badge-active">
-                  <span className="be-badge-dot" />
-                  Active
-                </span>
-              ) : (
-                <span className="be-badge be-badge-gold">
-                  <span className="be-badge-dot" />
-                  Coming Soon
-                </span>
-              )}
             </div>
           </div>
-        </div>
+        </FadeIn>
 
         <div className="apk-detail-stack">
           <div className="apk-detail-main">
-            {/* Performance vs Nifty (headline return + comparison chart) */}
+            {/* Performance vs Nifty */}
             <PerformanceSection fund={fund} />
 
             {/* Objective */}
             {isComponentEnabled(appConfig, 'fundDetail', 'objective') && (
-              <div className="be-card apk-fund-obj">
-                <div className="be-eyebrow">{copy.objectiveTitle}</div>
-                <p>{fund.objective}</p>
-                <div className="apk-fund-obj-meta">
-                  <div><strong>{copy.riskLabel}</strong>{RISK_LABELS[fund.riskLabel]}</div>
-                  <div><strong>{copy.horizonLabel}</strong>{fund.horizon}</div>
+              <FadeIn direction="up" distance={12} duration={400} delay={80}>
+                <div className="be-card apk-fund-obj">
+                  <div className="be-eyebrow">{copy.objectiveTitle}</div>
+                  <p>{fund.objective}</p>
+                  <div className="apk-fund-obj-meta">
+                    <div><strong>{copy.riskLabel}</strong>{RISK_LABELS[fund.riskLabel]}</div>
+                    <div><strong>{copy.horizonLabel}</strong>{fund.horizon}</div>
+                  </div>
                 </div>
-              </div>
+              </FadeIn>
             )}
 
             {/* Key Stats */}
             {isComponentEnabled(appConfig, 'fundDetail', 'key_stats') && (
-              <div className="be-card apk-key-stats">
-                <div className="be-eyebrow">{copy.keyStatsTitle || 'Key Metrics'}</div>
-                <div className="apk-key-stats-grid">
-                  <div className="apk-stat-card">
-                    <div className="apk-stat-card-icon" style={{ background: 'rgba(31, 122, 77, 0.10)', color: 'var(--be-green)' }}>
-                      <Briefcase size={18} strokeWidth={2} />
-                    </div>
-                    <div className="apk-stat-card-label">Pool Size</div>
-                    <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.totalPoolSize} source={fund.source || 'mock'} asOf={new Date().toISOString()} /></div>
-                  </div>
-                  <div className="apk-stat-card">
-                    <div className="apk-stat-card-icon" style={{ background: 'rgba(181, 137, 74, 0.12)', color: 'var(--be-gold)' }}>
-                      <Calendar size={18} strokeWidth={2} />
-                    </div>
-                    <div className="apk-stat-card-label">Min SIP</div>
-                    <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.minSip} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div>
-                  </div>
-                  <div className="apk-stat-card">
-                    <div className="apk-stat-card-icon" style={{ background: 'rgba(180, 58, 46, 0.10)', color: 'var(--be-red)' }}>
-                      <Shield size={18} strokeWidth={2} />
-                    </div>
-                    <div className="apk-stat-card-label">Risk Level</div>
-                    <div className="apk-stat-card-value">{RISK_LABELS[fund.riskLabel]}</div>
-                  </div>
-                  {analytics.fundAge && (
+              <FadeIn direction="up" distance={12} duration={400} delay={120}>
+                <div className="be-card apk-key-stats">
+                  <div className="be-eyebrow">{copy.keyStatsTitle || 'Key Metrics'}</div>
+                  <div className="apk-key-stats-grid">
                     <div className="apk-stat-card">
-                      <div className="apk-stat-card-icon" style={{ background: 'var(--be-gold-soft)', color: 'var(--be-gold)' }}>
+                      <div className="apk-stat-card-icon" style={{ background: 'rgba(31, 122, 77, 0.10)', color: 'var(--be-green)' }}>
+                        <Briefcase size={18} strokeWidth={2} />
+                      </div>
+                      <div className="apk-stat-card-label">Pool Size</div>
+                      <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.totalPoolSize} source={fund.source || 'mock'} asOf={new Date().toISOString()} /></div>
+                    </div>
+                    <div className="apk-stat-card">
+                      <div className="apk-stat-card-icon" style={{ background: 'rgba(181, 137, 74, 0.12)', color: 'var(--be-gold)' }}>
                         <Calendar size={18} strokeWidth={2} />
                       </div>
-                      <div className="apk-stat-card-label">Fund Age</div>
-                      <div className="apk-stat-card-value be-num">{analytics.fundAge.display}</div>
+                      <div className="apk-stat-card-label">Min SIP</div>
+                      <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.minSip} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div>
                     </div>
-                  )}
+                    <div className="apk-stat-card">
+                      <div className="apk-stat-card-icon" style={{ background: 'rgba(180, 58, 46, 0.10)', color: 'var(--be-red)' }}>
+                        <Shield size={18} strokeWidth={2} />
+                      </div>
+                      <div className="apk-stat-card-label">Risk Level</div>
+                      <div className="apk-stat-card-value">{RISK_LABELS[fund.riskLabel]}</div>
+                    </div>
+                    {analytics.fundAge && (
+                      <div className="apk-stat-card">
+                        <div className="apk-stat-card-icon" style={{ background: 'var(--be-gold-soft)', color: 'var(--be-gold)' }}>
+                          <Calendar size={18} strokeWidth={2} />
+                        </div>
+                        <div className="apk-stat-card-label">Fund Age</div>
+                        <div className="apk-stat-card-value be-num">{analytics.fundAge.display}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="apk-key-stats-divider" />
+                  <div className="apk-key-stats-row">
+                    <span>Horizon</span>
+                    <span>{fund.horizon}</span>
+                  </div>
+                  <div className="apk-key-stats-row">
+                    <span>Risk</span>
+                    <span className="be-badge be-badge-neutral" style={{ fontSize: 11, padding: '4px 10px' }}>{RISK_LABELS[fund.riskLabel]}</span>
+                  </div>
                 </div>
-                <div className="apk-key-stats-divider" />
-                <div className="apk-key-stats-row">
-                  <span>Horizon</span>
-                  <span>{fund.horizon}</span>
-                </div>
-                <div className="apk-key-stats-row">
-                  <span>Risk</span>
-                  <span className="be-badge be-badge-neutral" style={{ fontSize: 11, padding: '4px 10px' }}>{RISK_LABELS[fund.riskLabel]}</span>
-                </div>
-              </div>
+              </FadeIn>
             )}
-
-
 
             {/* Sector Distribution */}
             {isComponentEnabled(appConfig, 'fundDetail', 'allocation_chart') && chartConfig.showSectorDistribution !== false && sectors.length > 0 && (
-              <div className="be-card apk-alloc apk-sector-chart-3d">
-                <div className="apk-sector-chart-wrap">
-                  <PieChart3D
-                    data={sectors.map((s) => ({ label: s.name, percentage: s.percentage, color: s.color }))}
-                    size={180}
-                    depth={18}
-                  />
+              <FadeIn direction="up" distance={12} duration={400} delay={160}>
+                <div className="be-card apk-alloc apk-sector-chart-3d">
+                  <div className="apk-sector-chart-wrap">
+                    <PieChart3D
+                      data={sectors.map((s) => ({ label: s.name, percentage: s.percentage, color: s.color }))}
+                      size={180}
+                      depth={18}
+                    />
+                  </div>
+                  <div className="apk-sector-legend">
+                    <div className="be-eyebrow" style={{ marginBottom: 8 }}>Sector Allocation</div>
+                    {sectors.map((s) => (
+                      <div key={s.id} className="apk-sector-legend-item">
+                        <span className="apk-sector-color" style={{ background: s.color }} />
+                        <span>{s.name}</span>
+                        <span className="be-num">{s.percentage}%</span>
+                      </div>
+                    ))}
+                    {largestSector && (
+                      <div className="apk-concentration-note">Largest concentration: {largestSector.name}</div>
+                    )}
+                  </div>
                 </div>
-                <div className="apk-sector-legend">
-                  <div className="be-eyebrow" style={{ marginBottom: 8 }}>Sector Allocation</div>
-                  {sectors.map((s) => (
-                    <div key={s.id} className="apk-sector-legend-item">
-                      <span className="apk-sector-color" style={{ background: s.color }} />
-                      <span>{s.name}</span>
-                      <span className="be-num">{s.percentage}%</span>
-                    </div>
-                  ))}
-                  {largestSector && (
-                    <div className="apk-concentration-note">Largest concentration: {largestSector.name}</div>
-                  )}
-                </div>
-              </div>
+              </FadeIn>
             )}
 
             {/* Investment Breakdown */}
             {isComponentEnabled(appConfig, 'fundDetail', 'portfolio_exposure') && chartConfig.showInvestmentBreakdown !== false && investments.length > 0 && (
-              <div className="be-card apk-investment-breakdown">
-                <div className="be-eyebrow">{copy.exposureTitle || 'Investment Breakdown'}</div>
-                {sectors.map((sector) => {
-                  const sectorInvestments = investments.filter((inv) => inv.sectorId === sector.id);
-                  if (sectorInvestments.length === 0) return null;
-                  return (
-                    <div key={sector.id} className="apk-investment-sector">
-                      <div className="apk-investment-sector-header">
-                        <span className="apk-sector-color" style={{ background: sector.color }} />
-                        <strong>{sector.name}</strong>
-                        <span className="be-num">({sector.percentage}%)</span>
-                      </div>
-                      <div className="apk-investment-list">
-                        {sectorInvestments.map((inv, idx) => (
-                          <div key={inv.id || idx} className="apk-investment-item">
-                            <span className="apk-investment-item-name">
-                              {chartConfig.showCompanyNames !== false ? inv.companyName : `Company ${idx + 1}`}
-                            </span>
-                            <div className="apk-investment-item-right">
-                              <div className="apk-investment-progress">
-                                <div className="apk-investment-progress-track">
-                                  <div
-                                    className="apk-investment-progress-fill"
-                                    style={{
-                                      width: `${Math.min(100, ((inv.percentage ?? 0) / (sector.percentage || 1)) * 100)}%`,
-                                      background: sector.color,
-                                    }}
-                                  />
+              <FadeIn direction="up" distance={12} duration={400} delay={200}>
+                <div className="be-card apk-investment-breakdown">
+                  <div className="be-eyebrow">{copy.exposureTitle || 'Investment Breakdown'}</div>
+                  {sectors.map((sector) => {
+                    const sectorInvestments = investments.filter((inv) => inv.sectorId === sector.id);
+                    if (sectorInvestments.length === 0) return null;
+                    return (
+                      <div key={sector.id} className="apk-investment-sector">
+                        <div className="apk-investment-sector-header">
+                          <span className="apk-sector-color" style={{ background: sector.color }} />
+                          <strong>{sector.name}</strong>
+                          <span className="be-num">({sector.percentage}%)</span>
+                        </div>
+                        <div className="apk-investment-list">
+                          {sectorInvestments.map((inv, idx) => (
+                            <div key={inv.id || idx} className="apk-investment-item">
+                              <span className="apk-investment-item-name">
+                                {chartConfig.showCompanyNames !== false ? inv.companyName : `Company ${idx + 1}`}
+                              </span>
+                              <div className="apk-investment-item-right">
+                                <div className="apk-investment-progress">
+                                  <div className="apk-investment-progress-track">
+                                    <div
+                                      className="apk-investment-progress-fill"
+                                      style={{ '--pct': Math.min(1, ((inv.percentage ?? 0) / (sector.percentage || 1))) }}
+                                    />
+                                  </div>
                                 </div>
+                                <span className="be-num apk-investment-item-pct">{fmtPct((inv.percentage ?? 0) / 100, { sign: false, decimals: 1 })}</span>
                               </div>
-                              <span className="be-num apk-investment-item-pct">{fmtPct((inv.percentage ?? 0) / 100, { sign: false, decimals: 1 })}</span>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </FadeIn>
             )}
 
             {/* Portfolio exposure */}
             {isActive && isComponentEnabled(appConfig, 'fundDetail', 'portfolio_exposure') && fund.topHoldings?.length > 0 && (
-              <div className="be-card apk-holding">
-                <div className="be-eyebrow">{copy.exposureTitle}</div>
-                {fund.topHoldings.slice(0, screen.exposureLimit).map((h) => (
-                  <div key={h.symbol} className="apk-holding-row">
-                    <div>
-                      <div className="apk-holding-name">{h.name}</div>
+              <FadeIn direction="up" distance={12} duration={400} delay={240}>
+                <div className="be-card apk-holding">
+                  <div className="be-eyebrow">{copy.exposureTitle}</div>
+                  {fund.topHoldings.slice(0, screen.exposureLimit).map((h) => (
+                    <div key={h.symbol} className="apk-holding-row">
+                      <div>
+                        <div className="apk-holding-name">{h.name}</div>
+                      </div>
+                      <div className="apk-holding-pct be-num">{fmtPct((h.pct ?? 0) / 100, { sign: false, decimals: 1 })}</div>
                     </div>
-                    <div className="apk-holding-pct be-num">{fmtPct((h.pct ?? 0) / 100, { sign: false, decimals: 1 })}</div>
-                  </div>
-                ))}
-                <a className="apk-link apk-inline-link">{copy.exposureLinkLabel}</a>
-              </div>
+                  ))}
+                  <a className="apk-link apk-inline-link">{copy.exposureLinkLabel}</a>
+                </div>
+              </FadeIn>
             )}
 
             {/* Fees */}
             {isActive && isComponentEnabled(appConfig, 'fundDetail', 'fees') && fund.fees?.length > 0 && (
-              <div className="be-card apk-fund-fees">
-                <div className="be-eyebrow">{copy.feesTitle}</div>
-                {fund.fees.map((f) => (
-                  <div key={f.label} className="apk-fund-fees-row"><span>{f.label}</span><span>{f.value}</span></div>
-                ))}
-                <div className="be-disclosure apk-card-note">{copy.feesDisclosure}</div>
-              </div>
+              <FadeIn direction="up" distance={12} duration={400} delay={280}>
+                <div className="be-card apk-fund-fees">
+                  <div className="be-eyebrow">{copy.feesTitle}</div>
+                  {fund.fees.map((f) => (
+                    <div key={f.label} className="apk-fund-fees-row"><span>{f.label}</span><span>{f.value}</span></div>
+                  ))}
+                  <div className="be-disclosure apk-card-note">{copy.feesDisclosure}</div>
+                </div>
+              </FadeIn>
             )}
 
             {/* SEBI / AMFI Disclosure Block */}
             {disclosures && (
-              <div className="be-card apk-disclosure-block">
-                <div className="be-eyebrow">Regulatory Disclosures</div>
+              <FadeIn direction="up" distance={12} duration={400} delay={320}>
+                <div className="be-card apk-disclosure-block">
+                  <div className="be-eyebrow">Regulatory Disclosures</div>
 
-                {/* Risk-o-meter */}
-                <div className="apk-riskometer">
-                  <div className="apk-riskometer-label">
-                    <span className="apk-riskometer-badge" style={{ background: disclosures.riskometer?.color ? `${disclosures.riskometer.color}18` : 'var(--be-ivory-2)', color: disclosures.riskometer?.color || 'var(--be-slate)' }}>
-                      <AlertTriangle size={12} strokeWidth={2} />
-                      {disclosures.riskometer?.label || disclosures.riskometer?.level}
-                    </span>
-                    <span className="apk-riskometer-level">Risk-o-meter</span>
+                  <div className="apk-riskometer">
+                    <div className="apk-riskometer-label">
+                      <span className="apk-riskometer-badge" style={{ background: disclosures.riskometer?.color ? `${disclosures.riskometer.color}18` : 'var(--be-ivory-2)', color: disclosures.riskometer?.color || 'var(--be-slate)' }}>
+                        <AlertTriangle size={12} strokeWidth={2} />
+                        {disclosures.riskometer?.label || disclosures.riskometer?.level}
+                      </span>
+                      <span className="apk-riskometer-level">Risk-o-meter</span>
+                    </div>
+                    <div className="apk-riskometer-bar">
+                      {['low', 'moderate', 'high', 'very_high'].map((lvl) => (
+                        <div
+                          key={lvl}
+                          className={`apk-riskometer-segment ${disclosures.riskometer?.level === lvl ? 'is-active' : ''}`}
+                          style={{
+                            background: disclosures.riskometer?.level === lvl
+                              ? (disclosures.riskometer?.color || 'var(--be-slate)')
+                              : 'var(--be-border)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <p className="apk-riskometer-desc">{disclosures.riskometer?.description}</p>
                   </div>
-                  <div className="apk-riskometer-bar">
-                    {['low', 'moderate', 'high', 'very_high'].map((lvl) => (
-                      <div
-                        key={lvl}
-                        className={`apk-riskometer-segment ${disclosures.riskometer?.level === lvl ? 'is-active' : ''}`}
-                        style={{
-                          background: disclosures.riskometer?.level === lvl
-                            ? (disclosures.riskometer?.color || 'var(--be-slate)')
-                            : 'var(--be-border)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <p className="apk-riskometer-desc">{disclosures.riskometer?.description}</p>
-                </div>
 
-                {/* Key disclosure rows */}
-                <div className="apk-disclosure-rows">
-                  <div className="apk-disclosure-row">
-                    <span className="apk-disclosure-row-label">Scheme Category</span>
-                    <span className="apk-disclosure-row-value">{disclosures.schemeCategory}</span>
+                  <div className="apk-disclosure-rows">
+                    <div className="apk-disclosure-row">
+                      <span className="apk-disclosure-row-label">Scheme Category</span>
+                      <span className="apk-disclosure-row-value">{disclosures.schemeCategory}</span>
+                    </div>
+                    <div className="apk-disclosure-row">
+                      <span className="apk-disclosure-row-label">Expense Ratio</span>
+                      <span className="apk-disclosure-row-value">{disclosures.expenseRatio}</span>
+                    </div>
+                    <div className="apk-disclosure-row">
+                      <span className="apk-disclosure-row-label">Exit Load</span>
+                      <span className="apk-disclosure-row-value">{disclosures.exitLoad}</span>
+                    </div>
                   </div>
-                  <div className="apk-disclosure-row">
-                    <span className="apk-disclosure-row-label">Expense Ratio</span>
-                    <span className="apk-disclosure-row-value">{disclosures.expenseRatio}</span>
-                  </div>
-                  <div className="apk-disclosure-row">
-                    <span className="apk-disclosure-row-label">Exit Load</span>
-                    <span className="apk-disclosure-row-value">{disclosures.exitLoad}</span>
-                  </div>
-                </div>
 
-                {/* SEBI mandated text */}
-                <div className="apk-sebi-text">
-                  <AlertTriangle size={14} strokeWidth={2} />
-                  <span>{disclosures.sebiDisclosure}</span>
-                </div>
+                  <div className="apk-sebi-text">
+                    <AlertTriangle size={14} strokeWidth={2} />
+                    <span>{disclosures.sebiDisclosure}</span>
+                  </div>
 
-                {/* Links */}
-                <div className="apk-disclosure-links">
-                  <Link className="apk-disclosure-link" to={disclosures.investorCharterUrl}>
-                    <FileText size={14} strokeWidth={2} />
-                    Investor Charter
-                  </Link>
-                  <Link className="apk-disclosure-link" to={disclosures.grievanceUrl}>
-                    <MessageSquare size={14} strokeWidth={2} />
-                    Grievance Redressal
-                  </Link>
+                  <div className="apk-disclosure-links">
+                    <Link className="apk-disclosure-link" to={disclosures.investorCharterUrl}>
+                      <FileText size={14} strokeWidth={2} />
+                      Investor Charter
+                    </Link>
+                    <Link className="apk-disclosure-link" to={disclosures.grievanceUrl}>
+                      <MessageSquare size={14} strokeWidth={2} />
+                      Grievance Redressal
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              </FadeIn>
             )}
 
-            {/* Holdings analysis: asset split + sector donut + advanced ratios */}
+            {/* Holdings analysis */}
             <HoldingsAnalysis fund={fund} />
 
             {/* Investment Flow CTA */}
-            <div className="be-card apk-invest-cta-card">
-              {isActive ? (
-                <>
-                  <div className="apk-invest-cta-icon">
-                    <Wallet size={28} strokeWidth={1.5} />
-                  </div>
-                  <h3>Ready to invest?</h3>
-                  <p>Start building your portfolio with this fund today.</p>
-                  <div className="apk-invest-cta-actions">
-                    <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn" onClick={() => navigate(`/app/invest/sip/${fund.id}`)}>
-                      Start SIP
+            <FadeIn direction="up" distance={14} duration={450} delay={120}>
+              <div className="be-card apk-invest-cta-card">
+                {isActive ? (
+                  <>
+                    <div className="apk-invest-cta-icon">
+                      <Wallet size={28} strokeWidth={1.5} />
+                    </div>
+                    <h3>Ready to invest?</h3>
+                    <p>Start building your portfolio with this fund today.</p>
+                    <div className="apk-invest-cta-actions">
+                      <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn" onClick={() => navigate(`/app/invest/sip/${fund.id}`)}>
+                        Start SIP
+                      </button>
+                      <button className="be-btn be-btn-secondary be-btn-lg apk-invest-cta-btn" onClick={() => navigate(`/app/invest/lumpsum/${fund.id}`)}>
+                        One-time Investment
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="apk-invest-cta-icon" style={{ background: 'var(--be-ivory-2)', color: 'var(--be-slate)' }}>
+                      <Bell size={28} strokeWidth={1.5} />
+                    </div>
+                    <h3>Coming Soon</h3>
+                    <p>This fund is not currently accepting investments. You&apos;ll be notified when it opens.</p>
+                    <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn" style={{ maxWidth: 260 }}>
+                      <Bell size={16} strokeWidth={2} /> Notify me
                     </button>
-                    <button className="be-btn be-btn-secondary be-btn-lg apk-invest-cta-btn" onClick={() => navigate(`/app/invest/lumpsum/${fund.id}`)}>
-                      One-time Investment
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="apk-invest-cta-icon" style={{ background: 'var(--be-ivory-2)', color: 'var(--be-slate)' }}>
-                    <Bell size={28} strokeWidth={1.5} />
-                  </div>
-                  <h3>Coming Soon</h3>
-                  <p>This fund is not currently accepting investments. You&apos;ll be notified when it opens.</p>
-                  <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn" style={{ maxWidth: 260 }}>
-                    <Bell size={16} strokeWidth={2} /> Notify me
-                  </button>
-                </>
-              )}
-            </div>
+                  </>
+                )}
+              </div>
+            </FadeIn>
 
             {/* Methodology disclosure */}
             {isComponentEnabled(appConfig, 'fundDetail', 'methodology_disclosure') && (
@@ -580,54 +584,60 @@ export default function FundDetail() {
             )}
 
             {/* Bottom Disclaimer */}
-            <div className="apk-fund-disclaimer-card">
-              <div className="apk-disclaimer-icon">ⓘ</div>
-              <p><strong>Important Disclaimer:</strong> Past performance is not indicative of future returns. All investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-            </div>
+            <FadeIn direction="up" distance={10} duration={400} delay={160}>
+              <div className="apk-fund-disclaimer-card">
+                <div className="apk-disclaimer-icon">ⓘ</div>
+                <p><strong>Important Disclaimer:</strong> Past performance is not indicative of future returns. All investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
+              </div>
+            </FadeIn>
           </div>
 
           <div className="apk-detail-side">
             {/* Minimums */}
             {isComponentEnabled(appConfig, 'fundDetail', 'minimums') && (
-              <div className="apk-fund-mins">
-                <div><div className="apk-fund-mins-l">{copy.minSipLabel}</div><div className="apk-fund-mins-v be-money"><MoneyValue amount={fund.minSip} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div></div>
-                <div><div className="apk-fund-mins-l">{copy.minLumpsumLabel}</div><div className="apk-fund-mins-v be-money"><MoneyValue amount={fund.minLumpsum} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div></div>
-                <div><div className="apk-fund-mins-l">{copy.lockInLabel}</div><div className="apk-fund-mins-v">{fund.lockInText}</div></div>
-              </div>
+              <FadeIn direction="up" distance={10} duration={400} delay={80}>
+                <div className="apk-fund-mins">
+                  <div><div className="apk-fund-mins-l">{copy.minSipLabel}</div><div className="apk-fund-mins-v be-money"><MoneyValue amount={fund.minSip} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div></div>
+                  <div><div className="apk-fund-mins-l">{copy.minLumpsumLabel}</div><div className="apk-fund-mins-v be-money"><MoneyValue amount={fund.minLumpsum} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div></div>
+                  <div><div className="apk-fund-mins-l">{copy.lockInLabel}</div><div className="apk-fund-mins-v">{fund.lockInText}</div></div>
+                </div>
+              </FadeIn>
             )}
 
             {/* Calculator */}
             {isActive && isComponentEnabled(appConfig, 'fundDetail', 'sip_projection') && (
-              <div className="be-card apk-fund-calc">
-                <div className="be-eyebrow">{copy.projectionTitle}</div>
-                <div className="be-field">
-                  <label>Monthly SIP amount</label>
-                  <div className="apk-amount-row">
-                    <span className="apk-amount-symbol">₹</span>
-                    <input className="be-input be-num" type="number" min={fund.minSip ?? 0} value={sipAmount ?? ''} onChange={(e) => setSipAmount(e.target.value === '' ? '' : Number(e.target.value))} />
+              <FadeIn direction="up" distance={10} duration={400} delay={120}>
+                <div className="be-card apk-fund-calc">
+                  <div className="be-eyebrow">{copy.projectionTitle}</div>
+                  <div className="be-field">
+                    <label>Monthly SIP amount</label>
+                    <div className="apk-amount-row">
+                      <span className="apk-amount-symbol">₹</span>
+                      <input className="be-input be-num" type="number" min={fund.minSip ?? 0} value={sipAmount ?? ''} onChange={(e) => setSipAmount(e.target.value === '' ? '' : Number(e.target.value))} />
+                    </div>
+                    <div className="apk-chip-row apk-field-chips">
+                      {screen.calculator.amountPresets.map((v) => (
+                        <button key={v} className={'apk-chip' + (sipAmount === v ? ' is-active' : '')} onClick={() => setSipAmount(v)}>{fmtMoney(v)}</button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="apk-chip-row apk-field-chips">
-                    {screen.calculator.amountPresets.map((v) => (
-                      <button key={v} className={'apk-chip' + (sipAmount === v ? ' is-active' : '')} onClick={() => setSipAmount(v)}>{fmtMoney(v)}</button>
-                    ))}
+                  <div className="be-field">
+                    <label>Duration</label>
+                    <div className="apk-chip-row">
+                      {screen.calculator.durationMonths.map((m) => (
+                        <button key={m} className={'apk-chip' + (sipMonths === m ? ' is-active' : '')} onClick={() => setSipMonths(m)}>{m} mo</button>
+                      ))}
+                    </div>
                   </div>
+                  {projectedInvested > 0 && (
+                    <div className="apk-fund-calc-out">
+                      <div className="apk-fund-calc-out-l">Total invested at end of {sipMonths || 'configured'} months</div>
+                      <div className="apk-fund-calc-out-v be-money"><MoneyValue amount={projectedInvested} source="derived" asOf={new Date().toISOString()} showBadge={false} /></div>
+                    </div>
+                  )}
+                  <div className="be-disclosure">{copy.projectionDisclosure}</div>
                 </div>
-                <div className="be-field">
-                  <label>Duration</label>
-                  <div className="apk-chip-row">
-                    {screen.calculator.durationMonths.map((m) => (
-                      <button key={m} className={'apk-chip' + (sipMonths === m ? ' is-active' : '')} onClick={() => setSipMonths(m)}>{m} mo</button>
-                    ))}
-                  </div>
-                </div>
-                {projectedInvested > 0 && (
-                  <div className="apk-fund-calc-out">
-                    <div className="apk-fund-calc-out-l">Total invested at end of {sipMonths || 'configured'} months</div>
-                    <div className="apk-fund-calc-out-v be-money"><MoneyValue amount={projectedInvested} source="derived" asOf={new Date().toISOString()} showBadge={false} /></div>
-                  </div>
-                )}
-                <div className="be-disclosure">{copy.projectionDisclosure}</div>
-              </div>
+              </FadeIn>
             )}
           </div>
         </div>

@@ -14,8 +14,8 @@
 }
 .apk-search input:focus {
   background: var(--be-bone);
-  border-color: var(--be-ink);
-  box-shadow: 0 0 0 3px rgba(14, 17, 22, 0.06);
+  border-color: var(--be-gold);
+  box-shadow: 0 0 0 3px var(--be-gold-soft);
 }
 .apk-search svg {
   position: absolute;
@@ -338,10 +338,15 @@
   border-top: 3px solid var(--be-gold);
   background: var(--be-bone);
   cursor: pointer;
-  transition: background var(--be-d-2) var(--be-ease), transform var(--be-d-1) var(--be-ease);
+  transition: background 200ms var(--be-ease), transform 160ms var(--be-ease-out), box-shadow 200ms var(--be-ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.apk-featured-card:hover {
-  background: var(--be-ivory-2);
+.apk-featured-card:active { transform: scale(0.98); }
+@media (hover: hover) and (pointer: fine) {
+  .apk-featured-card:hover {
+    background: var(--be-ivory-2);
+    box-shadow: var(--be-shadow-2);
+  }
 }
 .apk-featured-card .apk-fund-header h3 {
   font-size: 20px;
@@ -409,19 +414,25 @@
   font-weight: 500;
   color: var(--be-slate);
   cursor: pointer;
-  transition: background var(--be-d-1) var(--be-ease), color var(--be-d-1) var(--be-ease), border-color var(--be-d-1) var(--be-ease);
+  transition: background var(--be-d-1) var(--be-ease), color var(--be-d-1) var(--be-ease), border-color var(--be-d-1) var(--be-ease), transform 120ms var(--be-ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.apk-filter-chip:hover {
-  border-color: var(--be-slate-2);
-  color: var(--be-ink);
+.apk-filter-chip:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .apk-filter-chip:hover {
+    border-color: var(--be-slate-2);
+    color: var(--be-ink);
+  }
 }
 .apk-filter-chip--active {
   background: var(--be-ink);
   color: var(--be-bone);
   border-color: var(--be-ink);
 }
-.apk-filter-chip--active:hover {
-  color: var(--be-bone);
+@media (hover: hover) and (pointer: fine) {
+  .apk-filter-chip--active:hover {
+    color: var(--be-bone);
+  }
 }
 
 /* Redesigned Fund Card */
@@ -461,7 +472,9 @@
 }
 .apk-sector-mini-bar {
   height: 100%;
-  transition: width 600ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 600ms var(--be-ease);
 }
 
 /* Disclaimer banner */
@@ -546,19 +559,25 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background var(--be-d-1) var(--be-ease), color var(--be-d-1) var(--be-ease), border-color var(--be-d-1) var(--be-ease);
+  transition: background var(--be-d-1) var(--be-ease), color var(--be-d-1) var(--be-ease), border-color var(--be-d-1) var(--be-ease), transform 120ms var(--be-ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.apk-sort-chip:hover {
-  border-color: var(--be-slate-2);
-  color: var(--be-ink);
+.apk-sort-chip:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .apk-sort-chip:hover {
+    border-color: var(--be-slate-2);
+    color: var(--be-ink);
+  }
 }
 .apk-sort-chip--active {
   background: var(--be-ink);
   color: var(--be-bone);
   border-color: var(--be-ink);
 }
-.apk-sort-chip--active:hover {
-  color: var(--be-bone);
+@media (hover: hover) and (pointer: fine) {
+  .apk-sort-chip--active:hover {
+    color: var(--be-bone);
+  }
 }
 
 /* -------------------------------------------------------------------------- */

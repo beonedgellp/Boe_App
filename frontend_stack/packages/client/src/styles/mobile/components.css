@@ -200,6 +200,17 @@
   display: flex;
   align-items: flex-end;
   padding: 12px;
+  opacity: 1;
+  transition: opacity 280ms var(--be-ease-drawer);
+}
+
+.apk-sheet-overlay.is-exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@starting-style {
+  .apk-sheet-overlay { opacity: 0; }
 }
 
 .apk-sheet {
@@ -210,6 +221,16 @@
   max-height: 92%;
   overflow-y: auto;
   box-shadow: 0 -8px 24px rgba(14,17,22,0.18);
+  transform: translateY(0);
+  transition: transform 350ms var(--be-ease-drawer);
+}
+
+.apk-sheet-overlay.is-exiting .apk-sheet {
+  transform: translateY(100%);
+}
+
+@starting-style {
+  .apk-sheet { transform: translateY(100%); }
 }
 
 .apk-sheet-handle {

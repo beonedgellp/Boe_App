@@ -41,7 +41,6 @@ export function SectorMiniBar({ sectors, height = 6, className = '', animate = t
             width: `${s.percentage}%`,
             height: '100%',
             background: s.color || 'var(--be-slate)',
-            transition: animate ? 'width 600ms cubic-bezier(0.2, 0, 0, 1)' : undefined,
           }}
           title={`${s.name || 'Unnamed'}: ${s.percentage}%`}
         />

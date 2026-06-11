@@ -5,6 +5,7 @@ import Blocked from '../pages/Blocked.jsx';
 import BottomNav from './BottomNav.jsx';
 import AppLockGate from '../components/AppLockGate.jsx';
 import { isTerminalAccount } from '../utils/approval.js';
+import { PageTransition } from '@beonedge/shared';
 
 const PRIMARY_TAB_PATHS = [
   '/app/dashboard',
@@ -34,7 +35,11 @@ export default function ClientLayout() {
   const isPublic = path === '/app/login' || path === '/app/splash';
 
   if (isPublic) {
-    return <Outlet />;
+    return (
+      <PageTransition>
+        <Outlet />
+      </PageTransition>
+    );
   }
 
   if (isLoading) return null;
@@ -68,7 +73,9 @@ export default function ClientLayout() {
     <AppLockGate user={user} logout={logout}>
       <div className="app-shell">
         <main className="app-main">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </main>
 
         {showBottomNav && <BottomNav />}

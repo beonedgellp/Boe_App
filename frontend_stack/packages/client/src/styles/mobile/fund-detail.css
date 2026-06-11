@@ -173,12 +173,16 @@
 .apk-fund-calc-bar-invested {
   height: 100%;
   background: var(--be-slate-2);
-  transition: width 400ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 400ms var(--be-ease);
 }
 .apk-fund-calc-bar-gain {
   height: 100%;
   background: var(--be-green);
-  transition: width 400ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 400ms var(--be-ease);
 }
 
 /* Allocation / Sector Distribution */
@@ -201,7 +205,9 @@
 .apk-alloc-bar-fill {
   height: 100%;
   border-radius: var(--be-radius-pill);
-  transition: width 600ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 600ms var(--be-ease);
 }
 
 /* Sector chart */
@@ -272,7 +278,9 @@
 .apk-investment-progress-fill {
   height: 100%;
   border-radius: var(--be-radius-pill);
-  transition: width 600ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 600ms var(--be-ease);
 }
 
 /* Fees */
@@ -384,7 +392,9 @@
 .apk-health-meter-fill {
   height: 100%;
   border-radius: var(--be-r-pill);
-  transition: width 800ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 800ms var(--be-ease);
 }
 
 /* Diversification bar (shared with Charts component) */
@@ -403,7 +413,9 @@
 .apk-diversification-fill {
   height: 100%;
   border-radius: var(--be-r-pill);
-  transition: width 600ms var(--be-ease);
+  transform: scaleX(var(--pct, 1));
+  transform-origin: left;
+  transition: transform 600ms var(--be-ease);
 }
 .apk-diversification-label {
   font-size: 13px;
