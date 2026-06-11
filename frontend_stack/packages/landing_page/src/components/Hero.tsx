@@ -1,41 +1,40 @@
 import Link from 'next/link';
-import { authLinks, primaryCta, secondaryCta } from '../content/nav';
+import { heroDefaults } from '../lib/landingDefaults';
+import type { HeroDefaults } from '../lib/landingDefaults';
 
-// Education-focused hero. No stock tickers, trading charts, return graphics,
-// portfolio cards, or SIP/lumpsum language - an editorial course/digest
-// preview only.
-export default function Hero() {
+export default function Hero({ hero = heroDefaults }: { hero?: Partial<HeroDefaults> }) {
+  const resolved = { ...heroDefaults, ...hero };
   return (
     <section className="hero" id="top">
       <div className="container hero__grid">
         <div>
-          <span className="eyebrow">Learn finance with clarity</span>
-          <h1 className="hero__title">
-            Understand money and manage it smarter.
-          </h1>
-          <p className="hero__lead">
-            Practical finance courses and premium money insights that help you
-            budget, save, handle debt and credit, and follow financial news
-            without the jargon.
-          </p>
+          <span className="eyebrow">{resolved.eyebrow}</span>
+          <h1 className="hero__title">{resolved.title}</h1>
+          <p className="hero__lead">{resolved.lead}</p>
           <div className="hero__actions">
-            <Link className="btn btn--primary" href={primaryCta.href}>
-              {primaryCta.label}
+            <Link className="btn btn--primary" href={resolved.primaryCta.href}>
+              {resolved.primaryCta.label}
             </Link>
-            <Link className="btn btn--ghost" href={secondaryCta.href}>
-              {secondaryCta.label}
+            <Link className="btn btn--ghost" href={resolved.secondaryCta.href}>
+              {resolved.secondaryCta.label}
             </Link>
           </div>
           <p className="hero__note">
-            New here? <Link href={authLinks.signUp.href}>Sign up</Link> to create a
-            free learner account.
+            {resolved.note.split('Sign up').map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <Link href={resolved.secondaryCta?.href ?? '/signup'}>Sign up</Link>
+                )}
+              </span>
+            ))}
           </p>
         </div>
 
         <div className="hero__media" aria-hidden="true">
           <img
-            src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=600&q=80"
-            alt="Financial planning documents and calculator"
+            src={resolved.imageUrl}
+            alt={resolved.imageAlt}
             className="hero__image"
             width={600}
             height={450}

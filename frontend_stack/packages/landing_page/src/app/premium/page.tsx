@@ -1,13 +1,17 @@
 import Link from 'next/link';
+import { fetchLandingConfig } from '../../lib/landingConfig';
 import Nav from '../../components/Nav';
 import Footer from '../../components/Footer';
 import Reveal from '../../components/Reveal';
-import { premiumBenefits } from '../../content/benefits';
+import { premiumDefaults } from '../../lib/landingDefaults';
 
-export default function PremiumPage() {
+export default async function PremiumPage() {
+  const config = await fetchLandingConfig();
+  const benefits = config?.premium?.benefits ?? premiumDefaults.benefits;
+
   return (
     <>
-      <Nav />
+      <Nav nav={config?.nav} siteName={config?.meta?.siteName} />
       <main>
         <section className="section">
           <div className="container">
@@ -19,7 +23,7 @@ export default function PremiumPage() {
               </p>
             </div>
             <div className="grid grid--3">
-              {premiumBenefits.map((benefit) => (
+              {benefits.map((benefit) => (
                 <Reveal as="div" key={benefit.id} className="card stagger-item">
                   <h3 className="benefit__title">{benefit.title}</h3>
                   <p className="benefit__desc">{benefit.description}</p>
@@ -34,7 +38,7 @@ export default function PremiumPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer meta={config?.meta} nav={config?.nav} />
     </>
   );
 }
