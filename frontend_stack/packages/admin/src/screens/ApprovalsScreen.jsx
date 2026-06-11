@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   UserCheck, ShieldCheck, LineChart, Layers, TrendingUp, PieChart,
@@ -29,7 +29,6 @@ import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
-import IndeterminateCheckbox from '../components/IndeterminateCheckbox.jsx';
 import ApprovalStatusBadge from '../components/ApprovalStatusBadge.jsx';
 import SkeletonTile from '../components/SkeletonTile.jsx';
 import SkeletonTableRow from '../components/SkeletonTableRow.jsx';
@@ -40,11 +39,6 @@ import { displayRole } from '../helpers/formatters.js';
 function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onApprove, onUserDetail, onNavigateToUsers, busy = false }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedIds, setSelectedIds] = useState(new Set());
-
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [rows, searchQuery, statusFilter]);
 
   const filteredRows = rows.filter((r) => {
     const q = searchQuery.trim().toLowerCase();
@@ -53,35 +47,7 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = rows.filter((r) => ['draft','pending_review','kyc_pending'].includes(r.status)).length;
-
   const visibleRows = filteredRows;
-  const allVisibleSelected = visibleRows.length > 0 && visibleRows.every((r) => selectedIds.has(r.id));
-  const someSelected = visibleRows.some((r) => selectedIds.has(r.id));
-
-  function toggleSelect(id) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    if (allVisibleSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(visibleRows.map((r) => r.id)));
-    }
-  }
-
-  function handleBulkApprove() {
-    // Bulk approve not yet implemented — backend endpoint needed
-  }
-  function handleBulkReject() {
-    // Bulk reject not yet implemented — backend endpoint needed
-  }
 
   return (
     <div className="adm-screen">
@@ -135,31 +101,10 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
           </div>
         </div>
 
-        {selectedIds.size > 0 && (
-          <div className="adm-bulk-bar">
-            <span className="adm-bulk-count">{selectedIds.size} selected</span>
-            <div className="adm-bulk-actions">
-              <button className="be-btn be-btn-primary be-btn-sm" onClick={handleBulkApprove} disabled title="Bulk approve coming soon">
-                <I icon={CheckCircle2} size={14} /> Approve {selectedIds.size} selected
-              </button>
-              <button className="be-btn be-btn-danger be-btn-sm" onClick={handleBulkReject} disabled title="Bulk reject coming soon">
-                <I icon={XCircle} size={14} /> Reject {selectedIds.size} selected
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="adm-table-scroll">
           <table>
             <thead>
               <tr>
-                <th className="adm-col-checkbox">
-                  <IndeterminateCheckbox
-                    checked={allVisibleSelected}
-                    indeterminate={someSelected && !allVisibleSelected}
-                    onChange={toggleSelectAll}
-                  />
-                </th>
                 <th className="adm-col-user">User</th>
                 <th className="adm-col-date">Signed up</th>
                 <th className="adm-col-status">Status</th>
@@ -185,10 +130,7 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
                 </EmptyTableRow>
               )}
               {visibleRows.map((r) => (
-                <tr key={r.id || r.email} className={selectedIds.has(r.id) ? 'is-selected' : ''}>
-                  <td className="adm-col-checkbox">
-                    <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} />
-                  </td>
+                <tr key={r.id || r.email}>
                   <td className="adm-col-user">
                     <div className="adm-user">
                       <div className="adm-avatar adm-avatar-sm">{initials(r.name, 'CL')}</div>

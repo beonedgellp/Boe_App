@@ -38,13 +38,13 @@ export default function FaqEditorDrawer({ open, faq, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function run(action, successMessage) {
+  async function run(action, successMessage, { keepOpen = false } = {}) {
     setBusy(true);
     try {
       await action();
       addToast(successMessage, 'success');
       onSaved();
-      onClose();
+      if (!keepOpen) onClose();
     } catch (error) {
       addToast(error?.message || 'Action failed.', 'error');
     } finally {
@@ -75,6 +75,7 @@ export default function FaqEditorDrawer({ open, faq, onClose, onSaved }) {
       await run(
         () => apiRequest(`/v1/admin/faqs/${encodeURIComponent(faq.id)}`, { method: 'PATCH', body: formToPayload(), scope: 'admin' }),
         'FAQ saved.',
+        { keepOpen: true },
       );
     }
   }

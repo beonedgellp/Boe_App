@@ -1,11 +1,11 @@
 /* Site Control pages — catalog managers and the landing content editor. */
 
 .ash-card-toolbar {
-  padding: 12px 18px;
+  padding: var(--be-space-3) var(--be-card-pad);
   border-bottom: var(--be-border-1);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--be-space-3);
   flex-wrap: wrap;
 }
 
@@ -17,7 +17,7 @@
 
 .ash-featured-star {
   color: var(--be-gold);
-  margin-left: 6px;
+  margin-left: var(--be-space-1);
   vertical-align: -1px;
 }
 
@@ -26,8 +26,8 @@
 .ash-check {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: var(--be-space-2);
+  font-size: var(--be-text-sm);
   color: var(--be-fg);
   cursor: pointer;
 }
@@ -45,13 +45,13 @@
 .ash-list-editor {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--be-space-2);
 }
 
 .ash-list-editor-row {
   display: grid;
   grid-template-columns: 1fr auto auto auto;
-  gap: 6px;
+  gap: var(--be-space-1);
   align-items: center;
 }
 
@@ -60,12 +60,12 @@
 /* inline warning (non-blocking) */
 
 .ash-warning-note {
-  padding: 10px 12px;
+  padding: var(--be-space-2) var(--be-space-3);
   border: 1px solid rgba(168, 116, 28, 0.35);
   background: var(--be-amber-soft);
   color: var(--be-amber);
   border-radius: var(--be-radius-sm);
-  font-size: 12px;
+  font-size: var(--be-text-xs);
   line-height: 1.5;
 }
 
@@ -73,8 +73,8 @@
 
 .ash-content-layout {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 20px;
+  grid-template-columns: var(--be-sidebar-w) 1fr;
+  gap: var(--be-space-5);
   align-items: start;
 }
 
@@ -83,19 +83,19 @@
   flex-direction: column;
   gap: 2px;
   position: sticky;
-  top: 92px;
+  top: calc(var(--be-nav-h-web) + var(--be-space-4));
 }
 
 .ash-content-rail-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: var(--be-space-2);
+  padding: var(--be-space-2) var(--be-space-3);
   border: none;
   background: transparent;
   border-radius: var(--be-radius-sm);
-  font: 400 13px var(--be-font-sans);
+  font: 400 var(--be-text-sm) var(--be-font-sans);
   color: var(--be-fg-muted);
   text-align: left;
   cursor: pointer;
@@ -123,17 +123,17 @@
 .ash-content-editor {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--be-space-4);
   min-width: 0;
 }
 
-.ash-content-editor .ash-card { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.ash-content-editor .ash-card { padding: var(--be-space-5); display: flex; flex-direction: column; gap: var(--be-space-4); }
 
 .ash-content-group-title {
-  font-size: 13px;
+  font-size: var(--be-text-sm);
   font-weight: 600;
   color: var(--be-fg);
-  margin: 4px 0 0;
+  margin: var(--be-space-1) 0 0;
 }
 
 /* sticky publish bar */
@@ -144,44 +144,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 12px 18px;
+  gap: var(--be-space-3);
+  padding: var(--be-space-3) var(--be-card-pad);
   background: var(--be-bg-elevated);
   border: var(--be-border-1);
   border-radius: var(--be-radius-md);
   box-shadow: var(--be-shadow-2);
-  z-index: var(--ash-z-topbar);
+  z-index: var(--be-z-topbar);
 }
 
 .ash-publish-meta {
-  font-size: 12px;
+  font-size: var(--be-text-xs);
   color: var(--be-slate);
 }
 
-.ash-publish-meta .ash-cell-mono { font-size: 11px; }
+.ash-publish-meta .ash-cell-mono { font-size: var(--be-text-xs); }
 
-.ash-publish-actions { display: flex; align-items: center; gap: 10px; }
+.ash-publish-actions { display: flex; align-items: center; gap: var(--be-space-2); }
 
 .ash-publish-warnings {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 14px;
+  gap: var(--be-space-1);
+  padding: var(--be-space-2) var(--be-space-3);
   border: 1px solid rgba(168, 116, 28, 0.35);
   background: var(--be-amber-soft);
   border-radius: var(--be-radius-sm);
-  font-size: 12px;
+  font-size: var(--be-text-xs);
   color: var(--be-amber);
 }
 
 /* JSON view */
 
 .ash-json-view {
-  font: 400 12px var(--be-font-mono);
+  font: 400 var(--be-text-xs) var(--be-font-mono);
   background: var(--be-ink);
   color: var(--be-ivory);
   border-radius: var(--be-radius-sm);
-  padding: 14px;
+  padding: var(--be-space-3);
   overflow: auto;
   max-height: 100%;
   white-space: pre;
@@ -198,14 +198,14 @@
 .ash-objlist {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--be-space-3);
 }
 
 .ash-objlist-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--be-space-2);
+  padding: var(--be-space-3);
   border: var(--be-border-1);
   border-radius: var(--be-radius-sm);
   background: var(--be-bg);
@@ -215,11 +215,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--be-space-2);
 }
 
 .ash-objlist-title {
-  font-size: 12px;
+  font-size: var(--be-text-xs);
   font-weight: 600;
   color: var(--be-fg-muted);
   overflow: hidden;
@@ -227,7 +227,7 @@
   white-space: nowrap;
 }
 
-.ash-objlist-controls { display: flex; gap: 4px; flex-shrink: 0; }
+.ash-objlist-controls { display: flex; gap: var(--be-space-1); flex-shrink: 0; }
 
 .ash-objlist .ash-btn { align-self: flex-start; }
 

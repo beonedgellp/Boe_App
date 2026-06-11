@@ -90,6 +90,10 @@ export default function Sidebar({ user, counts = {} }) {
         <img src={logo} height="22" alt="BeOnEdge" />
         <span className="ash-brand-tag">ADMIN</span>
       </div>
+      <div className="ash-side-user-mobile" aria-label="Signed in as">
+        <div className="ash-avatar">{user?.avatarInitials || initials(displayName)}</div>
+        <span className="ash-side-user-mobile-name">{displayName}</span>
+      </div>
       <nav className="ash-nav" aria-label="Admin sections">
         {NAV_DOMAINS.map((domain) => (
           <SidebarGroup

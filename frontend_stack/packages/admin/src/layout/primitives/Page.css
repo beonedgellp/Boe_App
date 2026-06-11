@@ -1,0 +1,36 @@
+.be-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap, var(--be-section-gap));
+  width: 100%;
+  max-width: var(--page-max-w, var(--be-content-max));
+  margin: 0 auto;
+  padding: var(--page-pad, var(--be-page-pad-y) var(--be-page-pad-x) var(--be-page-pad-b));
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Full-bleed variant (no max-width) */
+.be-page.is-bleed {
+  max-width: none;
+}
+
+/* Compact variant (tighter gaps for dense data screens) */
+.be-page.is-compact {
+  --page-gap: var(--be-space-4);
+}
+
+/* Responsive: sidebar-collapsed breakpoint */
+@media (max-width: 1100px) {
+  .be-page {
+    padding: var(--be-space-5) var(--be-space-5) var(--be-space-8);
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .be-page {
+    padding: var(--be-space-4) var(--be-space-4) var(--be-space-6);
+    gap: var(--be-space-4);
+  }
+}

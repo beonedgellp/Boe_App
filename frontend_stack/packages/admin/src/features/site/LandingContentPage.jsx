@@ -4,6 +4,7 @@ import useLandingConfig from '../../hooks/useLandingConfig.js';
 import { LANDING_SECTION_LIST } from './landingDefaults.js';
 import { lintLandingConfig } from './contentLint.js';
 import Drawer from '../../layout/Drawer.jsx';
+import { SplitLayout } from '../../layout/primitives/index.js';
 import { useToast } from '../../components/ToastProvider.jsx';
 import I from '../../components/I.jsx';
 import HeroSection from './content/HeroSection.jsx';
@@ -93,10 +94,10 @@ export default function LandingContentPage() {
   if (loading) {
     return (
       <div className="ash-page">
-        <div className="ash-content-layout">
-          <div className="ash-skel-block" style={{ minHeight: 320 }} aria-hidden="true" />
-          <div className="ash-skel-block" style={{ minHeight: 480 }} aria-hidden="true" />
-        </div>
+        <SplitLayout
+          rail={<div className="ash-skel-block" style={{ minHeight: 320 }} aria-hidden="true" />}
+          main={<div className="ash-skel-block" style={{ minHeight: 480 }} aria-hidden="true" />}
+        />
       </div>
     );
   }
@@ -112,94 +113,98 @@ export default function LandingContentPage() {
     );
   }
 
+  const rail = (
+    <nav className="ash-content-rail" aria-label="Landing page sections">
+      {LANDING_SECTION_LIST.map((section) => (
+        <button
+          key={section.id}
+          type="button"
+          className={`ash-content-rail-item ${activeSection === section.id ? 'is-active' : ''}`}
+          onClick={() => setActiveSection(section.id)}
+        >
+          <span>{section.label}</span>
+          {dirtySections.has(section.id) && <span className="ash-dirty-dot" title="Unpublished edits" />}
+        </button>
+      ))}
+    </nav>
+  );
+
+  const main = (
+    <div className="ash-content-editor">
+      {Editor && (
+        <Editor
+          value={draft?.[activeSection]}
+          onChange={(next) => setSection(activeSection, next)}
+        />
+      )}
+
+      {warnings.length > 0 && (
+        <div className="ash-publish-warnings" role="status">
+          <strong>Review before publishing</strong>
+          {warnings.slice(0, 6).map((warning) => (
+            <span key={`${warning.path}-${warning.message}`}>{warning.path}: {warning.message}</span>
+          ))}
+          {warnings.length > 6 && <span>{warnings.length - 6} more warnings in other fields.</span>}
+        </div>
+      )}
+
+      <div className="ash-publish-bar">
+        <div className="ash-publish-meta">
+          {versionMeta.version
+            ? <>Version {versionMeta.version}, published {formatPublishedAt(versionMeta.publishedAt)}</>
+            : 'Nothing published yet. The landing page shows its built-in content until the first publish.'}
+          {isDirty && <> · {dirtySections.size} section{dirtySections.size > 1 ? 's' : ''} edited</>}
+        </div>
+        <div className="ash-publish-actions">
+          <button type="button" className="ash-btn ash-btn-ghost ash-btn-sm" onClick={() => setShowJson(true)}>
+            <I icon={Braces} size={13} />
+            View JSON
+          </button>
+          <input
+            className="ash-input ash-publish-reason"
+            value={reason}
+            placeholder="Reason (optional)"
+            aria-label="Publish reason"
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <button
+            type="button"
+            className={`ash-btn ash-btn-primary ${publishing ? 'is-loading' : ''}`}
+            onClick={handlePublish}
+            disabled={!isDirty || publishing}
+          >
+            <I icon={UploadCloud} size={14} />
+            Publish
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const preview = showPreview ? (
+    <div className="ash-preview-panel">
+      <div className="ash-preview-header">
+        <span><I icon={Monitor} size={14} /> Live preview</span>
+        <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
+      </div>
+      {previewTimedOut && !previewReady && (
+        <div className="ash-preview-offline" role="status">
+          <p>Preview unavailable. The landing page is not responding at {PREVIEW_URL}.</p>
+          <p>Start it from the landing worktree with npm run dev, then reopen this panel.</p>
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        src={PREVIEW_URL}
+        title="Landing page preview"
+        className="ash-preview-frame"
+      />
+    </div>
+  ) : null;
+
   return (
     <div className="ash-page">
-      <div className="ash-content-layout">
-        <nav className="ash-content-rail" aria-label="Landing page sections">
-          {LANDING_SECTION_LIST.map((section) => (
-            <button
-              key={section.id}
-              type="button"
-              className={`ash-content-rail-item ${activeSection === section.id ? 'is-active' : ''}`}
-              onClick={() => setActiveSection(section.id)}
-            >
-              <span>{section.label}</span>
-              {dirtySections.has(section.id) && <span className="ash-dirty-dot" title="Unpublished edits" />}
-            </button>
-          ))}
-        </nav>
-
-        <div className="ash-content-editor">
-          {Editor && (
-            <Editor
-              value={draft?.[activeSection]}
-              onChange={(next) => setSection(activeSection, next)}
-            />
-          )}
-
-          {warnings.length > 0 && (
-            <div className="ash-publish-warnings" role="status">
-              <strong>Review before publishing</strong>
-              {warnings.slice(0, 6).map((warning) => (
-                <span key={`${warning.path}-${warning.message}`}>{warning.path}: {warning.message}</span>
-              ))}
-              {warnings.length > 6 && <span>{warnings.length - 6} more warnings in other fields.</span>}
-            </div>
-          )}
-
-          <div className="ash-publish-bar">
-            <div className="ash-publish-meta">
-              {versionMeta.version
-                ? <>Version {versionMeta.version}, published {formatPublishedAt(versionMeta.publishedAt)}</>
-                : 'Nothing published yet. The landing page shows its built-in content until the first publish.'}
-              {isDirty && <> · {dirtySections.size} section{dirtySections.size > 1 ? 's' : ''} edited</>}
-            </div>
-            <div className="ash-publish-actions">
-              <button type="button" className="ash-btn ash-btn-ghost ash-btn-sm" onClick={() => setShowJson(true)}>
-                <I icon={Braces} size={13} />
-                View JSON
-              </button>
-              <input
-                className="ash-input ash-publish-reason"
-                value={reason}
-                placeholder="Reason (optional)"
-                aria-label="Publish reason"
-                onChange={(event) => setReason(event.target.value)}
-              />
-              <button
-                type="button"
-                className={`ash-btn ash-btn-primary ${publishing ? 'is-loading' : ''}`}
-                onClick={handlePublish}
-                disabled={!isDirty || publishing}
-              >
-                <I icon={UploadCloud} size={14} />
-                Publish
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {showPreview && (
-          <div className="ash-preview-panel">
-            <div className="ash-preview-header">
-              <span><I icon={Monitor} size={14} /> Live preview</span>
-              <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
-            </div>
-            {previewTimedOut && !previewReady && (
-              <div className="ash-preview-offline" role="status">
-                <p>Preview unavailable. The landing page is not responding at {PREVIEW_URL}.</p>
-                <p>Start it from the landing worktree with npm run dev, then reopen this panel.</p>
-              </div>
-            )}
-            <iframe
-              ref={iframeRef}
-              src={PREVIEW_URL}
-              title="Landing page preview"
-              className="ash-preview-frame"
-            />
-          </div>
-        )}
-      </div>
+      <SplitLayout rail={rail} main={main} preview={preview} />
 
       {!showPreview && (
         <button

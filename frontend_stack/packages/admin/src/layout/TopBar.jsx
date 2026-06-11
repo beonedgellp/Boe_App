@@ -1,17 +1,27 @@
+import { Link } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import I from '../components/I.jsx';
 
-export default function TopBar({ title, breadcrumbs, onLogout }) {
+export default function TopBar({ title, breadcrumbs, crumbPaths, onLogout }) {
+  const paths = crumbPaths || breadcrumbs.map(() => null);
   return (
     <header className="ash-top">
       <div className="ash-top-heading">
         <nav className="ash-bread" aria-label="Breadcrumb">
-          {breadcrumbs.map((crumb, index) => (
-            <span key={`${crumb}-${index}`}>
-              {index > 0 && <span className="ash-bread-sep" aria-hidden="true">/</span>}
-              <span className={index === breadcrumbs.length - 1 ? 'is-active' : ''}>{crumb}</span>
-            </span>
-          ))}
+          {breadcrumbs.map((crumb, index) => {
+            const isLast = index === breadcrumbs.length - 1;
+            const path = paths[index];
+            return (
+              <span key={`${crumb}-${index}`}>
+                {index > 0 && <span className="ash-bread-sep" aria-hidden="true">/</span>}
+                {isLast || !path ? (
+                  <span className={isLast ? 'is-active' : ''}>{crumb}</span>
+                ) : (
+                  <Link className="ash-bread-link" to={path}>{crumb}</Link>
+                )}
+              </span>
+            );
+          })}
         </nav>
         <h1 className="ash-top-title">{title}</h1>
       </div>

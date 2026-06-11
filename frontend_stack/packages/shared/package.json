@@ -11,5 +11,8 @@
     "./appTarget.js": "./src/appTarget.js",
     "./format.js": "./src/format.js",
     "./riskMapping.js": "./src/riskMapping.js"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0"
   }
 }

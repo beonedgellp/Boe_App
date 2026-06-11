@@ -691,17 +691,21 @@
 
 .adm-sector-row {
   display: grid;
-  grid-template-columns: 1fr 80px 100px 36px;
+  grid-template-columns: minmax(160px, 1fr) 80px 100px 36px;
   gap: 8px;
   align-items: center;
 }
 
 .adm-investment-row {
   display: grid;
-  grid-template-columns: 1fr 120px 140px 36px;
+  grid-template-columns: minmax(160px, 1fr) 120px 140px 60px 36px;
   gap: 8px;
   align-items: center;
 }
+
+.adm-editor-list { overflow-x: auto; }
+.adm-editor-list::-webkit-scrollbar { height: 6px; }
+.adm-editor-list::-webkit-scrollbar-thumb { background: var(--be-border-strong); border-radius: 3px; }
 
 .adm-percentage-warning {
   color: var(--be-red);
@@ -1055,6 +1059,70 @@
   padding-bottom: 12px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--be-border);
+}
+
+.adm-fund-editor-section-divider {
+  height: 1px;
+  background: var(--be-border);
+  margin: 24px 0 18px;
+}
+
+.adm-fund-editor-section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--be-font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--be-ink);
+  margin-bottom: 12px;
+}
+
+.adm-fund-editor-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.adm-fund-editor-section[id] {
+  scroll-margin-top: 116px;
+}
+
+.adm-fund-editor-subnav {
+  position: sticky;
+  top: 64px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 32px;
+  background: var(--be-ivory);
+  border-bottom: 1px solid var(--be-border);
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.adm-fund-editor-subnav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: var(--be-border-1);
+  background: var(--be-bone);
+  border-radius: var(--be-radius-sm);
+  color: var(--be-slate);
+  font: 500 12px var(--be-font-sans);
+  cursor: pointer;
+  transition: background var(--be-dur-fast) var(--be-ease), color var(--be-dur-fast) var(--be-ease), border-color var(--be-dur-fast) var(--be-ease);
+}
+
+.adm-fund-editor-subnav-link:hover {
+  background: var(--be-ivory-2);
+  color: var(--be-ink);
+  border-color: var(--be-border-strong);
 }
 
 /* Deprecated: old slide-over panel styles */

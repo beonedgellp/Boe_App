@@ -127,13 +127,13 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
               placeholder={placeholder}
               onChange={(event) => updateAt(index, event.target.value)}
             />
-            <button type="button" className="ash-icon-btn" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up">
+            <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up">
               <I icon={ArrowUp} size={13} />
             </button>
-            <button type="button" className="ash-icon-btn" onClick={() => move(index, 1)} disabled={index === list.length - 1} aria-label="Move down">
+            <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => move(index, 1)} disabled={index === list.length - 1} aria-label="Move down">
               <I icon={ArrowDown} size={13} />
             </button>
-            <button type="button" className="ash-icon-btn" onClick={() => removeAt(index)} aria-label="Remove item">
+            <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => removeAt(index)} aria-label="Remove item">
               <I icon={Trash2} size={13} />
             </button>
           </div>
@@ -216,13 +216,13 @@ export function ObjectListEditor({ label, items, onChange, itemFields, newItem, 
             <div className="ash-objlist-head">
               <span className="ash-objlist-title">{itemTitle ? itemTitle(item, index) : `Item ${index + 1}`}</span>
               <span className="ash-objlist-controls">
-                <button type="button" className="ash-icon-btn" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up">
+                <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up">
                   <I icon={ArrowUp} size={13} />
                 </button>
-                <button type="button" className="ash-icon-btn" onClick={() => move(index, 1)} disabled={index === list.length - 1} aria-label="Move down">
+                <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => move(index, 1)} disabled={index === list.length - 1} aria-label="Move down">
                   <I icon={ArrowDown} size={13} />
                 </button>
-                <button type="button" className="ash-icon-btn" onClick={() => removeAt(index)} aria-label="Remove item">
+                <button type="button" className="ash-icon-btn ash-icon-btn--sm" onClick={() => removeAt(index)} aria-label="Remove item">
                   <I icon={Trash2} size={13} />
                 </button>
               </span>

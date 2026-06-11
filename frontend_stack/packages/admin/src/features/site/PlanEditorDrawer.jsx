@@ -75,13 +75,13 @@ export default function PlanEditorDrawer({ open, plan, plans, onClose, onSaved }
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function run(action, successMessage) {
+  async function run(action, successMessage, { keepOpen = false } = {}) {
     setBusy(true);
     try {
       await action();
       addToast(successMessage, 'success');
       onSaved();
-      onClose();
+      if (!keepOpen) onClose();
     } catch (error) {
       addToast(error?.message || 'Action failed.', 'error');
     } finally {
@@ -104,6 +104,7 @@ export default function PlanEditorDrawer({ open, plan, plans, onClose, onSaved }
       await run(
         () => apiRequest(`/v1/admin/plans/${encodeURIComponent(plan.id)}`, { method: 'PATCH', body: payload, scope: 'admin' }),
         `${payload.name} saved.`,
+        { keepOpen: true },
       );
     }
   }

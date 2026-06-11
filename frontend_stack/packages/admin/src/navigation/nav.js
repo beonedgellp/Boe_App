@@ -70,6 +70,7 @@ export const NAV_DOMAINS = [
 const DEFAULT_META = {
   title: 'Overview',
   crumbs: ['BeOnEdge', 'Overview'],
+  crumbPaths: ['/admin/overview', '/admin/overview'],
 };
 
 export function findNavMeta(pathname) {
@@ -79,7 +80,11 @@ export function findNavMeta(pathname) {
         const crumbs = domain.id === 'overview'
           ? ['BeOnEdge', item.label]
           : ['BeOnEdge', domain.label, item.label];
-        return { title: item.title, crumbs, domainId: domain.id, item };
+        const domainPath = domain.items[0]?.path || '/admin/overview';
+        const crumbPaths = domain.id === 'overview'
+          ? ['/admin/overview', item.path]
+          : ['/admin/overview', domainPath, item.path];
+        return { title: item.title, crumbs, crumbPaths, domainId: domain.id, item };
       }
     }
   }
