@@ -13,6 +13,7 @@ export const Routes = Object.freeze({
   GET_V1_PUBLIC_GRIEVANCE: "/v1/public/grievance",
   GET_V1_PUBLIC_COURSES: "/v1/public/courses",
   GET_V1_PUBLIC_PLANS: "/v1/public/plans",
+  GET_V1_PUBLIC_LANDING_CONFIG: "/v1/public/landing-config",
   // client
   GET_V1_SYSTEM_REACHABILITY: "/v1/system/reachability",
   GET_V1_CLIENT_DASHBOARD: "/v1/client/dashboard",
@@ -77,6 +78,8 @@ export const Routes = Object.freeze({
   POST_V1_ADMIN_SUPPORT_TICKETS_TICKET_ID_REPLY: "/v1/admin/support/tickets/:ticket_id/reply",
   GET_V1_ADMIN_APP_CONFIG: "/v1/admin/app-config",
   PATCH_V1_ADMIN_APP_CONFIG: "/v1/admin/app-config",
+  GET_V1_ADMIN_LANDING_CONFIG: "/v1/admin/landing-config",
+  PATCH_V1_ADMIN_LANDING_CONFIG: "/v1/admin/landing-config",
   GET_V1_ADMIN_NOTIFICATIONS: "/v1/admin/notifications",
   POST_V1_ADMIN_NOTIFICATIONS: "/v1/admin/notifications",
   GET_V1_ADMIN_FAQS: "/v1/admin/faqs",

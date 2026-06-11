@@ -60,7 +60,7 @@ function rowToPayload(row) {
   };
 }
 
-export async function getPublishedAppConfig(config) {
+export async function getPublishedConfigVersion(config, configKey) {
   requireDatabase(config);
 
   const result = await query(config, `
@@ -69,14 +69,18 @@ export async function getPublishedAppConfig(config) {
     WHERE config_key = $1 AND status = 'published'
     ORDER BY version DESC
     LIMIT 1
-  `, [CONFIG_KEY]);
+  `, [configKey]);
 
   return rowToPayload(result.rows[0]);
 }
 
-export async function publishAppConfig(config, actor, body, requestContext = {}) {
-  const incoming = validateAppConfig(body?.config ?? body);
-
+export async function publishConfigVersion(config, configKey, actor, configJson, {
+  reason,
+  defaultReason,
+  auditAction,
+  entityType,
+  requestContext = {},
+} = {}) {
   requireDatabase(config);
 
   return transaction(config, async (client) => {
@@ -86,7 +90,7 @@ export async function publishAppConfig(config, actor, body, requestContext = {})
       WHERE config_key = $1 AND status = 'published'
       ORDER BY version DESC
       LIMIT 1
-    `, [CONFIG_KEY]);
+    `, [configKey]);
 
     const previousRow = previous.rows[0] || null;
     const nextVersion = (previousRow?.version || 0) + 1;
@@ -101,7 +105,7 @@ export async function publishAppConfig(config, actor, body, requestContext = {})
       )
       VALUES ($1, $2, $3::jsonb, 'published', $4)
       RETURNING id, version, config_json, published_at, published_by
-    `, [CONFIG_KEY, nextVersion, JSON.stringify(incoming), actor?.id || null]);
+    `, [configKey, nextVersion, JSON.stringify(configJson), actor?.id || null]);
 
     await client.query(`
       INSERT INTO admin_audit_logs (
@@ -115,18 +119,36 @@ export async function publishAppConfig(config, actor, body, requestContext = {})
         ip_address,
         user_agent
       )
-      VALUES ($1, 'app_config.publish', 'app_config', $2, $3::jsonb, $4::jsonb, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
     `, [
       actor?.id || null,
+      auditAction,
+      entityType,
       inserted.rows[0].id,
       previousRow ? JSON.stringify(previousRow.config_json) : null,
-      JSON.stringify(incoming),
-      body?.reason || 'Admin published app configuration.',
+      JSON.stringify(configJson),
+      reason || defaultReason,
       requestContext.ipAddress || null,
       requestContext.userAgent || null,
     ]);
 
     return rowToPayload(inserted.rows[0]);
+  });
+}
+
+export async function getPublishedAppConfig(config) {
+  return getPublishedConfigVersion(config, CONFIG_KEY);
+}
+
+export async function publishAppConfig(config, actor, body, requestContext = {}) {
+  const incoming = validateAppConfig(body?.config ?? body);
+
+  return publishConfigVersion(config, CONFIG_KEY, actor, incoming, {
+    reason: body?.reason,
+    defaultReason: 'Admin published app configuration.',
+    auditAction: 'app_config.publish',
+    entityType: 'app_config',
+    requestContext,
   });
 }
 

@@ -12,6 +12,7 @@ import { reviewSipControlRequest } from '../services/sipControlAdminService.js';
 import { sendNotification, listAdminNotifications } from '../services/notificationComposerService.js';
 import { listAdminFaqs, createFaq, updateFaq, deleteFaq } from '../services/faqAdminService.js';
 import { getPublishedAppConfig, publishAppConfig } from '#shared/services/appConfigService.js';
+import { getPublishedLandingConfig, publishLandingConfig } from '#shared/services/landingConfigService.js';
 import {
   adminApprovals,
   adminAuditLogs,
@@ -163,6 +164,21 @@ export function registerAdminRoutes(router) {
     roles: ADMIN_ROLES,
     description: 'Publish mobile app component and content configuration.',
   }, ({ actor, body, config, headers }) => publishAppConfig(config, actor, body, {
+    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
+    userAgent: headers['user-agent'] || null,
+  }));
+
+  router.get(Routes.GET_V1_ADMIN_LANDING_CONFIG, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Published landing page content configuration.',
+  }, ({ config }) => getPublishedLandingConfig(config));
+
+  router.patch(Routes.PATCH_V1_ADMIN_LANDING_CONFIG, {
+    group: 'admin',
+    roles: ADMIN_ROLES,
+    description: 'Publish landing page content configuration.',
+  }, ({ actor, body, config, headers }) => publishLandingConfig(config, actor, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));

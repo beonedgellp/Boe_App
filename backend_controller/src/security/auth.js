@@ -13,6 +13,18 @@ function bearerToken(req) {
 }
 
 async function activeSessionActor(claims, config) {
+  // Environment-backed admin: tokens issued by envAdminLogin reference a
+  // deviceSessionId that has no device_sessions row. The actor is derived
+  // from config, not the database (same contract as the env-admin login).
+  if (claims.role === 'admin' && claims.sub === config.adminUserId) {
+    return {
+      userId: claims.sub,
+      role: 'admin',
+      status: 'approved',
+      deviceSessionId: claims.deviceSessionId,
+    };
+  }
+
   if (!hasDatabaseConfig(config)) {
     return null;
   }

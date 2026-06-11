@@ -362,12 +362,12 @@ function AppBuilderScreen() {
             <div>
               <span className="be-eyebrow">Investment controls</span>
               <div className="adm-form-grid">
-                <label className="adm-field"><span>Fund detail chart periods</span><input value={config.mobile.screens.fundDetail.charts.periods.join(', ')} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.periods = event.target.value.split(',').map((item) => item.trim()).filter(Boolean); })} /></label>
-                <label className="adm-field"><span>Default period</span><input value={config.mobile.screens.fundDetail.charts.defaultPeriod} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.defaultPeriod = event.target.value; })} /></label>
-                <label className="adm-field"><span>SIP presets</span><input value={config.mobile.screens.invest.sip.amountPresets.join(', ')} onChange={(event) => updateArraySetting('sip', 'amountPresets', event.target.value)} /></label>
-                <label className="adm-field"><span>SIP durations</span><input value={config.mobile.screens.invest.sip.durationMonths.join(', ')} onChange={(event) => updateArraySetting('sip', 'durationMonths', event.target.value)} /></label>
-                <label className="adm-field"><span>Debit days</span><input value={config.mobile.screens.invest.sip.debitDays.join(', ')} onChange={(event) => updateArraySetting('sip', 'debitDays', event.target.value)} /></label>
-                <label className="adm-field"><span>One-time presets</span><input value={config.mobile.screens.invest.oneTime.amountPresets.join(', ')} onChange={(event) => updateArraySetting('oneTime', 'amountPresets', event.target.value)} /></label>
+                <label className="adm-field"><span>Fund detail chart periods</span><input value={(config.mobile.screens.fundDetail.charts.periods || []).join(', ')} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.periods = event.target.value.split(',').map((item) => item.trim()).filter(Boolean); })} /></label>
+                <label className="adm-field"><span>Default period</span><input value={config.mobile.screens.fundDetail.charts.defaultPeriod || ''} onChange={(event) => updateConfig((next) => { next.mobile.screens.fundDetail.charts.defaultPeriod = event.target.value; })} /></label>
+                <label className="adm-field"><span>SIP presets</span><input value={(config.mobile.screens.invest.sip.amountPresets || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'amountPresets', event.target.value)} /></label>
+                <label className="adm-field"><span>SIP durations</span><input value={(config.mobile.screens.invest.sip.durationMonths || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'durationMonths', event.target.value)} /></label>
+                <label className="adm-field"><span>Debit days</span><input value={(config.mobile.screens.invest.sip.debitDays || []).join(', ')} onChange={(event) => updateArraySetting('sip', 'debitDays', event.target.value)} /></label>
+                <label className="adm-field"><span>One-time presets</span><input value={(config.mobile.screens.invest.oneTime.amountPresets || []).join(', ')} onChange={(event) => updateArraySetting('oneTime', 'amountPresets', event.target.value)} /></label>
               </div>
             </div>
           </div>
