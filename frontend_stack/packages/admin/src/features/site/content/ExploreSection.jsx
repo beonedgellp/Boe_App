@@ -24,8 +24,8 @@ export default function ExploreSection({ value, onChange }) {
 
   return (
     <div className="ash-card">
-      <TextField label="Section title" value={explore.title} onChange={(v) => set('title', v)} />
-      <TextAreaField label="Section lead" value={explore.lead} onChange={(v) => set('lead', v)} rows={2} />
+      <TextField label="Section title" value={explore.title} onChange={(v) => set('title', v)} tooltip="Heading above the bento tile grid on the home page." />
+      <TextAreaField label="Section lead" value={explore.lead} onChange={(v) => set('lead', v)} rows={2} tooltip="Short description under the explore heading." />
       <ObjectListEditor
         label="Tiles"
         items={explore.tiles}
@@ -35,6 +35,7 @@ export default function ExploreSection({ value, onChange }) {
         newItem={() => ({ id: `tile-${Date.now()}-${tileCounter++}`, title: '', description: '', href: '/', size: 'standard' })}
         max={8}
         addLabel="Add tile"
+        tooltip="Bento grid tiles on the home page. Each tile links to a page (Courses, Premium, News, Plans, About). Large and wide tiles span multiple grid cells."
       />
     </div>
   );

@@ -20,9 +20,10 @@ export default function NavSection({ value, onChange }) {
         newItem={() => ({ label: '', href: '/' })}
         max={8}
         addLabel="Add link"
+        tooltip="Top nav bar links. Appears in the header on every landing page."
       />
-      <LinkField label="Sign in link" value={nav.signIn} onChange={(v) => set('signIn', v)} />
-      <LinkField label="Sign up link" value={nav.signUp} onChange={(v) => set('signUp', v)} />
+      <LinkField label="Sign in link" value={nav.signIn} onChange={(v) => set('signIn', v)} tooltip="Sign-in button in the nav bar." />
+      <LinkField label="Sign up link" value={nav.signUp} onChange={(v) => set('signUp', v)} tooltip="Sign-up button in the nav bar." />
     </div>
   );
 }

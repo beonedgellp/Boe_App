@@ -1,15 +1,17 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import I from '../../components/I.jsx';
+import HelpTooltip from '../../components/HelpTooltip.jsx';
 
 // Shared form primitives for the Site Control pages. Labels sit above
 // inputs; help text is optional; error text renders below the input.
 
-export function TextField({ label, value, onChange, placeholder, help, error, required, type = 'text', disabled }) {
+export function TextField({ label, value, onChange, placeholder, help, error, required, type = 'text', disabled, tooltip }) {
   return (
     <div className="ash-field">
       <label className="ash-label">
         {label}
         {required && <span aria-hidden="true"> *</span>}
+        {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       <input
         type={type}
@@ -25,12 +27,13 @@ export function TextField({ label, value, onChange, placeholder, help, error, re
   );
 }
 
-export function TextAreaField({ label, value, onChange, placeholder, help, error, required, rows = 3, disabled }) {
+export function TextAreaField({ label, value, onChange, placeholder, help, error, required, rows = 3, disabled, tooltip }) {
   return (
     <div className="ash-field">
       <label className="ash-label">
         {label}
         {required && <span aria-hidden="true"> *</span>}
+        {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       <textarea
         className={`ash-textarea ${error ? 'is-invalid' : ''}`}
@@ -46,10 +49,13 @@ export function TextAreaField({ label, value, onChange, placeholder, help, error
   );
 }
 
-export function SelectField({ label, value, onChange, options, help, disabled }) {
+export function SelectField({ label, value, onChange, options, help, disabled, tooltip }) {
   return (
     <div className="ash-field">
-      <label className="ash-label">{label}</label>
+      <label className="ash-label">
+        {label}
+        {tooltip && <HelpTooltip text={tooltip} />}
+      </label>
       <select
         className="ash-select"
         value={value ?? ''}
@@ -65,7 +71,7 @@ export function SelectField({ label, value, onChange, options, help, disabled })
   );
 }
 
-export function CheckboxField({ label, checked, onChange, help, disabled }) {
+export function CheckboxField({ label, checked, onChange, help, disabled, tooltip }) {
   return (
     <div className="ash-field">
       <label className="ash-check">
@@ -76,6 +82,7 @@ export function CheckboxField({ label, checked, onChange, help, disabled }) {
           onChange={(event) => onChange(event.target.checked)}
         />
         <span>{label}</span>
+        {tooltip && <HelpTooltip text={tooltip} />}
       </label>
       {help && <span className="ash-help">{help}</span>}
     </div>
@@ -84,7 +91,7 @@ export function CheckboxField({ label, checked, onChange, help, disabled }) {
 
 // Generic editable string list with add, remove, and reorder. `max`
 // disables the add action once reached.
-export function ListEditor({ label, items, onChange, placeholder, max, addLabel = 'Add item', help }) {
+export function ListEditor({ label, items, onChange, placeholder, max, addLabel = 'Add item', help, tooltip }) {
   const list = Array.isArray(items) ? items : [];
 
   function updateAt(index, value) {
@@ -106,7 +113,10 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
 
   return (
     <div className="ash-field">
-      <span className="ash-label">{label}</span>
+      <span className="ash-label">
+        {label}
+        {tooltip && <HelpTooltip text={tooltip} />}
+      </span>
       {help && <span className="ash-help">{help}</span>}
       <div className="ash-list-editor">
         {list.map((item, index) => (
@@ -143,11 +153,14 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
 }
 
 // Label + href pair for CTAs and nav links.
-export function LinkField({ label, value, onChange, hrefHelp }) {
+export function LinkField({ label, value, onChange, hrefHelp, tooltip }) {
   const link = value || { label: '', href: '' };
   return (
     <div className="ash-field">
-      <span className="ash-label">{label}</span>
+      <span className="ash-label">
+        {label}
+        {tooltip && <HelpTooltip text={tooltip} />}
+      </span>
       <div className="ash-form-row">
         <input
           className="ash-input"
@@ -171,7 +184,7 @@ export function LinkField({ label, value, onChange, hrefHelp }) {
 
 // Editable list of objects (testimonials, tiles, steps). `itemFields`
 // describes the inputs per row; `newItem` builds an empty entry.
-export function ObjectListEditor({ label, items, onChange, itemFields, newItem, max, addLabel = 'Add item', itemTitle }) {
+export function ObjectListEditor({ label, items, onChange, itemFields, newItem, max, addLabel = 'Add item', itemTitle, tooltip }) {
   const list = Array.isArray(items) ? items : [];
 
   function updateAt(index, field, value) {
@@ -193,7 +206,10 @@ export function ObjectListEditor({ label, items, onChange, itemFields, newItem, 
 
   return (
     <div className="ash-field">
-      <span className="ash-label">{label}</span>
+      <span className="ash-label">
+        {label}
+        {tooltip && <HelpTooltip text={tooltip} />}
+      </span>
       <div className="ash-objlist">
         {list.map((item, index) => (
           <div className="ash-objlist-item" key={index}>

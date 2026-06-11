@@ -28,6 +28,7 @@ export default function SocialProofSection({ value, onChange }) {
         newItem={() => ({ id: `stat-${Date.now()}-${proofCounter++}`, value: '', label: '' })}
         max={6}
         addLabel="Add stat"
+        tooltip="Number blocks displayed in a row (e.g., '40,000+ Learners'). These build trust above testimonials."
       />
       <ObjectListEditor
         label="Testimonials"
@@ -38,8 +39,9 @@ export default function SocialProofSection({ value, onChange }) {
         newItem={() => ({ id: `quote-${Date.now()}-${proofCounter++}`, quote: '', name: '', role: '' })}
         max={8}
         addLabel="Add testimonial"
+        tooltip="Quote cards with learner names and roles. Displayed in a 3-column grid below stats."
       />
-      <TextAreaField label="Instructor note" value={proof.instructorNote} onChange={(v) => set('instructorNote', v)} rows={2} help="One line on who builds and reviews the courses." />
+      <TextAreaField label="Instructor note" value={proof.instructorNote} onChange={(v) => set('instructorNote', v)} rows={2} help="One line on who builds and reviews the courses." tooltip="Text that appears under the social-proof heading and above the stats. Used for credibility messaging." />
     </div>
   );
 }

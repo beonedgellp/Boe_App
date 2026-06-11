@@ -21,6 +21,7 @@ export default function BenefitsSection({ value, onChange }) {
         newItem={() => ({ id: `benefit-${Date.now()}-${benefitCounter++}`, title: '', description: '' })}
         max={12}
         addLabel="Add benefit"
+        tooltip="Membership benefit cards on the home page and /premium page. Each card shows a title and description in a 3-column grid."
       />
     </div>
   );
