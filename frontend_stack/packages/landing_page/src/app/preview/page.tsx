@@ -24,6 +24,9 @@ export default function PreviewPage() {
     };
 
     window.addEventListener('message', handleMessage);
+    // Handshake so the embedding admin portal can tell a live preview apart
+    // from a dead iframe (no data is sent, so the wildcard target is safe).
+    window.parent?.postMessage({ type: 'LANDING_PREVIEW_READY' }, '*');
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
