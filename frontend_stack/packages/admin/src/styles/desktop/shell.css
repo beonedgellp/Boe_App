@@ -690,15 +690,25 @@
 }
 
 @media (max-width: 760px) {
-  .ash-app { grid-template-columns: 1fr; }
-  .ash-side { position: static; height: auto; flex-direction: row; align-items: center; gap: 12px; overflow-x: auto; }
-  .ash-nav { flex-direction: row; }
-  .ash-nav-group { margin-bottom: 0; display: flex; }
+  .ash-app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .ash-side {
+    position: static;
+    height: auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 10px 12px;
+  }
+  .ash-brand { border-bottom: none; margin: 0; padding: 0 8px 0 0; flex-shrink: 0; }
+  .ash-nav { flex-direction: row; align-items: center; gap: 2px; }
+  .ash-nav-group { margin-bottom: 0; display: flex; align-items: center; }
   .ash-nav-group-toggle { display: none; }
-  .ash-nav-item { white-space: nowrap; }
+  .ash-nav-item { white-space: nowrap; padding: 6px 10px; }
   .ash-side-foot { display: none; }
   .ash-page { padding: 16px 16px 40px; }
-  .ash-top { padding: 12px 16px; }
+  .ash-top { padding: 12px 16px; position: static; }
   .ash-stat-grid { grid-template-columns: 1fr; }
   .ash-form-row { grid-template-columns: 1fr; }
 }
