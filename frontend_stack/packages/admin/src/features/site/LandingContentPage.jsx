@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Braces, UploadCloud } from 'lucide-react';
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { Braces, UploadCloud, Monitor } from 'lucide-react';
 import useLandingConfig from '../../hooks/useLandingConfig.js';
 import { LANDING_SECTION_LIST } from './landingDefaults.js';
 import { lintLandingConfig } from './contentLint.js';
@@ -42,7 +42,17 @@ export default function LandingContentPage() {
   const [activeSection, setActiveSection] = useState('hero');
   const [reason, setReason] = useState('');
   const [showJson, setShowJson] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const iframeRef = useRef(null);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (!iframeRef.current || !draft) return;
+    iframeRef.current.contentWindow?.postMessage(
+      { type: 'LANDING_PREVIEW_CONFIG', config: draft },
+      'http://localhost:3110'
+    );
+  }, [draft]);
 
   const warnings = useMemo(() => (draft ? lintLandingConfig(draft) : []), [draft]);
   const isDirty = dirtySections.size > 0;
@@ -146,7 +156,33 @@ export default function LandingContentPage() {
             </div>
           </div>
         </div>
+
+        {showPreview && (
+          <div className="ash-preview-panel">
+            <div className="ash-preview-header">
+              <span><I icon={Monitor} size={14} /> Live preview</span>
+              <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
+            </div>
+            <iframe
+              ref={iframeRef}
+              src="http://localhost:3110/preview"
+              title="Landing page preview"
+              className="ash-preview-frame"
+            />
+          </div>
+        )}
       </div>
+
+      {!showPreview && (
+        <button
+          type="button"
+          className="ash-preview-toggle"
+          onClick={() => setShowPreview(true)}
+          aria-label="Show live preview"
+        >
+          <I icon={Monitor} size={16} />
+        </button>
+      )}
 
       <Drawer open={showJson} title="Landing configuration JSON" onClose={() => setShowJson(false)} wide>
         <pre className="ash-json-view">{JSON.stringify(draft, null, 2)}</pre>

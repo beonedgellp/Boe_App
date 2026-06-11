@@ -21,6 +21,7 @@ export default function LearningSection({ value, onChange }) {
         newItem={() => ({ step: steps.length + 1, title: '', description: '' })}
         max={8}
         addLabel="Add step"
+        tooltip="Numbered steps shown on the home page and /about page. Each step has a number, title, and short description."
       />
     </div>
   );

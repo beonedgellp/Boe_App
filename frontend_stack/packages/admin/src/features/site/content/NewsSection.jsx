@@ -21,6 +21,7 @@ export default function NewsSection({ value, onChange }) {
         placeholder="Financial news, explained without jargon."
         max={6}
         addLabel="Add tagline"
+        tooltip="Rotating headline texts on the news section. The first tagline becomes the section title; the next two become the lead paragraph."
       />
       <ObjectListEditor
         label="News digests"
@@ -31,6 +32,7 @@ export default function NewsSection({ value, onChange }) {
         newItem={() => ({ id: `digest-${Date.now()}-${digestCounter++}`, tag: '', title: '', summary: '' })}
         max={10}
         addLabel="Add digest"
+        tooltip="News digest cards shown in a grid. Each has a category tag, title, and summary."
       />
     </div>
   );
