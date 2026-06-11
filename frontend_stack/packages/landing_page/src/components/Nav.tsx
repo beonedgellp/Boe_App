@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { site } from '../content/site';
-import { navLinks, authLinks } from '../content/nav';
+import { navDefaults } from '../lib/landingDefaults';
+import type { NavDefaults } from '../lib/landingDefaults';
 import { useAuth } from './AuthProvider';
 import ThemeToggle from './ThemeToggle';
 
@@ -11,9 +11,14 @@ function displayName(user: { firstName?: string; name?: string; username?: strin
   return user?.firstName || user?.name || user?.username || 'there';
 }
 
-// Sign in / Sign up create a LEARNER account (the gateway account). They are
-// never described as opening an investment or brokerage account.
-export default function Nav() {
+export default function Nav({
+  nav = navDefaults,
+  siteName = navDefaults.signUp.label,
+}: {
+  nav?: Partial<NavDefaults>;
+  siteName?: string;
+}) {
+  const resolved = { ...navDefaults, ...nav };
   const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   const { user, logout } = useAuth();
@@ -37,11 +42,11 @@ export default function Nav() {
     </>
   ) : (
     <>
-      <Link className="nav__signin" href={authLinks.signIn.href}>
-        {authLinks.signIn.label}
+      <Link className="nav__signin" href={resolved.signIn.href}>
+        {resolved.signIn.label}
       </Link>
-      <Link className="btn btn--primary" href={authLinks.signUp.href}>
-        {authLinks.signUp.label}
+      <Link className="btn btn--primary" href={resolved.signUp.href}>
+        {resolved.signUp.label}
       </Link>
     </>
   );
@@ -49,13 +54,13 @@ export default function Nav() {
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <Link className="nav__brand" href="/" aria-label={`${site.name} home`}>
-          {site.name}
+        <Link className="nav__brand" href="/" aria-label={`${siteName} home`}>
+          {siteName}
         </Link>
 
         <nav aria-label="Primary">
           <ul className="nav__links">
-            {navLinks.map((link) => (
+            {resolved.links.map((link) => (
               <li key={link.href}>
                 <Link className="nav__link" href={link.href}>
                   {link.label}
@@ -84,13 +89,9 @@ export default function Nav() {
       {open ? (
         <div className="nav__mobile" id="nav-mobile">
           <ul>
-            {navLinks.map((link) => (
+            {resolved.links.map((link) => (
               <li key={link.href}>
-                <Link
-                  className="nav__link"
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                >
+                <Link className="nav__link" href={link.href} onClick={() => setOpen(false)}>
                   {link.label}
                 </Link>
               </li>
@@ -99,8 +100,8 @@ export default function Nav() {
               {user ? (
                 <span className="nav__user">Hi {displayName(user)}</span>
               ) : (
-                <Link className="nav__signin" href={authLinks.signIn.href} onClick={() => setOpen(false)}>
-                  {authLinks.signIn.label}
+                <Link className="nav__signin" href={resolved.signIn.href} onClick={() => setOpen(false)}>
+                  {resolved.signIn.label}
                 </Link>
               )}
             </li>
@@ -110,12 +111,8 @@ export default function Nav() {
               Log out
             </button>
           ) : (
-            <Link
-              className="btn btn--primary btn--block"
-              href={authLinks.signUp.href}
-              onClick={() => setOpen(false)}
-            >
-              {authLinks.signUp.label}
+            <Link className="btn btn--primary btn--block" href={resolved.signUp.href} onClick={() => setOpen(false)}>
+              {resolved.signUp.label}
             </Link>
           )}
           {logoutError ? <p className="form__status form__status--error">{logoutError}</p> : null}

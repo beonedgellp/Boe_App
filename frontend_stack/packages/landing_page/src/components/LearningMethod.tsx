@@ -1,9 +1,14 @@
 import SectionHead from './SectionHead';
-import { learningSteps } from '../content/benefits';
+import { learningMethodDefaults } from '../lib/landingDefaults';
+import type { LearningMethodDefaults } from '../lib/landingDefaults';
 
-// The five-step learning method. Practical and simple - finance understood
-// through steady learning, not complexity.
-export default function LearningMethod() {
+export default function LearningMethod({
+  learningMethod = learningMethodDefaults,
+}: {
+  learningMethod?: Partial<LearningMethodDefaults>;
+}) {
+  const steps = learningMethod?.steps ?? learningMethodDefaults.steps;
+
   return (
     <section className="section" id="about">
       <div className="container split">
@@ -12,7 +17,7 @@ export default function LearningMethod() {
           title="A steady way to build money habits"
         />
         <div className="steps">
-          {learningSteps.map((item) => (
+          {steps.map((item) => (
             <div className="step" key={item.step}>
               <span className="step__num">{item.step}</span>
               <div>
