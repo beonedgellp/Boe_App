@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAdminSession } from '@beonedge/client/store/AdminSessionContext.jsx';
 import Sidebar from './Sidebar.jsx';
 import TopBar from './TopBar.jsx';
 import ToastProvider from '../components/ToastProvider.jsx';
 import LegacyAdminDataProvider, { useLegacyAdminData } from '../context/LegacyAdminDataContext.jsx';
 import { findNavMeta } from '../navigation/nav.js';
+import I from '../components/I.jsx';
 
 function ShellFrame() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAdminSession();
   const { overview, loadNote } = useLegacyAdminData();
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const meta = findNavMeta(location.pathname);
 
   async function handleLogout() {
@@ -19,8 +23,17 @@ function ShellFrame() {
   }
 
   return (
-    <div className="ash-app" data-screen-label="Admin Console">
-      <Sidebar user={user} counts={overview.counts || {}} />
+    <div className={`ash-app ${navCollapsed ? 'is-nav-collapsed' : ''}`} data-screen-label="Admin Console">
+      <Sidebar user={user} counts={overview.counts || {}} collapsed={navCollapsed} />
+      <button
+        type="button"
+        className="ash-nav-collapse"
+        onClick={() => setNavCollapsed((value) => !value)}
+        aria-label={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+        aria-expanded={!navCollapsed}
+      >
+        <I icon={navCollapsed ? PanelLeftOpen : PanelLeftClose} size={14} />
+      </button>
       <main className="ash-main">
         <TopBar title={meta.title} breadcrumbs={meta.crumbs} crumbPaths={meta.crumbPaths} onLogout={handleLogout} />
         {loadNote && <div className="ash-load-note" role="status">{loadNote}</div>}

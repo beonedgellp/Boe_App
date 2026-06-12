@@ -13,9 +13,10 @@ export default function Section({
   className = '',
   titleAs: TitleTag = 'h2',
   id,
+  ...rest
 }) {
   return (
-    <section className={`be-section ${className}`} id={id}>
+    <section className={`be-section ${className}`} id={id} {...rest}>
       {(title || subtitle) && (
         <div className="be-section-header">
           {title && (

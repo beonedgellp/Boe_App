@@ -3,7 +3,7 @@
 
 /* ===== Admin shell ========================================== */
 .adm-app {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--be-ivory-2);
   display: grid;
   grid-template-columns: var(--be-sidebar-w) 1fr;
@@ -16,7 +16,7 @@
   color: var(--be-ivory);
   padding: var(--be-space-6) var(--be-space-3) var(--be-space-4);
   display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100dvh;
   overflow-y: auto;
   border-right: 1px solid color-mix(in srgb, var(--be-ivory) 10%, transparent);
 }
@@ -58,7 +58,7 @@
   padding: var(--be-space-6) var(--be-space-8) var(--be-space-4);
   border-bottom: 1px solid var(--be-border);
   background: var(--be-ivory);
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: 0; z-index: var(--be-z-topbar);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--be-bone) 42%, transparent);
 }
 .adm-bread { font: 400 11px var(--be-font-mono); letter-spacing: 0; color: var(--be-slate); display: flex; gap: 6px; align-items: center; }
@@ -177,7 +177,7 @@
 .adm-review-overlay {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: var(--be-z-overlay);
   display: flex;
   justify-content: flex-end;
   background: color-mix(in srgb, var(--be-ink) 42%, transparent);
@@ -185,7 +185,7 @@
 
 .adm-review-panel {
   width: min(520px, 100%);
-  height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
   background: var(--be-ivory);
   border-left: 1px solid var(--be-border);
@@ -518,7 +518,7 @@
 .adm-table thead th {
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 4; /* sticky table header; intentionally below topbar */
 }
 .adm-table tbody tr {
   transition: background var(--be-dur-fast) var(--be-ease);
@@ -1066,7 +1066,7 @@
 .adm-fund-editor-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--be-z-topbar);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1168,7 +1168,7 @@
 .adm-fund-editor-subnav {
   position: sticky;
   top: 64px;
-  z-index: 9;
+  z-index: 9; /* secondary sticky nav; intentionally below editor header */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1217,7 +1217,7 @@
   position: fixed;
   top: 16px;
   right: 16px;
-  z-index: 9999;
+  z-index: var(--be-z-toast);
   display: flex;
   flex-direction: column;
   gap: 8px;

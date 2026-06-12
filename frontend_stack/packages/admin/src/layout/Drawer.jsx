@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import I from '../components/I.jsx';
 
@@ -6,6 +7,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 
 // Right-side editing panel: the standard editing surface for the redesigned
 // admin. Focus is trapped while open; Escape and overlay click close it.
+// Rendered via a React portal on document.body to escape ancestor stacking contexts.
 
 export default function Drawer({ open, title, onClose, footer, children, wide = false }) {
   const panelRef = useRef(null);
@@ -47,9 +49,19 @@ export default function Drawer({ open, title, onClose, footer, children, wide = 
     };
   }, [open, onClose]);
 
+  // Lock body scroll while the drawer is open.
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
-  return (
+  const drawer = (
     <div className="ash-drawer-overlay" onClick={onClose}>
       <div
         ref={panelRef}
@@ -70,4 +82,6 @@ export default function Drawer({ open, title, onClose, footer, children, wide = 
       </div>
     </div>
   );
+
+  return createPortal(drawer, document.body);
 }

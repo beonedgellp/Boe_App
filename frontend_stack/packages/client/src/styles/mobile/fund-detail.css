@@ -9,7 +9,14 @@
   padding: 18px;
   border-radius: var(--be-radius-md);
   border: 1px solid var(--be-border);
-  background: var(--be-bone);
+  background: linear-gradient(135deg, var(--hero-bg, var(--be-bone)) 0%, transparent 70%);
+}
+
+.apk-detail-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--be-space-2);
+  margin-bottom: var(--be-space-1);
 }
 .apk-detail-hero p { color: var(--be-slate); font-size: 14px; line-height: 1.55; max-width: 72ch; }
 .apk-detail-hero .apk-h { font-size: 30px; }
@@ -80,7 +87,7 @@
 .apk-fund-obj-meta strong { display: block; font-size: 11px; color: var(--be-slate); letter-spacing: 0; text-transform: uppercase; font-weight: 500; margin-bottom: 2px; }
 
 /* Minimums */
-.apk-fund-mins { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.apk-fund-mins { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .apk-fund-mins > div { background: var(--be-bone); border: 1px solid var(--be-border); border-radius: var(--be-r-8); padding: 12px; }
 .apk-fund-mins-l { font-size: 11px; color: var(--be-slate); letter-spacing: 0; text-transform: uppercase; }
 .apk-fund-mins-v { font-size: 14px; font-weight: 600; margin-top: 4px; }
@@ -222,6 +229,11 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: var(--sector-color);
+}
+
+.apk-sector-legend .be-eyebrow {
+  margin-bottom: var(--be-space-2);
 }
 
 /* 3D Sector chart card */
@@ -291,9 +303,10 @@
 /* Key stats */
 .apk-key-stats { padding: 16px; }
 .apk-key-stats .be-eyebrow { margin-bottom: 12px; }
-.apk-key-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+.apk-key-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
 .apk-key-stats-divider { height: 1px; background: var(--be-border); margin: 8px 0; }
 .apk-key-stats-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }
+.apk-key-stats-badge { font-size: var(--be-text-xs); padding: var(--be-space-1) var(--be-space-3); }
 
 /* Stat cards */
 .apk-stat-card {
@@ -312,6 +325,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.apk-stat-card-icon--green {
+  background: color-mix(in srgb, var(--be-green) 10%, transparent);
+  color: var(--be-green);
+}
+.apk-stat-card-icon--gold {
+  background: color-mix(in srgb, var(--be-gold) 12%, transparent);
+  color: var(--be-gold);
+}
+.apk-stat-card-icon--red {
+  background: color-mix(in srgb, var(--be-red) 10%, transparent);
+  color: var(--be-red);
+}
+.apk-stat-card-icon--gold-soft {
+  background: var(--be-gold-soft);
+  color: var(--be-gold);
 }
 .apk-stat-card-label {
   font-size: 11px;
@@ -334,6 +363,14 @@
 /* Skeleton */
 .apk-fund-detail .apk-skel {
   border-radius: var(--be-radius-md);
+}
+
+.apk-detail-skel-card {
+  padding: var(--be-space-4);
+}
+
+.apk-ha-dot {
+  background: var(--sector-color);
 }
 
 /* Fund Health Card */
@@ -497,6 +534,10 @@
   color: var(--be-green);
   margin-bottom: 2px;
 }
+.apk-invest-cta-icon--muted {
+  background: var(--be-ivory-2);
+  color: var(--be-slate);
+}
 .apk-invest-cta-btn {
   width: 100%;
   max-width: 400px;
@@ -504,6 +545,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+.apk-invest-cta-btn--narrow {
+  max-width: 260px;
 }
 
 /* Lifecycle badge in hero */
@@ -557,6 +601,8 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--be-r-pill);
+  background: color-mix(in srgb, var(--riskometer-color) 12%, transparent);
+  color: var(--riskometer-color);
 }
 .apk-riskometer-level {
   font-size: 12px;
@@ -572,6 +618,7 @@
 .apk-riskometer-segment {
   flex: 1;
   border-radius: var(--be-r-pill);
+  background: var(--riskometer-segment-bg);
   transition: background 300ms var(--be-ease);
 }
 .apk-riskometer-segment.is-active {

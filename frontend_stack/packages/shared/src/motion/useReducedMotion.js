@@ -25,11 +25,11 @@ export function useReducedMotion() {
  * When reduced motion is on, skips transform/position animations and uses
  * opacity-only crossfades. When off, returns the animated style.
  */
-export function getMotionStyle(reduced, animatedStyle, fallbackStyle = { opacity: 1 }) {
+export function getMotionStyle(reduced, animatedStyle, fallbackStyle = {}) {
   if (reduced) {
     // Keep opacity transitions but strip transforms
     const { opacity, ...rest } = animatedStyle;
-    return { ...fallbackStyle, opacity: opacity ?? 1 };
+    return { ...fallbackStyle, ...(opacity !== undefined && { opacity }) };
   }
   return animatedStyle;
 }

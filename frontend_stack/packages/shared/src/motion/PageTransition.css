@@ -1,0 +1,7 @@
+.be-page-transition {
+  min-height: 100%;
+}
+
+.be-page-transition--animated {
+  will-change: opacity, transform;
+}

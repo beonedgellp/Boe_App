@@ -1,4 +1,5 @@
 import React from 'react';
+import './Skeleton.css';
 
 /**
  * Skeleton — loading placeholder with staggered pulse.
@@ -21,41 +22,19 @@ export default function Skeleton({
   className = '',
   style = {},
 }) {
-  const baseStyle = {
-    background: 'var(--be-slate-soft)',
-    borderRadius: variant === 'circle' ? '50%' : 'var(--be-radius-sm)',
-    width: width ?? (variant === 'text' ? '100%' : undefined),
-    height: height ?? (variant === 'text' ? '14px' : variant === 'circle' ? '40px' : '80px'),
-    ...style,
-  };
-
   const items = Array.from({ length: count }, (_, i) => (
     <div
       key={i}
-      className={`be-skeleton ${className}`}
+      className={`be-skeleton be-skeleton--${variant} ${className}`}
       style={{
-        ...baseStyle,
+        width,
+        height,
         animationDelay: `${i * delay}ms`,
+        ...style,
       }}
       aria-hidden="true"
     />
   ));
 
-  return (
-    <>
-      {items}
-      <style>{`
-        @keyframes be-skeleton-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .be-skeleton {
-          animation: be-skeleton-pulse 1.6s ease-in-out infinite;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .be-skeleton { animation: none; opacity: 0.7; }
-        }
-      `}</style>
-    </>
-  );
+  return <>{items}</>;
 }

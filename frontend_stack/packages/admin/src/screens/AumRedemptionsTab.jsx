@@ -26,6 +26,7 @@ import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/servic
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
+import './admin-screens-shared.css';
 import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
 
@@ -75,13 +76,8 @@ function AumRedemptionsTab({ onUserDetail }) {
   }
 
   const statusBadge = (status) => {
-    const map = {
-      pending: { bg: 'var(--be-amber-soft)', color: 'var(--be-amber)', label: 'Pending' },
-      approved: { bg: 'var(--be-green-soft)', color: 'var(--be-green)', label: 'Approved' },
-      rejected: { bg: 'var(--be-red-soft)', color: 'var(--be-red)', label: 'Rejected' },
-    };
-    const s = map[status] || map.pending;
-    return <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500, background: s.bg, color: s.color }}>{s.label}</span>;
+    const label = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' }[status] || status || '—';
+    return <span className={`adm-status-badge adm-status-badge--${status || 'pending'}`}>{label}</span>;
   };
 
   return (
@@ -116,7 +112,7 @@ function AumRedemptionsTab({ onUserDetail }) {
                 <tr key={req.id}>
                   <td>{req.userId?.slice(0, 8) || '—'}</td>
                   <td>{req.fundName || req.fundId?.slice(0, 8)}</td>
-                  <td style={{ textTransform: 'capitalize' }}>{req.type}</td>
+                  <td className="adm-capitalize">{req.type}</td>
                   <td className="be-money">₹{(req.amount || 0).toLocaleString()}</td>
                   <td>{statusBadge(req.status)}</td>
                   <td className="adm-cell-meta">{req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : '—'}</td>
@@ -147,10 +143,10 @@ function AumRedemptionsTab({ onUserDetail }) {
               </div>
               <button className="adm-icon-btn" onClick={() => setActionRequest(null)} aria-label="Close" disabled={submitting}><I icon={X}/></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-              <div><span className="be-eyebrow">User</span><div style={{ fontSize: 14 }}>{actionRequest.userId}</div></div>
-              <div><span className="be-eyebrow">Amount</span><div className="be-money" style={{ fontSize: 20 }}>₹{(actionRequest.amount || 0).toLocaleString()}</div></div>
-              <div><span className="be-eyebrow">Type</span><div style={{ fontSize: 14, textTransform: 'capitalize' }}>{actionRequest.type}</div></div>
+            <div className="be-stack-3 adm-m-b-4">
+              <div><span className="be-eyebrow">User</span><div className="adm-text-sm">{actionRequest.userId}</div></div>
+              <div><span className="be-eyebrow">Amount</span><div className="be-money adm-text-xl">₹{(actionRequest.amount || 0).toLocaleString()}</div></div>
+              <div><span className="be-eyebrow">Type</span><div className="adm-text-sm adm-capitalize">{actionRequest.type}</div></div>
             </div>
             <label className="adm-field">
               <span>Reason {actionType === 'rejected' && '*'}</span>

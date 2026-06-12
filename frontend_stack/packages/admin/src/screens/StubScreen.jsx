@@ -26,13 +26,14 @@ import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/servic
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
+import './admin-screens-shared.css';
 function StubScreen({ title }) {
   return (
     <div className="adm-screen">
-      <div className="adm-card" style={{padding:48,textAlign:'center'}}>
+      <div className="adm-card adm-stub-card">
         <span className="be-eyebrow">Stub</span>
         <h2 className="adm-card-title">{title}</h2>
-        <p style={{color:'var(--be-slate)',marginTop:8}}>This screen is a placeholder. Wire up real data when the corresponding service is ready.</p>
+        <p className="adm-stub-desc">This screen is a placeholder. Wire up real data when the corresponding service is ready.</p>
       </div>
     </div>
   );

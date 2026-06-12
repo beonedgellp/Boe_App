@@ -153,7 +153,7 @@
   .adm-fund-editor-subnav {
     position: sticky;
     top: 0;
-    z-index: 11;
+    z-index: 11; /* secondary sticky nav; intentionally below editor header */
     padding: 8px 16px;
   }
   .adm-fund-editor-subnav-link {

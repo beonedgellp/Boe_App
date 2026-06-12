@@ -212,7 +212,7 @@ function FundsScreen() {
           <h3 className="adm-card-title">Asset breakdown</h3>
           <div style={{display:'flex',gap:24,alignItems:'center',marginTop:12}}>
             <svg viewBox="0 0 100 100" width="120" height="120">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#EFE9DB" strokeWidth="12"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--be-ivory-2)" strokeWidth="12"/>
               <circle cx="50" cy="50" r="40" fill="none" stroke="#0E1116" strokeWidth="12" strokeDasharray="237 251" strokeDashoffset="62" transform="rotate(-90 50 50)"/>
               <circle cx="50" cy="50" r="40" fill="none" stroke="#B5894A" strokeWidth="12" strokeDasharray="11 251" strokeDashoffset="-180" transform="rotate(-90 50 50)"/>
             </svg>

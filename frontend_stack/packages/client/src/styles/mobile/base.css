@@ -13,6 +13,16 @@
   --be-d-2: var(--be-dur-base);
   --be-d-3: var(--be-dur-slow);
   --be-d-4: var(--be-dur-chart);
+
+  /* Safe-area insets — consumed by shell, app bar, bottom nav, and sheets. */
+  --be-safe-top: env(safe-area-inset-top, 0px);
+  --be-safe-right: env(safe-area-inset-right, 0px);
+  --be-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --be-safe-left: env(safe-area-inset-left, 0px);
+
+  /* Mobile page rhythm */
+  --be-page-header-gap: var(--be-space-2);
+  --be-section-gap: var(--be-space-6);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -21,9 +31,12 @@
 
 .app-shell {
   display: block;
-  min-height: 100vh;
-  background: var(--be-ivory);
-  color: var(--be-ink);
+  min-height: 100dvh;
+  background: var(--be-bg);
+  color: var(--be-fg);
+  padding-left: var(--be-safe-left);
+  padding-right: var(--be-safe-right);
+  box-sizing: border-box;
 }
 
 .app-shell-single {
@@ -32,8 +45,19 @@
 
 .app-main {
   min-width: 0;
-  min-height: 100vh;
-  background: linear-gradient(180deg, var(--be-ivory) 0%, var(--be-ivory-2) 100%);
+  min-height: 100dvh;
+  background: linear-gradient(180deg, var(--be-bg) 0%, var(--be-bg-elevated) 100%);
+  box-sizing: border-box;
+}
+
+.app-main--nav {
+  padding-bottom: calc(var(--be-bottomnav-h) + var(--be-safe-bottom));
+}
+
+.app-main--nav .apk-screen,
+.app-main--nav .be-screen {
+  /* Primary tab screens have no AppBar, so reserve the safe-area inset at the top. */
+  padding-top: calc(var(--be-space-5) + var(--be-safe-top));
 }
 
 /* Mobile screen base */
@@ -41,27 +65,29 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 16px 80px; /* bottom padding reserves BottomNav space */
+  gap: var(--be-space-4);
+  padding: var(--be-space-5) var(--be-space-4);
+  box-sizing: border-box;
 }
 
 .apk-no-pad { padding: 0; }
-.apk-pad { padding: 18px 16px; }
+.apk-pad { padding: var(--be-space-5) var(--be-space-4); }
 
 .apk-h {
   font-family: var(--be-font-serif);
-  font-size: 28px;
+  font-size: var(--be-text-2xl);
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: var(--be-lh-snug);
+  letter-spacing: var(--be-tracking-tight);
   margin: 0;
   color: var(--be-ink);
 }
 
 .apk-h-sm {
   font-family: var(--be-font-serif);
-  font-size: 22px;
+  font-size: var(--be-text-xl);
   font-weight: 600;
+  line-height: var(--be-lh-snug);
   margin: 0;
 }
 
@@ -69,14 +95,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: var(--be-space-1) 0;
+  gap: var(--be-space-3);
 }
 
 .apk-link {
-  font-size: 13px;
+  font-size: var(--be-text-sm);
   color: var(--be-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Consistent page header and section rhythm */
+.be-page-header,
+.apk-page-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--be-space-3);
+  align-items: start;
+  padding: var(--be-page-header-gap) 0 var(--be-space-4);
+}
+
+.be-section + .be-section,
+.apk-section + .apk-section {
+  margin-top: var(--be-section-gap);
 }
 
 /* Splash */
@@ -85,7 +127,7 @@
   background: var(--be-ink);
   color: var(--be-bone);
   display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 24px;
+  flex-direction: column; gap: var(--be-space-6);
 }
 
 .apk-splash-spinner {
@@ -109,12 +151,12 @@
   position: absolute;
   bottom: 32px;
   font-family: var(--be-font-mono);
-  font-size: 11px;
+  font-size: var(--be-text-xs);
   color: rgba(255, 252, 246, 0.45);
 }
 
 /* Root cleanup */
-#root { min-height: 100vh; }
+#root { min-height: 100dvh; }
 
 /* Touch highlight removal */
 .apk-link,
@@ -129,7 +171,7 @@ button {
 /* -------------------------------------------------------------------------- */
 
 .apk-stage {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--be-ivory-2);
   display: flex;
   align-items: center;
@@ -141,7 +183,7 @@ button {
   width: min(100%, 720px);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--be-space-5);
   padding: clamp(28px, 5vw, 48px);
   background: var(--be-ivory);
   border: var(--be-border-1);
@@ -152,7 +194,7 @@ button {
 .apk-logo {
   width: 164px;
   height: auto;
-  margin-bottom: 8px;
+  margin-bottom: var(--be-space-2);
 }
 
 .apk-compat h1 {
@@ -170,24 +212,24 @@ button {
   max-width: 590px;
   margin: 0;
   color: var(--be-slate);
-  font-size: 16px;
-  line-height: 1.7;
+  font-size: var(--be-text-base);
+  line-height: var(--be-lh-relaxed);
 }
 
 .apk-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--be-space-3);
+  margin-top: var(--be-space-2);
 }
 
 .apk-splash-error {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--be-space-4);
   max-width: 280px;
   text-align: center;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--be-text-sm);
+  line-height: var(--be-lh-normal);
 }

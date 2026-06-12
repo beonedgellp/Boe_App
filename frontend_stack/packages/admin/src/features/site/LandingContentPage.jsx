@@ -1,10 +1,10 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { Braces, UploadCloud, Monitor } from 'lucide-react';
+import { Braces, UploadCloud, Monitor, RotateCw } from 'lucide-react';
 import useLandingConfig from '../../hooks/useLandingConfig.js';
 import { LANDING_SECTION_LIST } from './landingDefaults.js';
 import { lintLandingConfig } from './contentLint.js';
 import Drawer from '../../layout/Drawer.jsx';
-import { SplitLayout } from '../../layout/primitives/index.js';
+import { SplitLayout, Page } from '../../layout/primitives/index.js';
 import { useToast } from '../../components/ToastProvider.jsx';
 import I from '../../components/I.jsx';
 import HeroSection from './content/HeroSection.jsx';
@@ -16,6 +16,7 @@ import NewsSection from './content/NewsSection.jsx';
 import LeadFormSection from './content/LeadFormSection.jsx';
 import NavSection from './content/NavSection.jsx';
 import MetaSection from './content/MetaSection.jsx';
+import './LandingContentPage.css';
 
 const SECTION_EDITORS = {
   hero: HeroSection,
@@ -50,8 +51,23 @@ export default function LandingContentPage() {
   const [showPreview, setShowPreview] = useState(true);
   const [previewReady, setPreviewReady] = useState(false);
   const [previewTimedOut, setPreviewTimedOut] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
+  const [focusedField, setFocusedField] = useState(null);
   const iframeRef = useRef(null);
   const { addToast } = useToast();
+
+  function handleEditorFocus(event) {
+    const host = event.target.closest('[data-field-desc]');
+    if (host) {
+      setFocusedField({ label: host.dataset.fieldLabel || '', desc: host.dataset.fieldDesc || '' });
+    }
+  }
+
+  function reloadPreview() {
+    setPreviewReady(false);
+    setPreviewTimedOut(false);
+    setPreviewKey((key) => key + 1);
+  }
 
   useEffect(() => {
     if (!showPreview || previewReady) return undefined;
@@ -93,44 +109,52 @@ export default function LandingContentPage() {
 
   if (loading) {
     return (
-      <div className="ash-page">
+      <Page>
         <SplitLayout
-          rail={<div className="ash-skel-block" style={{ minHeight: 320 }} aria-hidden="true" />}
-          main={<div className="ash-skel-block" style={{ minHeight: 480 }} aria-hidden="true" />}
+          rail={<div className="ash-skel-block landing-content-skeleton--rail" aria-hidden="true" />}
+          main={<div className="ash-skel-block landing-content-skeleton--main" aria-hidden="true" />}
         />
-      </div>
+      </Page>
     );
   }
 
   if (error) {
     return (
-      <div className="ash-page">
-        <div className="ash-error-banner" role="alert">
+      <Page>
+        <div className="ash-error-banner landing-content-error-banner" role="alert">
           <span>{error}</span>
           <button type="button" className="ash-btn ash-btn-secondary ash-btn-sm" onClick={reload}>Retry</button>
         </div>
-      </div>
+      </Page>
     );
   }
 
+  const activeMeta = LANDING_SECTION_LIST.find((section) => section.id === activeSection);
+
   const rail = (
-    <nav className="ash-content-rail" aria-label="Landing page sections">
-      {LANDING_SECTION_LIST.map((section) => (
-        <button
-          key={section.id}
-          type="button"
-          className={`ash-content-rail-item ${activeSection === section.id ? 'is-active' : ''}`}
-          onClick={() => setActiveSection(section.id)}
-        >
-          <span>{section.label}</span>
-          {dirtySections.has(section.id) && <span className="ash-dirty-dot" title="Unpublished edits" />}
-        </button>
-      ))}
-    </nav>
+    <div className="ash-content-rail-stack">
+      <nav className="ash-content-rail" aria-label="Landing page sections">
+        {LANDING_SECTION_LIST.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            className={`ash-content-rail-item ${activeSection === section.id ? 'is-active' : ''}`}
+            onClick={() => { setActiveSection(section.id); setFocusedField(null); }}
+          >
+            <span>{section.label}</span>
+            {dirtySections.has(section.id) && <span className="ash-dirty-dot" title="Unpublished edits" />}
+          </button>
+        ))}
+      </nav>
+      <aside className="ash-section-desc" aria-live="polite">
+        <h3 className="ash-section-desc-title">{focusedField?.label ? `Description — ${focusedField.label}` : 'Description'}</h3>
+        <p className="ash-section-desc-body">{focusedField?.desc || activeMeta?.description}</p>
+      </aside>
+    </div>
   );
 
   const main = (
-    <div className="ash-content-editor">
+    <div className="ash-content-editor" onFocusCapture={handleEditorFocus}>
       {Editor && (
         <Editor
           value={draft?.[activeSection]}
@@ -148,7 +172,7 @@ export default function LandingContentPage() {
         </div>
       )}
 
-      <div className="ash-publish-bar">
+      <div className="ash-publish-bar landing-content-publish-bar">
         <div className="ash-publish-meta">
           {versionMeta.version
             ? <>Version {versionMeta.version}, published {formatPublishedAt(versionMeta.publishedAt)}</>
@@ -182,10 +206,16 @@ export default function LandingContentPage() {
   );
 
   const preview = showPreview ? (
-    <div className="ash-preview-panel">
+    <>
       <div className="ash-preview-header">
-        <span><I icon={Monitor} size={14} /> Live preview</span>
-        <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
+        <span><I icon={Monitor} size={14} /> Preview</span>
+        <div className="ash-preview-header-actions">
+          <button type="button" className="ash-btn ash-btn-ghost ash-btn-sm" onClick={reloadPreview}>
+            <I icon={RotateCw} size={13} />
+            Reload
+          </button>
+          <button type="button" className="ash-icon-btn" onClick={() => setShowPreview(false)} aria-label="Close preview">×</button>
+        </div>
       </div>
       {previewTimedOut && !previewReady && (
         <div className="ash-preview-offline" role="status">
@@ -194,18 +224,26 @@ export default function LandingContentPage() {
         </div>
       )}
       <iframe
+        key={previewKey}
         ref={iframeRef}
         src={PREVIEW_URL}
         title="Landing page preview"
         className="ash-preview-frame"
         sandbox="allow-scripts allow-same-origin"
       />
-    </div>
+    </>
   ) : null;
 
   return (
-    <div className="ash-page">
-      <SplitLayout rail={rail} main={main} preview={preview} />
+    <Page>
+      <SplitLayout
+        rail={rail}
+        main={main}
+        preview={preview}
+        className="is-preview-wide"
+        railWidth="200px"
+        editorMaxWidth="440px"
+      />
 
       {!showPreview && (
         <button
@@ -221,6 +259,6 @@ export default function LandingContentPage() {
       <Drawer open={showJson} title="Landing configuration JSON" onClose={() => setShowJson(false)} wide>
         <pre className="ash-json-view">{JSON.stringify(draft, null, 2)}</pre>
       </Drawer>
-    </div>
+    </Page>
   );
 }

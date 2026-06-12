@@ -9,6 +9,7 @@ import SkeletonTableRow from '../components/SkeletonTableRow.jsx';
 import { apiRequest, listFromPayload } from '@beonedge/client/services/_util.js';
 import { fmtInt } from '../helpers/formatters.js';
 import { fmtMoney } from '@beonedge/shared/format.js';
+import './admin-screens-shared.css';
 
 const TXN_TYPES = {
   sip: 'SIP',
@@ -96,7 +97,7 @@ function TransactionsScreen({ funds = [] }) {
             <span className="be-eyebrow">Transactions</span>
             <h2 className="adm-card-title">All client transactions</h2>
           </div>
-          <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="adm-card-actions adm-card-actions--responsive">
             <div className="adm-search">
               <I icon={Search} size={14} />
               <input

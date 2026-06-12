@@ -2,7 +2,7 @@
 .apk-search {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--be-z-topbar);
 }
 
 .apk-search input {
@@ -216,6 +216,39 @@
 .apk-fund-link .apk-link:hover {
   text-decoration: underline;
 }
+
+.apk-fc-notify-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.apk-featured-tagline {
+  margin-top: var(--be-space-1);
+}
+
+.apk-sort-eyebrow {
+  font-size: var(--be-text-xs);
+}
+
+.apk-fc-skeleton {
+  padding: var(--be-space-4);
+}
+
+.apk-fc-skeleton-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--be-space-2);
+  margin-top: var(--be-space-2);
+}
+
+.apk-research-skel-item {
+  padding: var(--be-space-3) 0;
+}
+
+.apk-research-bar-fill {
+  width: var(--w, 0);
+}
+
 .apk-fund-disclaimer {
   font-size: 11px;
   color: var(--be-slate-2);
@@ -350,6 +383,7 @@
 }
 .apk-featured-card .apk-fund-header h3 {
   font-size: 20px;
+  overflow-wrap: anywhere;
 }
 .apk-featured-card .apk-fund-tagline {
   font-size: 14px;

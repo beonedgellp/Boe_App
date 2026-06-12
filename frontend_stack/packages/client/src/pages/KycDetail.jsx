@@ -170,9 +170,9 @@ export default function KycDetail() {
       <>
         <AppBar title="KYC & Compliance" />
         <div className="apk-screen">
-          <div className="be-card" style={{ padding: 24 }}>
-            <div className="apk-skel" style={{ height: 20, width: '60%', marginBottom: 16 }} />
-            <div className="apk-skel" style={{ height: 14, width: '40%' }} />
+          <div className="be-card apk-card-p-24">
+            <div className="apk-skel apk-skel--h-20 apk-skel--w-60 apk-skel--mb-16" />
+            <div className="apk-skel apk-skel--h-14 apk-skel--w-40" />
           </div>
         </div>
       </>
@@ -190,14 +190,14 @@ export default function KycDetail() {
         )}
 
         {/* FATCA */}
-        <div className="be-card" style={{ padding: 0 }}>
-          <div style={{ padding: '16px 16px 0' }}>
+        <div className="be-card apk-card-no-pad">
+          <div className="apk-kyc-header">
             <div className="be-eyebrow">FATCA</div>
-            <div style={{ marginTop: 6, fontSize: 14 }}>
+            <div className="apk-kyc-status">
               Status: <span className={`be-badge ${profile?.fatcaStatus === 'completed' ? 'be-badge-active' : 'be-badge-paused'}`}>{profile?.fatcaStatus || 'not_started'}</span>
             </div>
           </div>
-          <form onSubmit={onSaveFatca} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={onSaveFatca} className="apk-kyc-form">
             <div className="be-field">
               <label>Tax residence</label>
               <input
@@ -248,19 +248,19 @@ export default function KycDetail() {
         </div>
 
         {/* Nominees */}
-        <div className="be-card" style={{ padding: 0 }}>
-          <div style={{ padding: '16px 16px 0' }}>
+        <div className="be-card apk-card-no-pad">
+          <div className="apk-kyc-header">
             <div className="be-eyebrow">Nominees</div>
-            <div style={{ marginTop: 6, fontSize: 13, color: 'var(--be-slate)' }}>
+            <div className="apk-kyc-meta">
               Total allocation: <strong>{nomineeTotal}%</strong> · {nominees.length}/3 added
             </div>
             {nomineeError && (
-              <div style={{ marginTop: 6, fontSize: 13, color: 'var(--be-red)' }}>{nomineeError}</div>
+              <div className="apk-kyc-meta apk-kyc-meta--error">{nomineeError}</div>
             )}
           </div>
 
           {nominees.length > 0 && (
-            <div style={{ padding: '0 16px' }}>
+            <div className="apk-kyc-list">
               {nominees.map((n, i) => (
                 <div key={i} className="apk-list-row apk-nominee-row">
                   <div>
@@ -283,7 +283,7 @@ export default function KycDetail() {
           )}
 
           {canAddNominee && (
-            <form onSubmit={onAddNominee} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, borderTop: '1px solid var(--be-border)' }}>
+            <form onSubmit={onAddNominee} className="apk-kyc-form apk-kyc-form--bordered">
               <div className="auth-field-row">
                 <div className="be-field">
                   <label>Name</label>
@@ -344,7 +344,7 @@ export default function KycDetail() {
             </form>
           )}
 
-          <div style={{ padding: '0 16px 16px' }}>
+          <div className="apk-kyc-footer">
             <button
               className="be-btn be-btn-primary be-btn-block"
               disabled={saving || nominees.length === 0 || nomineeTotal !== 100}
@@ -356,11 +356,11 @@ export default function KycDetail() {
         </div>
 
         {/* Re-KYC */}
-        <div className="be-card" style={{ padding: 0 }}>
-          <div style={{ padding: '16px 16px 0' }}>
+        <div className="be-card apk-card-no-pad">
+          <div className="apk-kyc-header">
             <div className="be-eyebrow">Re-KYC</div>
           </div>
-          <form onSubmit={onSaveReKyc} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={onSaveReKyc} className="apk-kyc-form">
             <div className="be-field">
               <label>Re-KYC due date</label>
               <input

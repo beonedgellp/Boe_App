@@ -14,7 +14,7 @@ export default function MandateAuth() {
 
   useEffect(() => { ordersApi.getMandate(mandateId).then(setMandate).catch(() => setMandate(null)); }, [mandateId]);
 
-  if (!mandate) return (<><AppBar title="Authorize AutoPay" /><div className="apk-screen"><div className="apk-skel" style={{ height: 200 }} /></div></>);
+  if (!mandate) return (<><AppBar title="Authorize AutoPay" /><div className="apk-screen"><div className="apk-skel apk-skel--h-200" /></div></>);
 
   const isRazorpayPending = mandate.provider === 'razorpay' && !mandate.providerMandateId;
   const isMock = mandate.provider === 'mock';
@@ -39,19 +39,19 @@ export default function MandateAuth() {
         <h1 className="apk-h-sm">Authorize UPI AutoPay</h1>
 
         {isRazorpayPending ? (
-          <div className="be-card" style={{ padding: 24, textAlign: 'center' }}>
-            <Info size={40} strokeWidth={1.5} style={{ color: 'var(--be-primary)', marginBottom: 12 }} />
-            <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>AutoPay setup is pending</h3>
-            <p style={{ color: 'var(--be-slate)', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+          <div className="be-card apk-mandate-pending">
+            <Info size={40} strokeWidth={1.5} className="apk-mandate-info" />
+            <h3 className="apk-mandate-pending-title">AutoPay setup is pending</h3>
+            <p className="apk-mandate-pending-text">
               Your UPI AutoPay mandate will be set up automatically after your first successful payment.
               You don't need to do anything right now.
             </p>
           </div>
         ) : (
-          <div className="be-card" style={{ padding: 16 }}>
-            <ol aria-label="AutoPay authorization steps" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+          <div className="be-card apk-mandate-steps-card">
+            <ol aria-label="AutoPay authorization steps" className="apk-mandate-steps">
               {['Open UPI app', `Authorize mandate up to ${fmtMoney(mandate.maxAmount)}`, 'Return to app'].map((step, i) => (
-                <li key={i} className="apk-timeline-row" style={{ paddingLeft: 0 }}>
+                <li key={i} className="apk-timeline-row apk-timeline-row--no-pad">
                   <div className="apk-timeline-dot is-active" />
                   <div>{i + 1}. {step}</div>
                   <div />
@@ -61,7 +61,7 @@ export default function MandateAuth() {
           </div>
         )}
 
-        <div className="be-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="be-card apk-mandate-summary-card">
           <div className="apk-sheet-summary-row"><span>Max per cycle</span><strong className="be-money">{fmtMoney(mandate.maxAmount)}</strong></div>
           {mandate.validTo && <div className="apk-sheet-summary-row"><span>Valid until</span><strong>{fmtDate(mandate.validTo)}</strong></div>}
           <div className="apk-sheet-summary-row"><span>Status</span>

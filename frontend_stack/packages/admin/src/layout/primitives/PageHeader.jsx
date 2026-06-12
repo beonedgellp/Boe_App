@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import './PageHeader.css';
 
 /**
@@ -8,28 +8,45 @@ import './PageHeader.css';
  * Merges the 18px ash style and 28px serif adm style into a single
  * 20px sans authoritative header.
  */
+function normalizeCrumb(crumb) {
+  if (typeof crumb === 'string') return { label: crumb, to: null };
+  if (crumb && typeof crumb === 'object') {
+    return { label: crumb.label || '', to: crumb.to || null };
+  }
+  return { label: String(crumb), to: null };
+}
+
 export default function PageHeader({
   title,
   subtitle,
   breadcrumbs = [],
   actions,
   className = '',
+  ...rest
 }) {
+  const normalized = breadcrumbs.map(normalizeCrumb);
+
   return (
-    <header className={`be-page-header ${className}`}>
+    <header className={`be-page-header ${className}`} {...rest}>
       <div className="be-page-header-main">
-        {breadcrumbs.length > 0 && (
+        {normalized.length > 0 && (
           <nav className="be-breadcrumbs" aria-label="Breadcrumb">
-            {breadcrumbs.map((crumb, index) => (
-              <span key={`${crumb}-${index}`} className="be-breadcrumb-item">
-                {index > 0 && (
-                  <span className="be-breadcrumb-sep" aria-hidden="true">/</span>
-                )}
-                <span className={index === breadcrumbs.length - 1 ? 'is-active' : ''}>
-                  {crumb}
+            {normalized.map((crumb, index) => {
+              const isLast = index === normalized.length - 1;
+              const key = `${crumb.label}-${index}`;
+              return (
+                <span key={key} className="be-breadcrumb-item">
+                  {index > 0 && (
+                    <span className="be-breadcrumb-sep" aria-hidden="true">/</span>
+                  )}
+                  {isLast || !crumb.to ? (
+                    <span className={isLast ? 'is-active' : ''}>{crumb.label}</span>
+                  ) : (
+                    <Link className="be-breadcrumb-link" to={crumb.to}>{crumb.label}</Link>
+                  )}
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </nav>
         )}
         <h1 className="be-page-header-title">{title}</h1>

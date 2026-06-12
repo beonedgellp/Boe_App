@@ -25,6 +25,7 @@ import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/servic
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
+import './admin-screens-shared.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
@@ -588,7 +589,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                     <div className="adm-distribution-preview__legend">
                       {form.sectors.map((s, i) => (
                         <span key={s.id || i} className="adm-distribution-preview__legend-item">
-                          <span className="adm-distribution-preview__swatch" style={{ background: s.color }} />
+                          <span className="adm-distribution-preview__swatch adm-swatch" style={{ '--adm-swatch-color': s.color }} />
                           {s.name || 'Unnamed'} {s.percentage}%
                         </span>
                       ))}

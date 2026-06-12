@@ -241,21 +241,21 @@ function ApkFundDetail({ onBack, onStartSip, onLumpsum }) {
           <div className="be-eyebrow">Asset allocation</div>
           <div className="apk-alloc-row">
             <svg viewBox="0 0 100 100" width="92" height="92">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#EFE9DB" strokeWidth="12"/>
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--be-ivory-2)" strokeWidth="12"/>
               <circle cx="50" cy="50" r="40" fill="none" stroke="#0E1116" strokeWidth="12"
                       strokeDasharray="237 251" strokeDashoffset="62" transform="rotate(-90 50 50)"/>
               <circle cx="50" cy="50" r="40" fill="none" stroke="#B5894A" strokeWidth="12"
                       strokeDasharray="11 251" strokeDashoffset="-180" transform="rotate(-90 50 50)"/>
             </svg>
             <div className="apk-alloc-legend">
-              <div className="apk-alloc-row-item"><span className="apk-alloc-sw" style={{background:'#0E1116'}}/><span>Equity</span><span className="be-money">95.0%</span></div>
-              <div className="apk-alloc-row-item"><span className="apk-alloc-sw" style={{background:'#B5894A'}}/><span>Cash & equivalents</span><span className="be-money">5.0%</span></div>
+              <div className="apk-alloc-row-item"><span className="apk-alloc-sw apk-alloc-sw--equity"/><span>Equity</span><span className="be-money">95.0%</span></div>
+              <div className="apk-alloc-row-item"><span className="apk-alloc-sw apk-alloc-sw--cash"/><span>Cash & equivalents</span><span className="be-money">5.0%</span></div>
             </div>
           </div>
         </div>
 
         <div className="be-card apk-holdings">
-          <div className="apk-section-head" style={{margin:'0 0 8px'}}>
+          <div className="apk-section-head apk-section-head--tight">
             <div className="be-eyebrow">Top holdings</div>
             <a className="apk-link" href="#">View all 24</a>
           </div>
@@ -309,7 +309,7 @@ function ApkStartSipSheet({ open, onClose, onConfirm }) {
             <button key={v} className={`apk-chip ${amount === v ? 'is-active' : ''}`} onClick={() => setAmount(v)}>₹{v.toLocaleString('en-IN')}</button>
           ))}
         </div>
-        <div className="be-disclosure" style={{marginTop:8}}>Minimum ₹500 · Admin override possible</div>
+        <div className="be-disclosure apk-mt-8">Minimum ₹500 · Admin override possible</div>
 
         <div className="apk-sheet-row">
           <label>Duration</label>
@@ -334,7 +334,7 @@ function ApkStartSipSheet({ open, onClose, onConfirm }) {
           <div className="apk-sheet-summary-row"><span>Total over {duration} mo</span><span className="be-money">₹{(amount*duration).toLocaleString('en-IN')}</span></div>
         </div>
 
-        <p className="be-disclosure" style={{margin:'8px 0 14px'}}>First payment uses UPI. Recurring debits require a UPI AutoPay mandate, which you'll authorize next.</p>
+        <p className="be-disclosure apk-disclosure-my">First payment uses UPI. Recurring debits require a UPI AutoPay mandate, which you'll authorize next.</p>
 
         <button className="be-btn be-btn-primary be-btn-block be-btn-lg" onClick={onConfirm}>Continue to payment</button>
       </div>
@@ -380,7 +380,7 @@ function ApkTransactions() {
           </div>
         ))}
       </div>
-      <p className="be-disclosure" style={{textAlign:'center',marginTop:14}}>Showing last 90 days · Older history available in Statements</p>
+      <p className="be-disclosure apk-disclosure-center">Showing last 90 days · Older history available in Statements</p>
     </div>
   );
 }
@@ -421,7 +421,7 @@ function ApkProfile({ onLogout }) {
       </div>
 
       <button className="be-btn be-btn-ghost be-btn-block apk-logout" onClick={onLogout}>Sign out</button>
-      <p className="be-disclosure" style={{textAlign:'center',marginTop:8}}>BeOnEdge · v1.0.0 · build 2026.04.28</p>
+      <p className="be-disclosure apk-disclosure-center-sm">BeOnEdge · v1.0.0 · build 2026.04.28</p>
     </div>
   );
 }

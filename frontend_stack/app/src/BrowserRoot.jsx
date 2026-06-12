@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@beonedge/client/store/SessionContext.jsx';
 import { AdminSessionProvider, useAdminSession } from '@beonedge/client/store/AdminSessionContext.jsx';
 import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.jsx';
+import PageLoader from './components/PageLoader.jsx';
+import RootErrorBoundary from './components/RootErrorBoundary.jsx';
 
 const Admin = lazy(() => import('@beonedge/admin/pages/Admin.jsx'));
 const AdminLogin = lazy(() => import('@beonedge/admin/pages/AdminLogin.jsx'));
@@ -35,7 +37,7 @@ function RequireAdmin({ children }) {
 }
 
 const Page = ({ children }) => (
-  <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
+  <Suspense fallback={<PageLoader />}>
     {children}
   </Suspense>
 );
@@ -44,12 +46,14 @@ export default function BrowserRoot() {
   return (
     <SessionProvider>
       <AdminSessionProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/admin/login" replace />} />
-          <Route path="/admin/login" element={<Page><RouteErrorBoundary><AdminLogin /></RouteErrorBoundary></Page>} />
-          <Route path="/admin/*" element={<RequireAdmin><Page><RouteErrorBoundary><Admin /></RouteErrorBoundary></Page></RequireAdmin>} />
-          <Route path="*" element={<Navigate to="/admin/login" replace />} />
-        </Routes>
+        <RootErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Navigate to="/admin/login" replace />} />
+            <Route path="/admin/login" element={<Page><RouteErrorBoundary><AdminLogin /></RouteErrorBoundary></Page>} />
+            <Route path="/admin/*" element={<RequireAdmin><Page><RouteErrorBoundary><Admin /></RouteErrorBoundary></Page></RequireAdmin>} />
+            <Route path="*" element={<Navigate to="/admin/login" replace />} />
+          </Routes>
+        </RootErrorBoundary>
       </AdminSessionProvider>
     </SessionProvider>
   );

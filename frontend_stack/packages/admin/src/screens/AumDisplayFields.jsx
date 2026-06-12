@@ -3,6 +3,7 @@ import {
   LineChart, PieChart, Gauge, Plus, Trash2, ArrowDownUp, AlertTriangle, Star, Calendar,
 } from 'lucide-react';
 import I from '../components/I.jsx';
+import './admin-screens-shared.css';
 
 // Admin editor for the Session 4 fund display fields (Groww-style profile):
 // identity extras, performance vs Nifty, asset split, advanced ratios.
@@ -127,7 +128,7 @@ export default function AumDisplayFields({ form, setForm }) {
       {/* Performance vs Nifty */}
       <div className="adm-fund-editor-section">
         <div className="adm-fund-editor-section-title"><I icon={LineChart} size={16} /> Performance vs Nifty</div>
-        <p className="adm-cell-meta" style={{ marginTop: 0 }}>Admin-published, indicative figures. Returns are stored as percentages.</p>
+        <p className="adm-cell-meta adm-m-t-0">Admin-published, indicative figures. Returns are stored as percentages.</p>
 
         <table className="adm-mini-table">
           <thead><tr><th>Period</th><th>Fund %</th><th>Nifty %</th><th>Annualised</th></tr></thead>
@@ -139,17 +140,17 @@ export default function AumDisplayFields({ form, setForm }) {
                   <td><strong>{key}</strong></td>
                   <td><input type="number" step="0.01" value={p.fundReturnPct ?? ''} onChange={(e) => setPeriod(key, 'fundReturnPct', e.target.value)} /></td>
                   <td><input type="number" step="0.01" value={p.niftyReturnPct ?? ''} onChange={(e) => setPeriod(key, 'niftyReturnPct', e.target.value)} /></td>
-                  <td style={{ textAlign: 'center' }}><input type="checkbox" checked={p.annualized === true} onChange={(e) => setPeriod(key, 'annualized', e.target.checked)} /></td>
+                  <td className="adm-text-center"><input type="checkbox" checked={p.annualized === true} onChange={(e) => setPeriod(key, 'annualized', e.target.checked)} /></td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '14px 0 6px' }}>
-          <span className="be-eyebrow" style={{ fontSize: 10 }}>Index series (baseline 100)</span>
+        <div className="adm-title-bar">
+          <span className="be-eyebrow adm-text-2xs">Index series (baseline 100)</span>
           {series.length > 0 && series.length < 2 && (
-            <span className="be-eyebrow adm-tone-red" style={{ fontSize: 10 }}><I icon={AlertTriangle} size={11} /> Need ≥2 points to draw the chart</span>
+            <span className="be-eyebrow adm-tone-red adm-text-2xs"><I icon={AlertTriangle} size={11} /> Need ≥2 points to draw the chart</span>
           )}
         </div>
         <div className="adm-editor-list">
@@ -162,7 +163,7 @@ export default function AumDisplayFields({ form, setForm }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <div className="adm-action-row adm-m-t-2">
           <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addSeriesRow}><I icon={Plus} size={14} /> Add point</button>
           <button type="button" className="be-btn be-btn-ghost be-btn-sm" onClick={sortSeries} disabled={series.length < 2}><I icon={ArrowDownUp} size={14} /> Sort by date</button>
         </div>
@@ -170,7 +171,7 @@ export default function AumDisplayFields({ form, setForm }) {
 
       {/* Asset split */}
       <div className="adm-fund-editor-section">
-        <div className="adm-fund-editor-section-title" style={{ justifyContent: 'space-between' }}>
+        <div className="adm-fund-editor-section-title adm-fund-editor-section-title--between">
           <span><I icon={PieChart} size={16} /> Asset Split (Equity / Debt / Cash)</span>
           <span className={`be-eyebrow ${Math.abs(assetTotal - 100) < 0.1 ? 'adm-tone-green' : 'adm-tone-red'}`}>Total: {assetTotal.toFixed(2)}%</span>
         </div>
@@ -184,13 +185,13 @@ export default function AumDisplayFields({ form, setForm }) {
             </div>
           ))}
         </div>
-        <button type="button" className="be-btn be-btn-secondary be-btn-sm" onClick={addAsset} style={{ marginTop: 8 }}><I icon={Plus} size={14} /> Add asset class</button>
+        <button type="button" className="be-btn be-btn-secondary be-btn-sm adm-m-t-2" onClick={addAsset}><I icon={Plus} size={14} /> Add asset class</button>
       </div>
 
       {/* Advanced ratios */}
       <div className="adm-fund-editor-section">
         <div className="adm-fund-editor-section-title"><I icon={Gauge} size={16} /> Advanced Ratios</div>
-        <p className="adm-cell-meta" style={{ marginTop: 0 }}>Display metrics only — never used in order execution. Leave blank to hide a metric.</p>
+        <p className="adm-cell-meta adm-m-t-0">Display metrics only — never used in order execution. Leave blank to hide a metric.</p>
         <div className="adm-form-grid">
           {RATIO_FIELDS.map((r) => (
             <label className="adm-field" key={r.key}><span>{r.label}</span>

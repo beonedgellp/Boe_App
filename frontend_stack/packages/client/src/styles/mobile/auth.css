@@ -7,7 +7,7 @@
 /* -------------------------------------------------------------------------- */
 
 .apk-login-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,7 +91,7 @@
 /* -------------------------------------------------------------------------- */
 
 .auth-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(420px, 520px);
   align-items: center;
@@ -237,7 +237,7 @@
 
 
 /* Login */
-.apk-login { padding: 32px 24px; display: flex; flex-direction: column; gap: 24px; min-height: 100vh; box-sizing: border-box; background: var(--be-ivory); }
+.apk-login { padding: 32px 24px; display: flex; flex-direction: column; gap: 24px; min-height: 100dvh; box-sizing: border-box; background: var(--be-ivory); }
 .apk-login-brand { padding-top: 20px; }
 .apk-logo-img { display: block; width: auto; object-fit: contain; }
 .apk-login-logo { height: 56px; max-width: 220px; }
@@ -251,11 +251,11 @@
 .apk-login-foot { display: flex; gap: 16px; justify-content: space-between; font-size: 13px; }
 .apk-login-disc { margin-top: auto; padding-top: 24px; }
 .apk-login-error { background: var(--be-red-soft); color: var(--be-red); padding: 10px 12px; border-radius: var(--be-r-4); font-size: 13px; }
-.apk-login-progress { position: fixed; top: 0; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.05); overflow: hidden; z-index: 50; }
+.apk-login-progress { position: fixed; top: 0; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.05); overflow: hidden; z-index: var(--be-z-overlay); }
 .apk-login-progress::after { content: ''; position: absolute; left: -40%; top: 0; height: 1px; width: 40%; background: var(--be-gold); animation: apk-slide 1.2s var(--be-ease) infinite; }
 
 /* Blocked state (mobile-first) */
-.apk-blocked { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 18px 16px; }
+.apk-blocked { display: flex; align-items: center; justify-content: center; min-height: 100dvh; padding: 18px 16px; }
 .apk-blocked-card { max-width: 520px; width: 100%; padding: 24px; text-align: center; }
 .apk-blocked-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--be-ivory-2); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px; }
 
@@ -263,7 +263,7 @@
 
 /* Auth page (mobile-first) — used by AdminLogin */
 .auth-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr;
   align-items: start;
@@ -407,12 +407,12 @@
     radial-gradient(circle at 20% 30%, rgba(181, 137, 74, 0.04) 0%, transparent 45%),
     radial-gradient(circle at 80% 70%, rgba(14, 17, 22, 0.02) 0%, transparent 40%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 0; /* background texture layer inside .auth-copy */
 }
 
 .auth-copy > * {
   position: relative;
-  z-index: 1;
+  z-index: 1; /* content layer above pseudo-element background */
 }
 
 /* Logo sizing */
@@ -465,7 +465,7 @@
 .auth-tabs button:focus-visible {
   outline: 2px solid var(--be-ink);
   outline-offset: 2px;
-  z-index: 1;
+  z-index: 1; /* local stacking inside tabs row */
 }
 
 .auth-tabs button.is-active {
@@ -700,3 +700,9 @@
 .auth-copy::before {
   inset: -24px -24px -24px -24px;
 }
+
+
+/* Inline-style replacements for Blocked state */
+.apk-blocked-title { margin-bottom: 8px; }
+.apk-blocked-body { color: var(--be-slate); font-size: 14px; line-height: 1.5; margin: 0; }
+.apk-blocked-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }

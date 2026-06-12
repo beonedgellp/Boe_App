@@ -76,6 +76,10 @@
   font-size: var(--be-text-sm);
 }
 
+.apk-portfolio-label {
+  color: var(--be-slate);
+}
+
 .apk-portfolio-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -119,11 +123,15 @@
   justify-content: space-between;
   gap: 8px;
 }
+.apk-sip-head > div {
+  min-width: 0;
+}
 
 .apk-sip-name {
   font-family: var(--be-font-serif);
   font-size: var(--be-text-base);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .apk-sip-meta {
@@ -344,4 +352,16 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.apk-disclosure-tight {
+  margin-top: var(--be-space-1);
+}
+
+.apk-portfolio-grid--tight {
+  margin-top: var(--be-space-1);
+}
+
+.apk-section-head--pad-bottom {
+  padding: 0 0 var(--be-space-2);
 }

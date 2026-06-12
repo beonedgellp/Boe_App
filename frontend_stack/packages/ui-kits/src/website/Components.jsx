@@ -213,7 +213,7 @@ function SignupForm({ open, onClose, onSubmit }) {
             <div className="be-field"><label>Loss tolerance</label>
               <select className="be-input"><option>I want capital protection</option><option selected>I can accept short-term losses for long-term gains</option><option>I can accept large drawdowns</option></select>
             </div>
-            <p className="be-disclosure" style={{marginBottom: 14}}>Investments are subject to market risk. Read all scheme documents carefully before investing.</p>
+            <p className="be-disclosure web-modal-disclosure">Investments are subject to market risk. Read all scheme documents carefully before investing.</p>
             <button className="be-btn be-btn-primary be-btn-block" onClick={onSubmit}>Submit application</button>
           </div>
         )}
@@ -237,7 +237,7 @@ function SubmittedScreen({ onClose }) {
           </div>
           <button className="be-btn be-btn-secondary be-btn-sm" disabled>Download APK</button>
         </div>
-        <button className="be-btn be-btn-ghost be-btn-block" onClick={onClose} style={{marginTop: 12}}>Close</button>
+        <button className="be-btn be-btn-ghost be-btn-block web-modal-close-btn" onClick={onClose}>Close</button>
       </div>
     </div>
   );

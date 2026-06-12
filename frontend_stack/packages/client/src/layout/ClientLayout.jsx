@@ -28,7 +28,7 @@ function isPrimaryTabPath(path) {
   return PRIMARY_TAB_PATHS.some((p) => path === p || path.startsWith(p + '/'));
 }
 
-export default function ClientLayout() {
+export default function ClientLayout(props) {
   const { user, isLoading, logout } = useSession();
   const location = useLocation();
   const path = location.pathname;
@@ -59,7 +59,7 @@ export default function ClientLayout() {
 
   if (isTerminalAccount(user)) {
     return (
-      <div className="app-shell app-shell-single">
+      <div className="app-shell app-shell-single" {...props}>
         <main className="app-main">
           <Blocked />
         </main>
@@ -71,8 +71,8 @@ export default function ClientLayout() {
 
   return (
     <AppLockGate user={user} logout={logout}>
-      <div className="app-shell">
-        <main className="app-main">
+      <div className="app-shell" {...props}>
+        <main className={showBottomNav ? 'app-main app-main--nav' : 'app-main'}>
           <PageTransition>
             <Outlet />
           </PageTransition>

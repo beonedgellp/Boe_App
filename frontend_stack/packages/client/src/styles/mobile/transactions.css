@@ -1,7 +1,7 @@
 /* Transactions — mobile-first */
 .apk-tx-list { display: flex; flex-direction: column; }
 .apk-list-card { padding: 6px 18px; }
-.apk-row-skel { height: 56px; margin: 12px 0; }
+.apk-tx-skeleton--mobile { display: flex; flex-direction: column; gap: 12px; }
 .apk-payment-card { padding: 16px; }
 .apk-payment-card--urgent {
   border: 1px solid var(--be-amber);
@@ -52,17 +52,7 @@
 .apk-tx-sheet-title { overflow-wrap: anywhere; }
 .apk-sheet-summary-row { align-items: center; }
 
-/* Empty state */
-.apk-empty--tx { min-height: 220px; justify-content: center; }
-.apk-empty-icon-wrap {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: var(--be-ivory-2); border: 1px solid var(--be-border);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: var(--be-slate);
-}
-
 /* Skeleton */
-.apk-tx-skeleton--mobile { display: block; }
 .apk-tx-list-mobile { display: block; }
 
 /* Notification row */
@@ -299,6 +289,10 @@
   gap: 10px;
   margin-top: 16px;
 }
+
+/* Notifications responsive fixes */
+.apk-notif-row { min-width: 0; }
+.apk-notif-title { min-width: 0; overflow-wrap: anywhere; }
 
 @keyframes apk-slide-in-right {
   from { transform: translateX(100%); }

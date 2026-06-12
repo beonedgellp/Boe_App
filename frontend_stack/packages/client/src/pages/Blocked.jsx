@@ -22,9 +22,9 @@ export default function Blocked() {
         <div className="apk-blocked-icon" style={{ color: cfg.color }}>
           <Icon size={28} strokeWidth={1.5} />
         </div>
-        <h2 className="apk-h-sm" style={{ marginBottom: 8 }}>{cfg.headline}</h2>
-        <p style={{ color: 'var(--be-slate)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>{cfg.body}</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 20 }}>
+        <h2 className="apk-h-sm apk-blocked-title">{cfg.headline}</h2>
+        <p className="apk-blocked-body">{cfg.body}</p>
+        <div className="apk-blocked-actions">
           {user?.status === 'rejected' && (
             <button className="be-btn be-btn-primary be-btn-block" onClick={() => navigate('/app/profile/support')}>Contact support</button>
           )}

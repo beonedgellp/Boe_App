@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Repeat, Info, Bell, BellOff } from 'lucide-react';
+import { EmptyState } from '@beonedge/shared';
 import AppBar from '../layout/AppBar.jsx';
 import * as notificationsApi from '../services/notificationsApi.js';
 import { fmtDate } from '../utils/format.js';
@@ -83,11 +84,11 @@ export default function Notifications() {
           </button>
         </div>
         {items.length === 0 ? (
-          <div className="be-card apk-empty">
-            <div className="apk-empty-icon" aria-hidden="true"><BellOff size={22} strokeWidth={1.4} /></div>
-            <div style={{ fontFamily: 'var(--be-font-serif)', fontSize: 18, fontWeight: 600 }}>You're all caught up</div>
-            <p>No notifications right now. We'll let you know when there's something to act on.</p>
-          </div>
+          <EmptyState
+            icon={<BellOff size={24} strokeWidth={1.4} />}
+            title="You're all caught up"
+            description="No notifications right now. We'll let you know when there's something to act on."
+          />
         ) : (
           ['Today', 'Yesterday', 'Earlier'].map((k) => groups[k] && (
             <section key={k} className="apk-notif-group" aria-label={k}>

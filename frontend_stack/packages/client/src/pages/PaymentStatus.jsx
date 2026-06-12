@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Loader2, CheckCircle, XCircle, CreditCard } from 'lucide-react';
+import { Skeleton } from '@beonedge/shared';
 import AppBar from '../layout/AppBar.jsx';
 import * as ordersApi from '../services/ordersApi.js';
 import { fmtMoney, fmtDate } from '../utils/format.js';
@@ -69,7 +70,7 @@ export default function PaymentStatus() {
     });
   }, [payment, order, loadPayment]);
 
-  if (!payment) return (<><AppBar title="Payment" leftIcon={X} /><div className="apk-screen"><div className="apk-skel" style={{ height: 200 }} /></div></>);
+  if (!payment) return (<><AppBar title="Payment" leftIcon={X} /><div className="apk-screen"><Skeleton variant="rect" height="200px" /></div></>);
 
   const isSuccess = payment.status === 'success' || payment.status === 'reconciled' || payment.status === 'approved';
   const isAwaitingApproval = payment.status === 'success' || payment.status === 'reconciled';
@@ -99,13 +100,13 @@ export default function PaymentStatus() {
       <AppBar title="Payment" leftIcon={X} onLeft={() => navigate('/app/dashboard')} />
       <div className="apk-screen">
         <div className="apk-payment-state">
-          <div className="apk-payment-icon-wrap" style={{ color: isSuccess ? 'var(--be-green)' : isFailed ? 'var(--be-red)' : 'var(--be-slate)' }}>
+          <div className={`apk-payment-icon-wrap ${isSuccess ? 'apk-payment-icon-wrap--success' : isFailed ? 'apk-payment-icon-wrap--failed' : ''}`}>
             <Icon size={32} strokeWidth={1.5} className={!isSuccess && !isFailed ? 'apk-spin' : ''} />
           </div>
           <div className="apk-payment-state-line">{stateLine}</div>
           <div className="apk-payment-amount be-money">{fmtMoney(payment.amount)}</div>
           <div className="apk-payment-method">{payment.upiHandle ? `UPI · ${payment.upiHandle}` : 'Payment method pending'}</div>
-          {isFailed && payment.failureReason && <div className="be-disclosure" style={{ color: 'var(--be-red)' }}>{payment.failureReason}</div>}
+          {isFailed && payment.failureReason && <div className="be-disclosure apk-payment-error">{payment.failureReason}</div>}
         </div>
 
         <div className="be-card apk-timeline">
@@ -131,7 +132,7 @@ export default function PaymentStatus() {
         <div className="apk-action-bar">
           {showPayButton && (
             <button className="be-btn be-btn-primary be-btn-block be-btn-lg" onClick={handlePayNow}>
-              <CreditCard size={18} strokeWidth={2} style={{ marginRight: 8 }} /> Pay with Razorpay
+              <CreditCard size={18} strokeWidth={2} className="apk-pay-icon" /> Pay with Razorpay
             </button>
           )}
           {showRazorpayConfigError && (

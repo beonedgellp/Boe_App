@@ -1,4 +1,5 @@
 import React from 'react';
+import './android-frame.css';
 
 // Android.jsx — Simplified Android (Material 3) device frame
 // Status bar + top app bar + content + gesture nav + keyboard.
@@ -6,14 +7,7 @@ import React from 'react';
 
 const MD_C = {
   surface: '#f4fbf8',
-  surfaceVariant: '#dae5e1',
-  inverseOnSurface: '#ecf2ef',
-  secondaryContainer: '#cde8e1',
-  primaryFixedDim: '#83d5c6',
   onSurface: '#171d1b',
-  onSurfaceVar: '#49454f',
-  onPrimaryContainer: '#00201c',
-  primary: '#006a60',
   frameBorder: 'rgba(116,119,117,0.5)',
 };
 
@@ -23,34 +17,26 @@ const MD_C = {
 function AndroidStatusBar({ dark = false }) {
   const c = dark ? '#fff' : MD_C.onSurface;
   return (
-    <div style={{
-      height: 40, display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', padding: '0 16px',
-      position: 'relative',
-      fontFamily: 'Roboto, system-ui, sans-serif',
-    }}>
+    <div className="android-status-bar" style={{ '--android-fg': c }}>
       {/* time left */}
-      <div style={{ width: 128, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14, fontWeight: 400, letterSpacing: 0.25, lineHeight: '20px', color: c }}>9:30</span>
+      <div className="android-status-bar__time-slot">
+        <span className="android-status-bar__time">9:30</span>
       </div>
       {/* camera punch-hole (center) */}
-      <div style={{
-        position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)',
-        width: 24, height: 24, borderRadius: 100, background: '#2e2e2e',
-      }} />
+      <div className="android-status-bar__punch" />
       {/* status icons right */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ display: 'flex', paddingRight: 2 }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginRight: -2 }}>
-            <path d="M8 13.3L.67 5.97a10.37 10.37 0 0114.66 0L8 13.3z" fill={c}/>
+      <div className="android-status-bar__icons">
+        <div className="android-status-bar__icon-group">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M8 13.3L.67 5.97a10.37 10.37 0 0114.66 0L8 13.3z" />
           </svg>
-          <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginRight: -2 }}>
-            <path d="M14.67 14.67V1.33L1.33 14.67h13.34z" fill={c}/>
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M14.67 14.67V1.33L1.33 14.67h13.34z" />
           </svg>
         </div>
         <svg width="16" height="16" viewBox="0 0 16 16">
-          <rect x="3.75" y="2" width="8.5" height="13" rx="1.5" fill={c}/>
-          <rect x="5.5" y="0.9" width="5" height="2" rx="0.5" fill={c}/>
+          <rect x="3.75" y="2" width="8.5" height="13" rx="1.5" />
+          <rect x="5.5" y="0.9" width="5" height="2" rx="0.5" />
         </svg>
       </div>
     </div>
@@ -62,31 +48,22 @@ function AndroidStatusBar({ dark = false }) {
 // ─────────────────────────────────────────────────────────────
 function AndroidAppBar({ title = 'Title', large = false }) {
   const iconDot = (
-    <div style={{
-      width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{ width: 22, height: 22, borderRadius: '50%', background: MD_C.onSurfaceVar, opacity: 0.3 }} />
+    <div className="android-app-bar__icon">
+      <div className="android-app-bar__icon-dot" />
     </div>
   );
   return (
-    <div style={{ background: MD_C.surface, padding: '4px 4px 0' }}>
-      <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div className="android-app-bar">
+      <div className="android-app-bar__row">
         {iconDot}
         {!large && (
-          <span style={{
-            flex: 1, fontSize: 22, fontWeight: 400, color: MD_C.onSurface,
-            fontFamily: 'Roboto, system-ui, sans-serif',
-          }}>{title}</span>
+          <span className="android-app-bar__title">{title}</span>
         )}
-        {large && <div style={{ flex: 1 }} />}
+        {large && <div className="android-flex-spacer" />}
         {iconDot}
       </div>
       {large && (
-        <div style={{
-          padding: '16px 16px 20px',
-          fontSize: 28, fontWeight: 400, color: MD_C.onSurface,
-          fontFamily: 'Roboto, system-ui, sans-serif',
-        }}>{title}</div>
+        <div className="android-app-bar__title android-app-bar__title--large">{title}</div>
       )}
     </div>
   );
@@ -97,23 +74,14 @@ function AndroidAppBar({ title = 'Title', large = false }) {
 // ─────────────────────────────────────────────────────────────
 function AndroidListItem({ headline, supporting, leading }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 16,
-      padding: '12px 16px', minHeight: 56, boxSizing: 'border-box',
-      fontFamily: 'Roboto, system-ui, sans-serif',
-    }}>
+    <div className="android-list-item">
       {leading && (
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: MD_C.primary, color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, fontWeight: 500, flexShrink: 0,
-        }}>{leading}</div>
+        <div className="android-list-item__leading">{leading}</div>
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 16, color: MD_C.onSurface, lineHeight: '24px' }}>{headline}</div>
+      <div className="android-list-item__content">
+        <div className="android-list-item__headline">{headline}</div>
         {supporting && (
-          <div style={{ fontSize: 14, color: MD_C.onSurfaceVar, lineHeight: '20px' }}>{supporting}</div>
+          <div className="android-list-item__supporting">{supporting}</div>
         )}
       </div>
     </div>
@@ -124,14 +92,10 @@ function AndroidListItem({ headline, supporting, leading }) {
 // Gesture nav bar (pill)
 // ─────────────────────────────────────────────────────────────
 function AndroidNavBar({ dark = false }) {
+  const c = dark ? '#fff' : MD_C.onSurface;
   return (
-    <div style={{
-      height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <div style={{
-        width: 108, height: 4, borderRadius: 2,
-        background: dark ? '#fff' : MD_C.onSurface, opacity: 0.4,
-      }} />
+    <div className="android-nav-bar">
+      <div className="android-nav-bar__pill" style={{ '--android-fg': c }} />
     </div>
   );
 }
@@ -144,16 +108,17 @@ function AndroidDevice({
   title, large = false, keyboard = false,
 }) {
   return (
-    <div style={{
-      width, height, borderRadius: 18, overflow: 'hidden',
-      background: dark ? '#1d1b20' : MD_C.surface,
-      border: `8px solid ${MD_C.frameBorder}`,
-      boxShadow: '0 30px 80px rgba(0,0,0,0.25)',
-      display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
-    }}>
+    <div
+      className="android-device"
+      style={{
+        width,
+        height,
+        '--android-bg': dark ? '#1d1b20' : MD_C.surface,
+      }}
+    >
       <AndroidStatusBar dark={dark} />
       {title !== undefined && <AndroidAppBar title={title} large={large} />}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="android-device__content">
         {children}
       </div>
       {keyboard && <AndroidKeyboard />}
@@ -167,43 +132,38 @@ function AndroidDevice({
 // ─────────────────────────────────────────────────────────────
 function AndroidKeyboard() {
   let _k = 0;
-  const key = (l, { flex = 1, bg = MD_C.surface, r = 6, minW, fs = 21 } = {}) => (
-    <div key={_k++} style={{
-      height: 46, borderRadius: r, flex, minWidth: minW,
-      background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Roboto, system-ui', fontSize: fs,
-      color: MD_C.onPrimaryContainer,
-    }}>{l}</div>
-  );
-  const row = (keys, style = {}) => (
-    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', ...style }}>
+  const key = (l, { flex = 1, variant = '', minW } = {}) => {
+    const className = ['android-keyboard__key', variant && `android-keyboard__key--${variant}`].filter(Boolean).join(' ');
+    return (
+      <div key={_k++} className={className} style={{ flex, minWidth: minW }}>{l}</div>
+    );
+  };
+  const row = (keys, className = '') => (
+    <div className={`android-keyboard__row ${className}`}>
       {keys.map(l => key(l))}
     </div>
   );
   return (
-    <div style={{
-      background: MD_C.inverseOnSurface, padding: '0 8px 8px',
-      display: 'flex', flexDirection: 'column', gap: 4,
-    }}>
+    <div className="android-keyboard">
       {/* navbar spacer (icons omitted) */}
-      <div style={{ height: 44 }} />
+      <div className="android-keyboard__spacer" />
       {/* key rows */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="android-keyboard__rows">
         {row(['q','w','e','r','t','y','u','i','o','p'])}
-        {row(['a','s','d','f','g','h','j','k','l'], { padding: '0 20px' })}
-        <div style={{ display: 'flex', gap: 6 }}>
-          {key('', { bg: MD_C.surfaceVariant })}
-          <div style={{ display: 'flex', gap: 6, flex: 7, minWidth: 274 }}>
+        {row(['a','s','d','f','g','h','j','k','l'], 'android-keyboard__row--indented')}
+        <div className="android-keyboard__row">
+          {key('', { variant: 'variant' })}
+          <div className="android-keyboard__letter-group">
             {['z','x','c','v','b','n','m'].map(l => key(l))}
           </div>
-          {key('', { bg: MD_C.surfaceVariant })}
+          {key('', { variant: 'variant' })}
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {key('?123', { bg: MD_C.secondaryContainer, r: 100, minW: 58, fs: 14 })}
-          {key(',', { bg: MD_C.surfaceVariant })}
+        <div className="android-keyboard__row">
+          {key('?123', { variant: 'action', minW: 58 })}
+          {key(',', { variant: 'variant' })}
           {key('', { flex: 3, minW: 154 })}
-          {key('.', { bg: MD_C.surfaceVariant })}
-          {key('', { bg: MD_C.primaryFixedDim, r: 100, minW: 58 })}
+          {key('.', { variant: 'variant' })}
+          {key('', { variant: 'primary', minW: 58 })}
         </div>
       </div>
     </div>

@@ -2,6 +2,13 @@ import React from 'react';
 import { formatMoney } from '../format.js';
 import DataFreshnessBadge from './DataFreshnessBadge.jsx';
 
+const WRAPPER_STYLE = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 'var(--be-space-1)',
+  flexWrap: 'wrap',
+};
+
 export default function MoneyValue({
   amount,
   source,
@@ -15,12 +22,7 @@ export default function MoneyValue({
   return (
     <span
       className="be-money-value"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        flexWrap: 'wrap',
-      }}
+      style={WRAPPER_STYLE}
     >
       <span className="be-money">{formatted.display}</span>
       {showBadge && (

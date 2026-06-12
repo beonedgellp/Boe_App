@@ -32,6 +32,7 @@ import { csvNumbers } from '../helpers/formatters.js';
 
 
 import { SCREEN_LABELS } from '../helpers/titles.js';
+import './admin-screens-shared.css';
 
 function AppBuilderScreen() {
   const [config, setConfig] = useState(() => loadAppConfig());
@@ -424,7 +425,7 @@ function AppBuilderScreen() {
             <label className="adm-field"><span>Disclosure version</span><input value={selectedProduct.disclosureVersion} onChange={(event) => updateProduct('disclosureVersion', event.target.value)} /></label>
           </div>
 
-          <div className="adm-grid-2" style={{ marginTop: 16 }}>
+          <div className="adm-grid-2 adm-m-t-4">
             <div>
               <span className="be-eyebrow">Investment controls</span>
               <div className="adm-form-grid">
@@ -450,7 +451,7 @@ function AppBuilderScreen() {
             </div>
           </div>
 
-          <div className="adm-grid-2" style={{ marginTop: 16 }}>
+          <div className="adm-grid-2 adm-m-t-4">
             <div>
               <div className="adm-card-head adm-card-head-tight">
                 <span className="be-eyebrow">Allocation chart</span>

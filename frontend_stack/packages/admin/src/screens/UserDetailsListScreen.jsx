@@ -5,6 +5,7 @@ import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
 import SkeletonTableRow from '../components/SkeletonTableRow.jsx';
 import { initials, displayRole, fmtInt } from '../helpers/formatters.js';
+import './admin-screens-shared.css';
 
 export default function UserDetailsListScreen({ onUserDetail }) {
   const [users, setUsers] = useState([]);
@@ -91,7 +92,7 @@ export default function UserDetailsListScreen({ onUserDetail }) {
         </div>
 
         <div className="adm-toolbar">
-          <div className="adm-search" style={{ flex: 1 }}>
+          <div className="adm-search adm-search--grow">
             <I icon={Search} size={14} />
             <input
               type="text"
@@ -169,7 +170,7 @@ export default function UserDetailsListScreen({ onUserDetail }) {
         </div>
 
         {totalPages > 1 && (
-          <div className="adm-toolbar" style={{ justifyContent: 'center', gap: 8, paddingTop: 12, borderTop: '1px solid var(--be-border)' }}>
+          <div className="adm-toolbar adm-toolbar--center adm-toolbar--bordered adm-toolbar--gap-2">
             <button className="be-btn be-btn-secondary be-btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
               <I icon={ChevronLeft} size={14} /> Prev
             </button>

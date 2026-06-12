@@ -2,22 +2,33 @@ import { Link } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import I from '../components/I.jsx';
 
+function normalizeCrumb(crumb) {
+  if (typeof crumb === 'string') return { label: crumb, to: null };
+  if (crumb && typeof crumb === 'object') {
+    return { label: crumb.label || '', to: crumb.to || null };
+  }
+  return { label: String(crumb), to: null };
+}
+
 export default function TopBar({ title, breadcrumbs, crumbPaths, onLogout }) {
-  const paths = crumbPaths || breadcrumbs.map(() => null);
+  const normalized = (breadcrumbs || []).map(normalizeCrumb);
+  const paths = crumbPaths || normalized.map((crumb) => crumb.to);
+
   return (
     <header className="ash-top">
       <div className="ash-top-heading">
         <nav className="ash-bread" aria-label="Breadcrumb">
-          {breadcrumbs.map((crumb, index) => {
-            const isLast = index === breadcrumbs.length - 1;
+          {normalized.map((crumb, index) => {
+            const isLast = index === normalized.length - 1;
             const path = paths[index];
+            const key = `${crumb.label}-${index}`;
             return (
-              <span key={`${crumb}-${index}`}>
+              <span key={key}>
                 {index > 0 && <span className="ash-bread-sep" aria-hidden="true">/</span>}
                 {isLast || !path ? (
-                  <span className={isLast ? 'is-active' : ''}>{crumb}</span>
+                  <span className={isLast ? 'is-active' : ''}>{crumb.label}</span>
                 ) : (
-                  <Link className="ash-bread-link" to={path}>{crumb}</Link>
+                  <Link className="ash-bread-link" to={path}>{crumb.label}</Link>
                 )}
               </span>
             );

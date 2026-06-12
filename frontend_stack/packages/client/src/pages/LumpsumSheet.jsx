@@ -25,7 +25,7 @@ export default function LumpsumSheet() {
 
   useEffect(() => { fundsApi.getFund(fundId).then(setFund).catch(() => setFund(null)); }, [fundId, appConfig.publishedAt]);
 
-  if (!fund) return (<><AppBar title="One-time" /><div className="apk-screen"><div className="apk-skel" style={{ height: 200 }} /></div></>);
+  if (!fund) return (<><AppBar title="One-time" /><div className="apk-screen"><div className="apk-skel apk-skel--h-200" /></div></>);
 
   const amountNumber = Number(amount) || 0;
   const minLumpsum = Number(fund.minLumpsum) || 0;
@@ -87,7 +87,7 @@ export default function LumpsumSheet() {
             <span className="apk-amount-prefix">₹</span>
             <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={minLumpsum || 0} step="500" value={amount} onChange={onAmountChange} placeholder="0" />
           </div>
-          <div className="apk-chip-row" style={{ marginTop: 8 }}>
+          <div className="apk-chip-row apk-mt-8">
             {settings.amountPresets.map((v) => (
               <button key={v} className={'apk-chip' + (amount === v ? ' is-active' : '')} onClick={() => setAmount(v)}>{fmtMoney(v)}</button>
             ))}
@@ -97,8 +97,8 @@ export default function LumpsumSheet() {
 
         <div className="apk-sheet-summary">
           <div className="apk-sheet-summary-row"><span>One-time investment</span><strong className="be-money">{fmtMoney(amountNumber)}</strong></div>
-          <div className="be-disclosure" style={{ marginTop: 6 }}>{settings.paymentDisclosure}</div>
-          <div className="be-disclosure" style={{ marginTop: 6 }}>{RISK_DISCLOSURE}</div>
+          <div className="be-disclosure apk-mt-6">{settings.paymentDisclosure}</div>
+          <div className="be-disclosure apk-mt-6">{RISK_DISCLOSURE}</div>
         </div>
 
         <label className="apk-consent-row">
@@ -111,7 +111,7 @@ export default function LumpsumSheet() {
         <button className="be-btn be-btn-primary be-btn-block be-btn-lg" disabled={!valid || !riskConsent || submitting} onClick={onContinue}>
           {submitting ? 'Setting up investment...' : (
             <>
-              <CreditCard size={18} strokeWidth={2} style={{ marginRight: 8 }} /> Pay ₹{fmtMoney(amountNumber)}
+              <CreditCard size={18} strokeWidth={2} className="apk-btn-icon" /> Pay ₹{fmtMoney(amountNumber)}
             </>
           )}
         </button>

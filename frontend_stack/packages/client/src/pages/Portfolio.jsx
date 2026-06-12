@@ -5,6 +5,7 @@ import * as portfolioApi from '../services/portfolioApi.js';
 import * as fundsApi from '../services/fundsApi.js';
 import { fmtMoney, fmtNum, fmtPct, fmtUnits, fmtDate } from '../utils/format.js';
 import MoneyValue from '@beonedge/shared/components/MoneyValue.jsx';
+import { EmptyState } from '@beonedge/shared';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -136,7 +137,7 @@ export default function Portfolio() {
           <span className="be-eyebrow">Your investments</span>
           <h1 className="apk-h">Portfolio</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="apk-portfolio-header-actions">
           <button className="be-btn be-btn-ghost be-btn-sm" onClick={() => navigate('/app/withdrawals')}>
             <RotateCcw size={14} /> Withdrawals
           </button>
@@ -152,21 +153,21 @@ export default function Portfolio() {
       {!portfolio ? (
         <>
           <div className="be-card apk-portfolio-summary-skeleton">
-            <div className="apk-skel" style={{ height: 14, width: '35%', marginBottom: 10 }} />
-            <div className="apk-skel" style={{ height: 44, width: '55%', marginBottom: 8 }} />
+            <div className="apk-skel apk-summary-skel-title" />
+            <div className="apk-skel apk-summary-skel-value" />
             <div className="apk-portfolio-summary-grid-skeleton">
-              {[1,2].map(i => <div key={i} className="apk-skel" style={{ height: 44 }} />)}
+              {[1,2].map(i => <div key={i} className="apk-skel apk-summary-skel-tile" />)}
             </div>
           </div>
           <div className="apk-holdings-list-skeleton">
             {[1,2].map(i => (
               <div key={i} className="be-card apk-holding-skeleton">
-                <div className="apk-skel" style={{ height: 18, width: '65%', marginBottom: 6 }} />
-                <div className="apk-skel" style={{ height: 14, width: '35%', marginBottom: 12 }} />
+                <div className="apk-skel apk-holding-skel-name" />
+                <div className="apk-skel apk-holding-skel-meta" />
                 <div className="apk-holding-metrics-skeleton">
-                  {[1,2].map(j => <div key={j} className="apk-skel" style={{ height: 36 }} />)}
+                  {[1,2].map(j => <div key={j} className="apk-skel apk-holding-skel-metric" />)}
                 </div>
-                <div className="apk-skel" style={{ height: 48, marginTop: 12 }} />
+                <div className="apk-skel apk-holding-skel-action" />
               </div>
             ))}
           </div>
@@ -176,7 +177,7 @@ export default function Portfolio() {
           <div className="apk-portfolio-hero">
             <span className="be-eyebrow apk-portfolio-eye">Your investments</span>
             <div className="apk-portfolio-num be-money"><MoneyValue amount={portfolio.invested} source={portfolio.source} asOf={portfolio.asOf} showBadge={false} /></div>
-            <div style={{ marginTop: 6, fontSize: 12, color: 'var(--be-slate)' }}>
+            <div className="apk-portfolio-hero-label">
               Total invested
             </div>
           </div>
@@ -217,14 +218,17 @@ export default function Portfolio() {
       </div>
 
       {!portfolio ? null : holdings.length === 0 ? (
-        <div className="be-card apk-empty apk-portfolio-empty">
-          <div className="apk-empty-icon">
-            <PieChart size={36} strokeWidth={1.5} />
-          </div>
-          <h2 className="apk-h-sm">No holdings yet</h2>
-          <p>Once you invest, your funds appear here.</p>
-          <button className="be-btn be-btn-primary apk-empty-cta" onClick={() => navigate('/app/explore')}>Explore funds</button>
-        </div>
+        <EmptyState
+          className="be-card apk-portfolio-empty"
+          icon={<PieChart size={36} strokeWidth={1.5} />}
+          title="No holdings yet"
+          description="Once you invest, your funds appear here."
+          action={
+            <button className="be-btn be-btn-primary apk-empty-cta" onClick={() => navigate('/app/explore')}>
+              Explore funds
+            </button>
+          }
+        />
       ) : (
         <div className="apk-holdings-list">
           {holdings.map((h) => (
@@ -256,10 +260,9 @@ export default function Portfolio() {
                   <dd className="apk-portfolio-mini-v be-num">{fmtUnits(h.units)}</dd>
                 </div>
               </dl>
-              <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+              <div className="apk-holding-actions">
                 <button
-                  className="be-btn be-btn-secondary be-btn-sm"
-                  style={{ flex: 1 }}
+                  className="be-btn be-btn-secondary be-btn-sm apk-holding-action-btn"
                   onClick={(e) => { e.stopPropagation(); setRedeemModal(h); setRedeemAmount(''); setRedeemType('partial'); setRedeemMessage(null); setRedeemStep('form'); setRedeemPreview(null); }}
                 >
                   <Wallet size={14} /> Redeem
@@ -284,21 +287,21 @@ export default function Portfolio() {
               <button className="apk-sheet-close" onClick={() => resetRedeemModal()} aria-label="Close" disabled={redeemSubmitting}>×</button>
             </div>
             {redeemStep === 'form' && (
-              <form onSubmit={handleRedeemSubmit} style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <form onSubmit={handleRedeemSubmit} className="apk-sheet-form">
                 {redeemMessage && (
-                  <div style={{ padding: 10, borderRadius: 6, fontSize: 13, background: redeemMessage.type === 'success' ? 'var(--be-green-soft)' : 'var(--be-red-soft)', color: redeemMessage.type === 'success' ? 'var(--be-green)' : 'var(--be-red)' }}>
+                  <div className={`apk-sheet-message apk-sheet-message--${redeemMessage.type}`}>
                     {redeemMessage.text}
                   </div>
                 )}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
-                  <div><div className="be-eyebrow">Current Value</div><div className="be-money" style={{ fontSize: 18 }}>{fmtMoney(redeemModal.currentValue)}</div></div>
-                  <div><div className="be-eyebrow">Units</div><div className="be-num" style={{ fontSize: 18 }}>{fmtUnits(redeemModal.units)}</div></div>
+                <div className="apk-sheet-grid-2">
+                  <div><div className="be-eyebrow">Current Value</div><div className="be-money apk-sheet-value-lg">{fmtMoney(redeemModal.currentValue)}</div></div>
+                  <div><div className="be-eyebrow">Units</div><div className="be-num apk-sheet-value-lg">{fmtUnits(redeemModal.units)}</div></div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" className={`be-btn be-btn-sm ${redeemType === 'partial' ? 'be-btn-primary' : 'be-btn-secondary'}`} style={{ flex: 1 }} onClick={() => setRedeemType('partial')}>
+                <div className="apk-sheet-actions apk-sheet-actions--inline">
+                  <button type="button" className={`be-btn be-btn-sm apk-sheet-btn ${redeemType === 'partial' ? 'be-btn-primary' : 'be-btn-secondary'}`} onClick={() => setRedeemType('partial')}>
                     Partial
                   </button>
-                  <button type="button" className={`be-btn be-btn-sm ${redeemType === 'full' ? 'be-btn-primary' : 'be-btn-secondary'}`} style={{ flex: 1 }} onClick={() => setRedeemType('full')}>
+                  <button type="button" className={`be-btn be-btn-sm apk-sheet-btn ${redeemType === 'full' ? 'be-btn-primary' : 'be-btn-secondary'}`} onClick={() => setRedeemType('full')}>
                     Full Amount
                   </button>
                 </div>
@@ -318,80 +321,80 @@ export default function Portfolio() {
                   </label>
                 )}
                 {redeemType === 'full' && (
-                  <div style={{ padding: 12, background: 'var(--be-bone)', borderRadius: 6, textAlign: 'center' }}>
+                  <div className="apk-sheet-well apk-sheet-well--center">
                     <div className="be-eyebrow">You will redeem</div>
-                    <div className="be-money" style={{ fontSize: 24 }}>{fmtMoney(redeemModal.currentValue)}</div>
+                    <div className="be-money apk-sheet-value-xl">{fmtMoney(redeemModal.currentValue)}</div>
                   </div>
                 )}
-                <div className="be-disclosure" style={{ fontSize: 11 }}>
+                <div className="be-disclosure apk-sheet-disclosure">
                   Redemption requests require admin approval. Funds will be returned to your registered account within 2-3 business days after approval.
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="be-btn be-btn-secondary" style={{ flex: 1 }} onClick={() => resetRedeemModal()} disabled={redeemSubmitting}>Cancel</button>
-                  <button type="submit" className="be-btn be-btn-primary" style={{ flex: 1 }} disabled={redeemSubmitting}>
+                <div className="apk-sheet-actions apk-sheet-actions--inline">
+                  <button type="button" className="be-btn be-btn-secondary apk-sheet-btn" onClick={() => resetRedeemModal()} disabled={redeemSubmitting}>Cancel</button>
+                  <button type="submit" className="be-btn be-btn-primary apk-sheet-btn" disabled={redeemSubmitting}>
                     {redeemSubmitting ? 'Loading...' : 'Preview Redemption'}
                   </button>
                 </div>
               </form>
             )}
             {redeemStep === 'preview' && redeemPreview && (
-              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '70vh', overflowY: 'auto' }}>
+              <div className="apk-sheet-body">
                 {redeemMessage && (
-                  <div style={{ padding: 10, borderRadius: 6, fontSize: 13, background: redeemMessage.type === 'success' ? 'var(--be-green-soft)' : 'var(--be-red-soft)', color: redeemMessage.type === 'success' ? 'var(--be-green)' : 'var(--be-red)' }}>
+                  <div className={`apk-sheet-message apk-sheet-message--${redeemMessage.type}`}>
                     {redeemMessage.text}
                   </div>
                 )}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13 }}>
-                  <div><div className="be-eyebrow">Units to redeem</div><div className="be-num" style={{ fontSize: 16 }}>{fmtUnits(redeemPreview.units)}</div></div>
-                  <div><div className="be-eyebrow">Gross amount</div><div className="be-money" style={{ fontSize: 16 }}>{fmtMoney(redeemPreview.grossAmount)}</div></div>
+                <div className="apk-sheet-grid-2">
+                  <div><div className="be-eyebrow">Units to redeem</div><div className="be-num apk-sheet-value-md">{fmtUnits(redeemPreview.units)}</div></div>
+                  <div><div className="be-eyebrow">Gross amount</div><div className="be-money apk-sheet-value-md">{fmtMoney(redeemPreview.grossAmount)}</div></div>
                 </div>
 
-                <div style={{ background: 'var(--be-bone)', borderRadius: 6, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                <div className="apk-sheet-well apk-sheet-well--col">
+                  <div className="apk-sheet-row apk-sheet-row--emphasis">
                     <span>Gross amount</span>
                     <span className="be-money">{fmtMoney(redeemPreview.grossAmount)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: 'var(--be-slate)' }}>Exit load ({(redeemPreview.exitLoadRate * 100).toFixed(2)}%)</span>
-                    <span className="be-money" style={{ color: 'var(--be-slate)' }}>−{fmtMoney(redeemPreview.exitLoadAmount)}</span>
+                  <div className="apk-sheet-row">
+                    <span className="apk-sheet-label">Exit load ({(redeemPreview.exitLoadRate * 100).toFixed(2)}%)</span>
+                    <span className="be-money apk-sheet-value--muted">−{fmtMoney(redeemPreview.exitLoadAmount)}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>{redeemPreview.exitLoadFormula}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: 'var(--be-slate)' }}>STT ({(redeemPreview.sttRate * 100).toFixed(3)}%)</span>
-                    <span className="be-money" style={{ color: 'var(--be-slate)' }}>−{fmtMoney(redeemPreview.sttAmount)}</span>
+                  <div className="apk-sheet-caption">{redeemPreview.exitLoadFormula}</div>
+                  <div className="apk-sheet-row">
+                    <span className="apk-sheet-label">STT ({(redeemPreview.sttRate * 100).toFixed(3)}%)</span>
+                    <span className="be-money apk-sheet-value--muted">−{fmtMoney(redeemPreview.sttAmount)}</span>
                   </div>
-                  <div style={{ height: 1, background: 'var(--be-border)', margin: '4px 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: 'var(--be-slate)' }}>Gain ({redeemPreview.gainType})</span>
-                    <span className="be-num" style={{ color: 'var(--be-slate)' }}>{fmtMoney(redeemPreview.gainAmount)}</span>
+                  <div className="apk-sheet-divider" />
+                  <div className="apk-sheet-row">
+                    <span className="apk-sheet-label">Gain ({redeemPreview.gainType})</span>
+                    <span className="be-num apk-sheet-value--muted">{fmtMoney(redeemPreview.gainAmount)}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--be-slate-2)' }}>Holding period: {redeemPreview.holdingPeriodMonths} months</div>
+                  <div className="apk-sheet-caption">Holding period: {redeemPreview.holdingPeriodMonths} months</div>
                   {redeemPreview.gainType === 'LTCG' && (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <span style={{ color: 'var(--be-slate)' }}>Exemption applied</span>
-                        <span className="be-money" style={{ color: 'var(--be-green)' }}>−{fmtMoney(redeemPreview.ltcgExemptionUsed)}</span>
+                      <div className="apk-sheet-row">
+                        <span className="apk-sheet-label">Exemption applied</span>
+                        <span className="be-money apk-sheet-value--gain">−{fmtMoney(redeemPreview.ltcgExemptionUsed)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <span style={{ color: 'var(--be-slate)' }}>Taxable gain</span>
-                        <span className="be-money" style={{ color: 'var(--be-slate)' }}>{fmtMoney(redeemPreview.gainAmount - redeemPreview.ltcgExemptionUsed)}</span>
+                      <div className="apk-sheet-row">
+                        <span className="apk-sheet-label">Taxable gain</span>
+                        <span className="be-money apk-sheet-value--muted">{fmtMoney(redeemPreview.gainAmount - redeemPreview.ltcgExemptionUsed)}</span>
                       </div>
                     </>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: 'var(--be-slate)' }}>Tax ({(redeemPreview.taxRate * 100).toFixed(1)}%)</span>
-                    <span className="be-money" style={{ color: 'var(--be-slate)' }}>−{fmtMoney(redeemPreview.taxAmount)}</span>
+                  <div className="apk-sheet-row">
+                    <span className="apk-sheet-label">Tax ({(redeemPreview.taxRate * 100).toFixed(1)}%)</span>
+                    <span className="be-money apk-sheet-value--muted">−{fmtMoney(redeemPreview.taxAmount)}</span>
                   </div>
-                  <div style={{ height: 1, background: 'var(--be-border)', margin: '4px 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 600 }}>
+                  <div className="apk-sheet-divider" />
+                  <div className="apk-sheet-row apk-sheet-row--total">
                     <span>Net proceeds</span>
                     <span className="be-money">{fmtMoney(redeemPreview.netProceeds)}</span>
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--be-bone)', borderRadius: 6, padding: 12 }}>
-                  <div className="be-eyebrow" style={{ marginBottom: 8 }}>Assumptions</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: 'var(--be-slate-2)' }}>
+                <div className="apk-sheet-well">
+                  <div className="be-eyebrow">Assumptions</div>
+                  <div className="apk-sheet-assumptions">
                     <div>STCG rate: {(redeemPreview.assumptions.stcgRate * 100).toFixed(1)}%</div>
                     <div>LTCG rate: {(redeemPreview.assumptions.ltcgRate * 100).toFixed(1)}%</div>
                     <div>LTCG exemption: ₹{fmtNum(redeemPreview.assumptions.ltcgExemptionLimit)}</div>
@@ -401,12 +404,12 @@ export default function Portfolio() {
                   </div>
                 </div>
 
-                <div className="be-disclosure" style={{ fontSize: 11 }}>
+                <div className="be-disclosure apk-sheet-disclosure">
                   Redemption requests require admin approval. Funds will be returned to your registered account within 2-3 business days after approval.
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="be-btn be-btn-secondary" style={{ flex: 1 }} onClick={() => setRedeemStep('form')} disabled={redeemSubmitting}>Back</button>
-                  <button type="button" className="be-btn be-btn-primary" style={{ flex: 1 }} onClick={handleConfirmRedemption} disabled={redeemSubmitting}>
+                <div className="apk-sheet-actions apk-sheet-actions--inline">
+                  <button type="button" className="be-btn be-btn-secondary apk-sheet-btn" onClick={() => setRedeemStep('form')} disabled={redeemSubmitting}>Back</button>
+                  <button type="button" className="be-btn be-btn-primary apk-sheet-btn" onClick={handleConfirmRedemption} disabled={redeemSubmitting}>
                     {redeemSubmitting ? 'Submitting...' : 'Confirm & Request'}
                   </button>
                 </div>

@@ -6,7 +6,7 @@ import { useRef, useEffect, useCallback } from 'react';
  *
  * @param {number} target - the value to animate toward
  * @param {{ stiffness?: number, damping?: number, mass?: number }} config
- * @returns {number} current animated value
+ * @returns {{ value: React.MutableRefObject<number>, getValue: () => number }}
  */
 export function useSpringValue(target, config = {}) {
   const {
@@ -19,6 +19,7 @@ export function useSpringValue(target, config = {}) {
   const velocityRef = useRef(0);
   const rafRef = useRef(null);
   const targetRef = useRef(target);
+  const lastTimeRef = useRef(null);
 
   // Update target without triggering re-render inside the loop
   useEffect(() => {
@@ -29,14 +30,20 @@ export function useSpringValue(target, config = {}) {
   const getValue = useCallback(() => valueRef.current, []);
 
   useEffect(() => {
-    const step = () => {
+    const step = (time) => {
+      if (lastTimeRef.current === null) {
+        lastTimeRef.current = time;
+      }
+      const delta = Math.min((time - lastTimeRef.current) / 1000, 0.05);
+      lastTimeRef.current = time;
+
       const displacement = targetRef.current - valueRef.current;
       const springForce = stiffness * displacement;
       const dampingForce = damping * velocityRef.current;
       const acceleration = (springForce - dampingForce) / mass;
 
-      velocityRef.current += acceleration * (1 / 60);
-      valueRef.current += velocityRef.current * (1 / 60);
+      velocityRef.current += acceleration * delta;
+      valueRef.current += velocityRef.current * delta;
 
       // Stop when settled
       if (
@@ -45,12 +52,14 @@ export function useSpringValue(target, config = {}) {
       ) {
         valueRef.current = targetRef.current;
         velocityRef.current = 0;
+        lastTimeRef.current = null;
         return;
       }
 
       rafRef.current = requestAnimationFrame(step);
     };
 
+    lastTimeRef.current = null;
     rafRef.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(rafRef.current);
   }, [stiffness, damping, mass]);

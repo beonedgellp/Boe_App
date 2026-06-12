@@ -21,8 +21,8 @@ export default function GrievanceRedressal() {
       <>
         <AppBar title="Grievance Redressal" />
         <div className="apk-screen">
-          <div className="be-card apk-skel" style={{ height: 180 }} />
-          <div className="be-card apk-skel" style={{ height: 240 }} />
+          <div className="be-card apk-skel apk-skel--h-180" />
+          <div className="be-card apk-skel apk-skel--h-240" />
         </div>
       </>
     );
@@ -53,20 +53,19 @@ export default function GrievanceRedressal() {
                   </div>
                   {step.actionLabel && step.actionRoute && (
                     <button
-                      className="apk-link apk-inline-link"
+                      className="apk-link apk-inline-link apk-grievance-action"
                       onClick={() => navigate(step.actionRoute)}
-                      style={{ marginTop: 8 }}
                     >
                       {step.actionLabel} <ChevronRight size={12} strokeWidth={2} />
                     </button>
                   )}
                   {step.contactEmail && (
-                    <a className="apk-link apk-inline-link" href={`mailto:${step.contactEmail}`} style={{ marginTop: 8 }}>
+                    <a className="apk-link apk-inline-link apk-grievance-action" href={`mailto:${step.contactEmail}`}>
                       {step.contactEmail} <ExternalLink size={12} strokeWidth={2} />
                     </a>
                   )}
                   {step.externalUrl && (
-                    <a className="apk-link apk-inline-link" href={step.externalUrl} target="_blank" rel="noopener noreferrer" style={{ marginTop: 8 }}>
+                    <a className="apk-link apk-inline-link apk-grievance-action" href={step.externalUrl} target="_blank" rel="noopener noreferrer">
                       Visit portal <ExternalLink size={12} strokeWidth={2} />
                     </a>
                   )}
@@ -106,14 +105,14 @@ export default function GrievanceRedressal() {
               <span>{content.contact.hours}</span>
             </div>
           </div>
-          <div className="apk-grievance-contact-item" style={{ marginTop: 12 }}>
+          <div className="apk-grievance-contact-item apk-grievance-contact-address">
             <MapPin size={16} strokeWidth={1.5} />
-            <span style={{ whiteSpace: 'pre-line' }}>{content.contact.address}</span>
+            <span className="apk-contact-address">{content.contact.address}</span>
           </div>
         </div>
 
         <div className="apk-grievance-footer">
-          <Link to="/app/explore" className="apk-back-link" style={{ display: 'inline-flex' }}>
+          <Link to="/app/explore" className="apk-back-link apk-inline-flex">
             <ArrowLeft size={16} strokeWidth={1.5} />
             <span>Back to strategies</span>
           </Link>

@@ -1,0 +1,276 @@
+/* Admin operational screens — token-backed helpers replacing inline styles.
+ * Imported locally by screens in this directory only.
+ */
+
+/* Text helpers */
+.adm-text-center { text-align: center; }
+.adm-capitalize { text-transform: capitalize; }
+.adm-font-medium { font-weight: 500; }
+.adm-text-xs { font-size: var(--be-text-xs); }
+.adm-text-sm { font-size: var(--be-text-sm); }
+.adm-text-lg { font-size: var(--be-text-lg); }
+.adm-text-xl { font-size: var(--be-text-xl); }
+
+/* Spacing helpers */
+.adm-m-t-0 { margin-top: 0; }
+.adm-m-t-2 { margin-top: var(--be-space-2); }
+.adm-m-t-4 { margin-top: var(--be-space-4); }
+
+/* Layout helpers */
+.adm-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: var(--be-space-4) 0 var(--be-space-2);
+}
+
+.adm-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--be-space-4);
+}
+
+.adm-sticky-tabs {
+  position: sticky;
+  top: 0;
+  z-index: var(--be-z-topbar);
+  background: var(--be-bg);
+  padding: var(--be-space-3) 0;
+  border-bottom: var(--be-border-1);
+}
+
+/* Chips (tab-like filters) */
+.adm-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--be-space-2);
+}
+
+.adm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--be-space-1);
+  padding: var(--be-space-2) var(--be-space-3);
+  border: var(--be-border-1);
+  border-radius: var(--be-radius-pill);
+  background: var(--be-bone);
+  color: var(--be-slate);
+  font-size: var(--be-text-sm);
+  cursor: pointer;
+}
+
+.adm-chip.is-active {
+  background: var(--be-ink);
+  color: var(--be-ivory);
+  border-color: var(--be-ink);
+}
+
+/* Read-only field (info cards) */
+.adm-field-readonly {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--be-space-1);
+}
+
+.adm-field-readonly__label {
+  font: 500 var(--be-text-xs) var(--be-font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--be-slate);
+}
+
+.adm-field-readonly__value {
+  font-size: var(--be-text-sm);
+  color: var(--be-fg);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* Status badge (pills) */
+.adm-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--be-space-1);
+  padding: 2px 10px;
+  border-radius: var(--be-radius-pill);
+  font-size: var(--be-text-xs);
+  font-weight: 500;
+}
+
+.adm-status-badge--pending,
+.adm-status-badge--paused,
+.adm-status-badge--in_review,
+.adm-status-badge--needs_more_information,
+.adm-status-badge--pending_user_auth,
+.adm-status-badge--created,
+.adm-status-badge--gateway_initiated,
+.adm-status-badge--submitted,
+.adm-status-badge--awaiting_approval {
+  background: var(--be-amber-soft);
+  color: var(--be-text-on-amber);
+}
+
+.adm-status-badge--approved,
+.adm-status-badge--active,
+.adm-status-badge--success,
+.adm-status-badge--completed,
+.adm-status-badge--open,
+.adm-status-badge--payment_confirmed {
+  background: var(--be-green-soft);
+  color: var(--be-text-on-green);
+}
+
+.adm-status-badge--rejected,
+.adm-status-badge--failed,
+.adm-status-badge--revoked,
+.adm-status-badge--approval_rejected {
+  background: var(--be-red-soft);
+  color: var(--be-text-on-red);
+}
+
+.adm-status-badge--closed,
+.adm-status-badge--reconciled,
+.adm-status-badge--not_started {
+  background: var(--be-slate-soft);
+  color: var(--be-text-on-slate);
+}
+
+/* Transaction / capital type labels */
+.adm-tx-type {
+  font-weight: 500;
+  font-size: var(--be-text-xs);
+}
+
+.adm-tx-type--allocation,
+.adm-tx-type--inflow { color: var(--be-green); }
+.adm-tx-type--unallocation { color: var(--be-amber); }
+.adm-tx-type--outflow { color: var(--be-red); }
+.adm-tx-type--default { color: var(--be-slate); }
+
+/* Data-driven swatch via CSS custom property */
+.adm-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--be-radius-xs);
+  display: inline-block;
+  background: var(--adm-swatch-color, var(--be-slate));
+}
+
+/* Stat negative state */
+.adm-stat--negative {
+  border-color: var(--be-red);
+}
+
+/* Validation banner variants */
+.adm-validation-banner--success {
+  background: var(--be-green-soft);
+  color: var(--be-green);
+  border-color: var(--be-green);
+}
+
+.adm-validation-banner--inline {
+  margin: var(--be-space-3) var(--be-space-4) 0;
+}
+
+/* Toolbar / card actions variants */
+.adm-toolbar--center {
+  justify-content: center;
+}
+
+.adm-toolbar--bordered {
+  padding-top: var(--be-space-3);
+  border-top: var(--be-border-1);
+}
+
+.adm-toolbar--gap-2 {
+  gap: var(--be-space-2);
+}
+
+.adm-search--grow {
+  flex: 1;
+}
+
+.adm-card-actions--responsive {
+  gap: var(--be-space-2);
+  flex-wrap: wrap;
+}
+
+/* Review panel / screen sizing */
+.adm-review-panel--user-detail {
+  width: 90vw;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.adm-screen--narrow {
+  max-width: 960px;
+}
+
+/* Code block scroll limit */
+.adm-code-block--scroll {
+  max-height: 400px;
+}
+
+/* List item cards (notifications / audit logs) */
+.adm-list-item {
+  padding: var(--be-space-3);
+  background: var(--be-bone);
+  border-radius: var(--be-radius-sm);
+  border: var(--be-border-1);
+  min-width: 0;
+}
+
+.adm-list-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--be-space-2);
+}
+
+.adm-list-item__title {
+  font-weight: 500;
+  font-size: var(--be-text-sm);
+}
+
+.adm-list-item__body {
+  font-size: var(--be-text-xs);
+  color: var(--be-slate);
+  margin-top: var(--be-space-1);
+}
+
+.adm-list-item__meta {
+  margin-top: var(--be-space-1);
+}
+
+/* Stub card */
+.adm-stub-card {
+  padding: var(--be-space-10);
+  text-align: center;
+}
+
+.adm-stub-desc {
+  color: var(--be-slate);
+  margin-top: var(--be-space-2);
+}
+
+/* Health check icon */
+.adm-health-check-icon--ok { color: var(--be-green); }
+.adm-health-check-icon--warn { color: var(--be-amber); }
+
+/* Responsive helpers */
+@media (max-width: 768px) {
+  .adm-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-review-panel--user-detail {
+    width: 100%;
+  }
+
+  .adm-stub-card {
+    padding: var(--be-space-6);
+  }
+}

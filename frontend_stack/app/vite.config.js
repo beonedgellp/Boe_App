@@ -17,6 +17,21 @@ export default defineConfig(() => {
         '@beonedge/admin': resolve(__dirname, '../packages/admin/src'),
       },
     },
-    server: { host: '127.0.0.1', port: 5173, open: false, strictPort: true },
+    server: { host: true, port: 5173, open: false, strictPort: true },
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+            if (id.includes('/packages/admin/')) return 'admin';
+            if (id.includes('/packages/client/')) return 'client';
+            if (id.includes('/packages/ui-kits/')) return 'ui-kits';
+          },
+        },
+      },
+    },
   };
 });

@@ -5,6 +5,7 @@ import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import { apiRequest } from '@beonedge/client/services/_util.js';
+import './admin-screens-shared.css';
 
 function EnvironmentScreen() {
   const [config, setConfig] = useState(null);
@@ -57,7 +58,7 @@ function EnvironmentScreen() {
             <div className="adm-health-checks">
               {checks.map((c) => (
                 <div key={c.label} className="adm-health-check">
-                  <I icon={c.ok ? CheckCircle2 : AlertTriangle} size={16} style={{ color: c.ok ? 'var(--be-green)' : 'var(--be-amber)' }} />
+                  <I icon={c.ok ? CheckCircle2 : AlertTriangle} size={16} className={c.ok ? 'adm-health-check-icon--ok' : 'adm-health-check-icon--warn'} />
                   <span className="adm-health-check-label">{c.label}</span>
                   <span className="adm-health-check-value">{c.value}</span>
                 </div>
@@ -65,7 +66,7 @@ function EnvironmentScreen() {
             </div>
 
             <h4 className="adm-section-title adm-section-title--spaced">Raw config</h4>
-            <pre className="adm-code-block" style={{ maxHeight: 400 }}>
+            <pre className="adm-code-block adm-code-block--scroll">
               {JSON.stringify(config, null, 2)}
             </pre>
           </div>

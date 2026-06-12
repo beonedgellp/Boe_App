@@ -13,9 +13,9 @@
   --be-ink:        #0E1116;
   --be-ink-2:      #1A1F27;
   --be-ink-3:      #262C36;
-  --be-ivory:      #F6F1E7;
-  --be-ivory-2:    #EFE9DB;
-  --be-bone:       #FFFCF6;
+  --be-ivory:      #F7F7F5;
+  --be-ivory-2:    #EEEDEA;
+  --be-bone:       #FAF9F6;
   --be-slate:      #5C6470;
   --be-slate-2:    #8A929D;
   --be-slate-soft: color-mix(in srgb, var(--be-slate) 12%, transparent);
@@ -42,8 +42,11 @@
   --be-fg-faint:     var(--be-slate-2);
   --be-fg-inverse:   var(--be-ivory);
   --be-accent:       var(--be-gold);
-  --be-border:       var(--be-slate-rule);
-  --be-border-strong: var(--be-slate-rule-strong);
+  --be-border-color: var(--be-slate-rule);
+  --be-border-strong-color: var(--be-slate-rule-strong);
+  --be-border:       var(--be-border-color);
+  --be-border-strong: var(--be-border-strong-color);
+  --be-border-focus: 1.5px solid var(--be-ink);
   --be-surface:      var(--be-bg-elevated);
 
   /* Text on colored soft backgrounds — ensures accessible contrast --------- */
@@ -54,8 +57,8 @@
   --be-text-on-slate: var(--be-ink);
 
   /* Typography ------------------------------------------------------------- */
-  --be-font-display: 'Fraunces Variable', 'Fraunces', 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --be-font-body:    'Instrument Sans Variable', 'Instrument Sans', 'Aptos', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --be-font-display: 'Fraunces', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --be-font-body:    'Instrument Sans', 'Aptos', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --be-font-sans:    var(--be-font-body);
   --be-font-serif:   var(--be-font-display);
   --be-font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -64,8 +67,8 @@
   /* Type scale (web) ------------------------------------------------------- */
   --be-text-xs:    11px;
   --be-text-sm:    13px;
-  --be-text-base:  15px;
-  --be-text-md:    16px;
+  --be-text-base:  16px;
+  --be-text-md:    var(--be-text-base);
   --be-text-lg:    18px;
   --be-text-xl:    22px;
   --be-text-2xl:   28px;
@@ -92,7 +95,9 @@
   --be-space-4:   16px;
   --be-space-5:   20px;
   --be-space-6:   24px;
+  --be-space-7:   28px;
   --be-space-8:   32px;
+  --be-space-9:   36px;
   --be-space-10:  40px;
   --be-space-14:  56px;
   --be-space-20:  80px;
@@ -109,9 +114,8 @@
   --be-r-8: var(--be-radius-md);
 
   /* Borders ---------------------------------------------------------------- */
-  --be-border-1: 1px solid var(--be-border);
-  --be-border-1-strong: 1px solid var(--be-border-strong);
-  --be-border-focus: 1.5px solid var(--be-ink);
+  --be-border-1: 1px solid var(--be-border-color);
+  --be-border-1-strong: 1px solid var(--be-border-strong-color);
 
   /* Shadows ---------------------------------------------------------------- */
   --be-shadow-1: 0 1px 2px color-mix(in srgb, var(--be-ink) 6%, transparent), 0 1px 1px color-mix(in srgb, var(--be-ink) 4%, transparent);
@@ -169,12 +173,8 @@
   --be-opacity-disabled: 0.4;
   --be-opacity-backdrop: 0.5;
 
-  /* Breakpoints ------------------------------------------------------------ */
-  --be-bp-sm: 375px;
-  --be-bp-md: 430px;
-  --be-bp-lg: 768px;
-  --be-bp-sidebar-collapse: 1100px;
-  --be-bp-mobile: 768px;
+  /* Breakpoints (documented constants; CSS custom props cannot be used in @media) */
+  /* sm: 375px | md: 430px | lg: 768px | sidebar-collapse: 1100px | mobile: 768px */
 
   /* Icon sizes ------------------------------------------------------------- */
   --be-icon-xs: 12px;
@@ -190,7 +190,7 @@
 
 html {
   font-family: var(--be-font-sans);
-  font-size: var(--be-text-md);
+  font-size: var(--be-text-base);
   line-height: var(--be-lh-normal);
   color: var(--be-fg);
   background: var(--be-bg);
@@ -242,7 +242,7 @@ h4, .be-h4 {
 
 p, .be-p {
   font-family: var(--be-font-sans);
-  font-size: var(--be-text-md);
+  font-size: var(--be-text-base);
   line-height: var(--be-lh-relaxed);
   color: var(--be-fg);
   margin: 0;
@@ -297,7 +297,7 @@ a:hover { text-decoration-color: var(--be-fg); }
 
 /* Focus ring (keyboard) ---------------------------------------------------- */
 :focus-visible {
-  outline: 2px solid var(--be-gold);
+  outline: 2px solid var(--be-accent);
   outline-offset: 2px;
 }
 
@@ -320,8 +320,10 @@ a:hover { text-decoration-color: var(--be-fg); }
     --be-fg-muted:     var(--be-slate-2);
     --be-fg-faint:     var(--be-slate);
     --be-fg-inverse:   var(--be-ink);
-    --be-border:       color-mix(in srgb, var(--be-slate) 30%, transparent);
-    --be-border-strong: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+    --be-border-color: color-mix(in srgb, var(--be-slate) 30%, transparent);
+    --be-border-strong-color: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+    --be-border:       var(--be-border-color);
+    --be-border-strong: var(--be-border-strong-color);
     --be-border-focus: 1.5px solid var(--be-ivory);
     --be-surface:      var(--be-bg-elevated);
 
@@ -359,8 +361,10 @@ html[data-theme="dark"] {
   --be-fg-muted:     var(--be-slate-2);
   --be-fg-faint:     var(--be-slate);
   --be-fg-inverse:   var(--be-ink);
-  --be-border:       color-mix(in srgb, var(--be-slate) 30%, transparent);
-  --be-border-strong: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+  --be-border-color: color-mix(in srgb, var(--be-slate) 30%, transparent);
+  --be-border-strong-color: color-mix(in srgb, var(--be-slate-2) 42%, transparent);
+  --be-border:       var(--be-border-color);
+  --be-border-strong: var(--be-border-strong-color);
   --be-border-focus: 1.5px solid var(--be-ivory);
   --be-surface:      var(--be-bg-elevated);
 
@@ -395,5 +399,74 @@ html[data-theme="dark"] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Semantic surface / elevation utilities                                   */
+/* -------------------------------------------------------------------------- */
+
+.be-surface { background: var(--be-surface); color: var(--be-fg); }
+.be-surface-elevated { background: var(--be-bg-elevated); color: var(--be-fg); }
+.be-inverse { background: var(--be-bg-inverse); color: var(--be-fg-inverse); }
+.be-border { border-color: var(--be-border-color); }
+.be-border-strong { border-color: var(--be-border-strong-color); }
+
+/* -------------------------------------------------------------------------- */
+/* Layout utilities                                                         */
+/* -------------------------------------------------------------------------- */
+
+.be-container {
+  width: 100%;
+  max-width: var(--be-container-marketing);
+  margin: 0 auto;
+  padding-left: var(--be-page-pad-x);
+  padding-right: var(--be-page-pad-x);
+  box-sizing: border-box;
+}
+
+.be-container-reading { max-width: var(--be-container-reading); }
+.be-container-admin   { max-width: var(--be-container-admin); }
+
+.be-stack-1  { display: flex; flex-direction: column; gap: var(--be-space-1); }
+.be-stack-2  { display: flex; flex-direction: column; gap: var(--be-space-2); }
+.be-stack-3  { display: flex; flex-direction: column; gap: var(--be-space-3); }
+.be-stack-4  { display: flex; flex-direction: column; gap: var(--be-space-4); }
+.be-stack-5  { display: flex; flex-direction: column; gap: var(--be-space-5); }
+.be-stack-6  { display: flex; flex-direction: column; gap: var(--be-space-6); }
+.be-stack-7  { display: flex; flex-direction: column; gap: var(--be-space-7); }
+.be-stack-8  { display: flex; flex-direction: column; gap: var(--be-space-8); }
+.be-stack-9  { display: flex; flex-direction: column; gap: var(--be-space-9); }
+.be-stack-10 { display: flex; flex-direction: column; gap: var(--be-space-10); }
+
+.be-inline-1  { display: flex; align-items: center; gap: var(--be-space-1); }
+.be-inline-2  { display: flex; align-items: center; gap: var(--be-space-2); }
+.be-inline-3  { display: flex; align-items: center; gap: var(--be-space-3); }
+.be-inline-4  { display: flex; align-items: center; gap: var(--be-space-4); }
+.be-inline-5  { display: flex; align-items: center; gap: var(--be-space-5); }
+.be-inline-6  { display: flex; align-items: center; gap: var(--be-space-6); }
+.be-inline-7  { display: flex; align-items: center; gap: var(--be-space-7); }
+.be-inline-8  { display: flex; align-items: center; gap: var(--be-space-8); }
+.be-inline-9  { display: flex; align-items: center; gap: var(--be-space-9); }
+.be-inline-10 { display: flex; align-items: center; gap: var(--be-space-10); }
+
+.be-wrap { flex-wrap: wrap; }
+.be-min-w-0 { min-width: 0; }
+
+.be-pad-1  { padding: var(--be-space-1); }
+.be-pad-2  { padding: var(--be-space-2); }
+.be-pad-3  { padding: var(--be-space-3); }
+.be-pad-4  { padding: var(--be-space-4); }
+.be-pad-5  { padding: var(--be-space-5); }
+.be-pad-6  { padding: var(--be-space-6); }
+.be-pad-7  { padding: var(--be-space-7); }
+.be-pad-8  { padding: var(--be-space-8); }
+.be-pad-9  { padding: var(--be-space-9); }
+.be-pad-10 { padding: var(--be-space-10); }
+
+@media (max-width: 768px) {
+  .be-container {
+    padding-left: var(--be-space-4);
+    padding-right: var(--be-space-4);
   }
 }

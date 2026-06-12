@@ -21,12 +21,8 @@ export default function BottomNav() {
           className={({ isActive }) => 'apk-tab' + (isActive ? ' is-active' : '')}
           aria-label={label}
         >
-          {({ isActive }) => (
-            <>
-              <Icon size={20} strokeWidth={1.5} />
-              <span>{label}</span>
-            </>
-          )}
+          <Icon size={20} strokeWidth={1.5} />
+          <span>{label}</span>
         </NavLink>
       ))}
     </nav>

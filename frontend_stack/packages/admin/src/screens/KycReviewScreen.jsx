@@ -10,6 +10,7 @@ import SkeletonTile from '../components/SkeletonTile.jsx';
 import SkeletonTableRow from '../components/SkeletonTableRow.jsx';
 import { fmtInt } from '../helpers/formatters.js';
 import { initials } from '../helpers/formatters.js';
+import './admin-screens-shared.css';
 
 function KycStatusBadge({ status }) {
   const map = {
@@ -20,8 +21,9 @@ function KycStatusBadge({ status }) {
     approved: { bg: 'var(--be-green-soft)', color: 'var(--be-text-on-green)', label: 'Approved' },
     rejected: { bg: 'var(--be-red-soft)', color: 'var(--be-text-on-red)', label: 'Rejected' },
   };
-  const s = map[String(status).toLowerCase()] || { bg: 'var(--be-slate-soft)', color: 'var(--be-text-on-slate)', label: status || '—' };
-  return <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500, background: s.bg, color: s.color }}>{s.label}</span>;
+  const normalized = String(status).toLowerCase();
+  const s = map[normalized] || { bg: 'var(--be-slate-soft)', color: 'var(--be-text-on-slate)', label: status || '—' };
+  return <span className={`adm-status-badge adm-status-badge--${normalized}`}>{s.label}</span>;
 }
 
 function KycReviewPanel({ row, onClose, onDecision, busy }) {

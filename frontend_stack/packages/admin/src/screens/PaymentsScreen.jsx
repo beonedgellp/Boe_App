@@ -132,7 +132,7 @@ function PaymentDecisionPanel({
             <h2 id="payment-decision-title">{row.fundName || 'Fund pool'}</h2>
           </div>
           <button type="button" className="adm-icon-btn" onClick={onClose} disabled={busy}>
-            <span aria-hidden="true" style={{ fontSize: 20 }}>&times;</span>
+            <span aria-hidden="true" className="adm-close-glyph">&times;</span>
           </button>
         </div>
 

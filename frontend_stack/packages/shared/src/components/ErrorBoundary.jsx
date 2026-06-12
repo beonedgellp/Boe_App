@@ -1,5 +1,73 @@
 import { Component } from 'react';
 
+const WRAPPER_STYLE = {
+  minHeight: '100dvh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 'var(--be-space-6)',
+  background: 'var(--be-bg)',
+};
+
+const CARD_STYLE = {
+  maxWidth: '480px',
+  width: '100%',
+  background: 'var(--be-bg-elevated)',
+  borderRadius: 'var(--be-radius-lg)',
+  padding: 'var(--be-space-10) var(--be-space-8)',
+  textAlign: 'center',
+  boxShadow: 'var(--be-shadow-2)',
+};
+
+const ICON_WRAP_STYLE = {
+  width: '64px',
+  height: '64px',
+  borderRadius: '50%',
+  background: 'var(--be-red-soft)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  margin: '0 auto var(--be-space-5)',
+  fontSize: '28px',
+};
+
+const TITLE_STYLE = {
+  margin: '0 0 var(--be-space-2)',
+  fontSize: 'var(--be-text-xl)',
+  fontWeight: 700,
+  color: 'var(--be-fg)',
+};
+
+const MESSAGE_STYLE = {
+  margin: '0 0 var(--be-space-6)',
+  fontSize: 'var(--be-text-sm)',
+  color: 'var(--be-fg-muted)',
+  lineHeight: 'var(--be-lh-normal)',
+};
+
+const BUTTON_STYLE = {
+  padding: '10px 24px',
+  borderRadius: 'var(--be-radius-md)',
+  border: 'none',
+  background: 'var(--be-accent)',
+  color: 'var(--be-fg-inverse)',
+  fontSize: 'var(--be-text-sm)',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const DETAILS_STYLE = {
+  marginTop: 'var(--be-space-5)',
+  padding: 'var(--be-space-3)',
+  background: 'var(--be-surface)',
+  borderRadius: 'var(--be-radius-md)',
+  fontSize: '11px',
+  color: 'var(--be-fg)',
+  overflow: 'auto',
+  textAlign: 'left',
+  maxHeight: '200px',
+};
+
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -22,67 +90,23 @@ export class ErrorBoundary extends Component {
         return this.props.fallback;
       }
       return (
-        <div style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          background: 'var(--be-bg, #f6f7f9)',
-        }}>
-          <div style={{
-            maxWidth: 480,
-            width: '100%',
-            background: '#fff',
-            borderRadius: 16,
-            padding: '40px 32px',
-            textAlign: 'center',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-          }}>
-            <div style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: 'var(--be-danger-light, #fee2e2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 20px',
-              fontSize: 28,
-            }}>⚠️</div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: 'var(--be-ink, #1a1d2b)' }}>
+        <div style={WRAPPER_STYLE}>
+          <div style={CARD_STYLE}>
+            <div style={ICON_WRAP_STYLE}>⚠️</div>
+            <h2 style={TITLE_STYLE}>
               Something went wrong
             </h2>
-            <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--be-slate, #6b7280)', lineHeight: 1.6 }}>
+            <p style={MESSAGE_STYLE}>
               We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
             </p>
             <button
               onClick={() => window.location.reload()}
-              style={{
-                padding: '10px 24px',
-                borderRadius: 8,
-                border: 'none',
-                background: 'var(--be-primary, #1a56db)',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              style={BUTTON_STYLE}
             >
               Refresh page
             </button>
             {this.props.showDetails && this.state.error && (
-              <pre style={{
-                marginTop: 20,
-                padding: 12,
-                background: 'var(--be-surface, #f3f4f6)',
-                borderRadius: 8,
-                fontSize: 11,
-                color: 'var(--be-ink, #1a1d2b)',
-                overflow: 'auto',
-                textAlign: 'left',
-                maxHeight: 200,
-              }}>
+              <pre style={DETAILS_STYLE}>
                 {this.state.error.toString()}
               </pre>
             )}

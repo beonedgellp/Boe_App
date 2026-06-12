@@ -112,7 +112,7 @@ export default function Dashboard() {
                   <div className="apk-portfolio-eye">{copy.portfolioTitle}</div>
                   <div className="apk-portfolio-num be-money"><MoneyValue amount={portfolio.invested} source={portfolio.source} asOf={portfolio.asOf} showBadge={false} /></div>
                   <div className="apk-portfolio-row">
-                    <span style={{ color: 'var(--be-slate)' }}>Total invested</span>
+                    <span className="apk-portfolio-label">Total invested</span>
                   </div>
                   <div className="apk-portfolio-grid">
                     <div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
                       <div className="apk-portfolio-mini-v be-num">{activeSips.length}</div>
                     </div>
                   </div>
-                  <div className="be-disclosure" style={{ marginTop: 4 }}>
+                  <div className="be-disclosure apk-disclosure-tight">
                     As of {fmtDate(portfolio.asOf, { withTime: true })} · Published by BeOnEdge
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
                     <Skeleton variant="text" width="30%" height={10} />
                     <Skeleton variant="text" width="55%" height={48} />
                     <Skeleton variant="text" width="40%" height={14} />
-                    <div className="apk-portfolio-grid" style={{ marginTop: 4 }}>
+                    <div className="apk-portfolio-grid apk-portfolio-grid--tight">
                       <div>
                         <Skeleton variant="text" width="60%" height={10} />
                         <Skeleton variant="text" width="70%" height={18} delay={80} />
@@ -256,7 +256,7 @@ export default function Dashboard() {
         <FadeIn direction="up" distance={10} duration={400} delay={400}>
           <div className="apk-grid-notifications">
             <div className="be-card apk-notifications">
-              <div className="apk-section-head" style={{ padding: '0 0 8px' }}>
+              <div className="apk-section-head apk-section-head--pad-bottom">
                 <div className="be-eyebrow">Notifications</div>
               </div>
               <div className="apk-notifications-empty">

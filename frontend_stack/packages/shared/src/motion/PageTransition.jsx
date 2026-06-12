@@ -1,6 +1,7 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import gsap from 'gsap';
+import './PageTransition.css';
 import { useReducedMotion } from './useReducedMotion.js';
 
 /**
@@ -31,10 +32,7 @@ export default function PageTransition({ children }) {
   return (
     <div
       ref={containerRef}
-      style={{
-        minHeight: '100%',
-        willChange: reduced ? undefined : 'opacity, transform',
-      }}
+      className={`be-page-transition ${reduced ? '' : 'be-page-transition--animated'}`}
     >
       {children}
     </div>

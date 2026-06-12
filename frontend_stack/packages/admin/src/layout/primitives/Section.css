@@ -22,7 +22,7 @@
 
 .be-section-subtitle {
   font-size: var(--be-text-xs);      /* 11px */
-  color: var(--be-slate);
+  color: var(--be-fg-muted);
   margin: 0;
   line-height: var(--be-lh-normal);
   max-width: 65ch;

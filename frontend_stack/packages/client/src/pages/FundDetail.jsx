@@ -51,7 +51,7 @@ function AllocationLegend({ items }) {
     <div className="apk-ha-legend">
       {items.map((it, i) => (
         <span key={i} className="apk-ha-legend-item">
-          <span className="apk-ha-dot" style={{ background: it.color }} />
+          <span className="apk-ha-dot" style={{ '--sector-color': it.color }} />
           <span className="apk-ha-legend-label">{it.label}</span>
           <span className="apk-ha-legend-pct be-num">{Number(it.percentage).toFixed(2)}%</span>
         </span>
@@ -181,15 +181,15 @@ function FundDetailSkeleton() {
           <Skeleton variant="text" width="80%" height={36} delay={40} />
           <Skeleton variant="text" width="60%" height={14} delay={80} />
         </div>
-        <div className="be-card" style={{ padding: 16 }}>
+        <div className="be-card apk-detail-skel-card">
           <Skeleton variant="text" width="40%" height={20} />
           <Skeleton variant="text" width="100%" height={120} delay={40} />
         </div>
-        <div className="be-card" style={{ padding: 16 }}>
+        <div className="be-card apk-detail-skel-card">
           <Skeleton variant="text" width="50%" height={20} />
           <Skeleton variant="text" width="100%" height={80} delay={40} />
         </div>
-        <div className="be-card" style={{ padding: 16 }}>
+        <div className="be-card apk-detail-skel-card">
           <Skeleton variant="text" width="40%" height={20} />
           <Skeleton variant="text" width="100%" height={60} delay={40} />
         </div>
@@ -268,14 +268,14 @@ export default function FundDetail() {
       <div className="apk-screen apk-fund-detail">
         {/* Hero */}
         <FadeIn direction="up" distance={16} duration={500}>
-          <div className="apk-detail-hero" style={{ background: `linear-gradient(135deg, ${heroBg} 0%, transparent 70%)` }}>
+          <div className="apk-detail-hero" style={{ '--hero-bg': heroBg }}>
             <button className="apk-back-link" onClick={() => navigate(-1)}>
               <ArrowLeft size={16} strokeWidth={1.5} />
               <span>Back to funds</span>
             </button>
             <div className="apk-detail-hero-top">
               <div className="apk-detail-hero-text">
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                <div className="apk-detail-hero-badges">
                   <div className="be-eyebrow">{fund.categoryEyebrow}</div>
                   <span className="apk-lifecycle-badge">{lifecycleLabel}</span>
                 </div>
@@ -333,21 +333,21 @@ export default function FundDetail() {
                   <div className="be-eyebrow">{copy.keyStatsTitle || 'Key Metrics'}</div>
                   <div className="apk-key-stats-grid">
                     <div className="apk-stat-card">
-                      <div className="apk-stat-card-icon" style={{ background: 'rgba(31, 122, 77, 0.10)', color: 'var(--be-green)' }}>
+                      <div className="apk-stat-card-icon apk-stat-card-icon--green">
                         <Briefcase size={18} strokeWidth={2} />
                       </div>
                       <div className="apk-stat-card-label">Pool Size</div>
                       <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.totalPoolSize} source={fund.source || 'mock'} asOf={new Date().toISOString()} /></div>
                     </div>
                     <div className="apk-stat-card">
-                      <div className="apk-stat-card-icon" style={{ background: 'rgba(181, 137, 74, 0.12)', color: 'var(--be-gold)' }}>
+                      <div className="apk-stat-card-icon apk-stat-card-icon--gold">
                         <Calendar size={18} strokeWidth={2} />
                       </div>
                       <div className="apk-stat-card-label">Min SIP</div>
                       <div className="apk-stat-card-value be-money"><MoneyValue amount={fund.minSip} source={fund.source || 'mock'} asOf={new Date().toISOString()} showBadge={false} /></div>
                     </div>
                     <div className="apk-stat-card">
-                      <div className="apk-stat-card-icon" style={{ background: 'rgba(180, 58, 46, 0.10)', color: 'var(--be-red)' }}>
+                      <div className="apk-stat-card-icon apk-stat-card-icon--red">
                         <Shield size={18} strokeWidth={2} />
                       </div>
                       <div className="apk-stat-card-label">Risk Level</div>
@@ -355,7 +355,7 @@ export default function FundDetail() {
                     </div>
                     {analytics.fundAge && (
                       <div className="apk-stat-card">
-                        <div className="apk-stat-card-icon" style={{ background: 'var(--be-gold-soft)', color: 'var(--be-gold)' }}>
+                        <div className="apk-stat-card-icon apk-stat-card-icon--gold-soft">
                           <Calendar size={18} strokeWidth={2} />
                         </div>
                         <div className="apk-stat-card-label">Fund Age</div>
@@ -370,7 +370,7 @@ export default function FundDetail() {
                   </div>
                   <div className="apk-key-stats-row">
                     <span>Risk</span>
-                    <span className="be-badge be-badge-neutral" style={{ fontSize: 11, padding: '4px 10px' }}>{RISK_LABELS[fund.riskLabel]}</span>
+                    <span className="be-badge be-badge-neutral apk-key-stats-badge">{RISK_LABELS[fund.riskLabel]}</span>
                   </div>
                 </div>
               </FadeIn>
@@ -388,10 +388,10 @@ export default function FundDetail() {
                     />
                   </div>
                   <div className="apk-sector-legend">
-                    <div className="be-eyebrow" style={{ marginBottom: 8 }}>Sector Allocation</div>
+                    <div className="be-eyebrow">Sector Allocation</div>
                     {sectors.map((s) => (
                       <div key={s.id} className="apk-sector-legend-item">
-                        <span className="apk-sector-color" style={{ background: s.color }} />
+                        <span className="apk-sector-color" style={{ '--sector-color': s.color }} />
                         <span>{s.name}</span>
                         <span className="be-num">{s.percentage}%</span>
                       </div>
@@ -415,7 +415,7 @@ export default function FundDetail() {
                     return (
                       <div key={sector.id} className="apk-investment-sector">
                         <div className="apk-investment-sector-header">
-                          <span className="apk-sector-color" style={{ background: sector.color }} />
+                          <span className="apk-sector-color" style={{ '--sector-color': sector.color }} />
                           <strong>{sector.name}</strong>
                           <span className="be-num">({sector.percentage}%)</span>
                         </div>
@@ -485,7 +485,7 @@ export default function FundDetail() {
 
                   <div className="apk-riskometer">
                     <div className="apk-riskometer-label">
-                      <span className="apk-riskometer-badge" style={{ background: disclosures.riskometer?.color ? `${disclosures.riskometer.color}18` : 'var(--be-ivory-2)', color: disclosures.riskometer?.color || 'var(--be-slate)' }}>
+                      <span className="apk-riskometer-badge" style={{ '--riskometer-color': disclosures.riskometer?.color || 'var(--be-slate)' }}>
                         <AlertTriangle size={12} strokeWidth={2} />
                         {disclosures.riskometer?.label || disclosures.riskometer?.level}
                       </span>
@@ -496,11 +496,7 @@ export default function FundDetail() {
                         <div
                           key={lvl}
                           className={`apk-riskometer-segment ${disclosures.riskometer?.level === lvl ? 'is-active' : ''}`}
-                          style={{
-                            background: disclosures.riskometer?.level === lvl
-                              ? (disclosures.riskometer?.color || 'var(--be-slate)')
-                              : 'var(--be-border)',
-                          }}
+                          style={{ '--riskometer-segment-bg': disclosures.riskometer?.level === lvl ? (disclosures.riskometer?.color || 'var(--be-slate)') : 'var(--be-border)' }}
                         />
                       ))}
                     </div>
@@ -565,12 +561,12 @@ export default function FundDetail() {
                   </>
                 ) : (
                   <>
-                    <div className="apk-invest-cta-icon" style={{ background: 'var(--be-ivory-2)', color: 'var(--be-slate)' }}>
+                    <div className="apk-invest-cta-icon apk-invest-cta-icon--muted">
                       <Bell size={28} strokeWidth={1.5} />
                     </div>
                     <h3>Coming Soon</h3>
                     <p>This fund is not currently accepting investments. You&apos;ll be notified when it opens.</p>
-                    <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn" style={{ maxWidth: 260 }}>
+                    <button className="be-btn be-btn-primary be-btn-lg apk-invest-cta-btn apk-invest-cta-btn--narrow">
                       <Bell size={16} strokeWidth={2} /> Notify me
                     </button>
                   </>

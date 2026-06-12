@@ -165,3 +165,65 @@
 
 .apk-sheet-summary-row { align-items: center; }
 .apk-stepup-toggle { flex-direction: row; align-items: center; justify-content: space-between; }
+
+/* Payment status modifiers */
+.apk-payment-icon-wrap { color: var(--be-fg-muted); }
+.apk-payment-icon-wrap--success { color: var(--be-green); }
+.apk-payment-icon-wrap--failed { color: var(--be-red); }
+.apk-payment-error { color: var(--be-red); }
+.apk-pay-icon { margin-right: var(--be-space-2); }
+
+
+/* Inline-style replacements */
+.apk-skel--h-200 { height: 200px; }
+
+.apk-mt-6 { margin-top: 6px; }
+.apk-mt-8 { margin-top: 8px; }
+.apk-mt-10 { margin-top: 10px; }
+.apk-mt-12 { margin-top: 12px; }
+.apk-mt-14 { margin-top: 14px; }
+.apk-mt-auto { margin-top: auto; }
+.apk-pt-18 { padding-top: 18px; }
+
+.apk-flex-col { display: flex; flex-direction: column; }
+.apk-gap-10 { gap: 10px; }
+.apk-flex-1 { flex: 1; }
+
+.apk-review-card {
+  margin-top: 18px;
+}
+
+.apk-sheet-tagline {
+  font-size: 13px;
+  color: var(--be-slate);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.apk-review-actions {
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.apk-stepup-title { font-size: 14px; font-weight: 500; }
+.apk-stepup-body { font-size: 12px; color: var(--be-slate); margin-top: 2px; }
+
+.apk-btn-icon { margin-right: 8px; }
+
+/* Mandate detail / auth */
+.apk-mandate-card { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.apk-mandate-empty { padding: 16px; text-align: center; }
+.apk-mandate-empty-text { color: var(--be-slate); font-size: 14px; line-height: 1.6; margin: 0; }
+.apk-mandate-list-card { padding: 4px 16px; }
+.apk-mandate-list-row { padding: 12px 0; }
+.apk-mandate-desc { color: var(--be-slate); font-size: 14px; margin-top: 6px; }
+.apk-mandate-actions-row { display: flex; gap: 10px; margin-top: 16px; }
+
+.apk-mandate-pending { padding: 24px; text-align: center; }
+.apk-mandate-info { color: var(--be-primary); margin-bottom: 12px; }
+.apk-mandate-pending-title { margin: 0 0 8px; font-size: 16px; }
+.apk-mandate-pending-text { color: var(--be-slate); font-size: 14px; line-height: 1.6; margin: 0; }
+.apk-mandate-steps-card { padding: 16px; }
+.apk-mandate-steps { margin: 0; padding: 0; list-style: none; }
+.apk-timeline-row--no-pad { padding-left: 0; }
+.apk-mandate-summary-card { padding: 16px; display: flex; flex-direction: column; gap: 6px; }

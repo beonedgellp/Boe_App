@@ -26,6 +26,7 @@ import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/servic
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
+import './admin-screens-shared.css';
 import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
 import { fmtMoney } from '@beonedge/shared/format.js';
@@ -95,7 +96,7 @@ function AumAllocationsTab({ funds }) {
                       <td><span className="adm-fund-name">{f.name}</span></td>
                       <td className="be-money">{f.totalPoolSize ?? 0}</td>
                       <td className="be-money">{fa.totalInvested ?? 0}</td>
-                      <td className="be-money" style={{ color: fcash < 0 ? 'var(--be-red)' : 'var(--be-green)' }}>{fcash}</td>
+                      <td className={`be-money ${fcash < 0 ? 'be-loss' : 'be-gain'}`}>{fcash}</td>
                       <td className="be-num">{f.investments?.length ?? 0}</td>
                       <td className="adm-cell-actions">
                         <button className="be-btn be-btn-primary be-btn-sm" onClick={() => setSelectedFund(f.id)}>Manage</button>
@@ -121,9 +122,9 @@ function AumAllocationsTab({ funds }) {
                   <div className="be-eyebrow">Allocated</div>
                   <div className="adm-stat-value be-money">{fmtMoney(analytics.totalInvested)}</div>
                 </div>
-                <div className="adm-stat adm-stat--sm" style={{ borderColor: cash < 0 ? 'var(--be-red)' : 'var(--be-border)' }}>
+                <div className={`adm-stat adm-stat--sm ${cash < 0 ? 'adm-stat--negative' : ''}`}>
                   <div className="be-eyebrow">Cash Available</div>
-                  <div className="adm-stat-value be-money" style={{ color: cash < 0 ? 'var(--be-red)' : 'var(--be-green)' }}>{fmtMoney(cash)}</div>
+                  <div className={`adm-stat-value be-money ${cash < 0 ? 'be-loss' : 'be-gain'}`}>{fmtMoney(cash)}</div>
                 </div>
               </div>
 
@@ -137,7 +138,7 @@ function AumAllocationsTab({ funds }) {
                     <div>
                       <div className="adm-cell-main">{inv.companyName || 'Unnamed'}</div>
                       <div className="adm-cell-sub">
-                        {sector ? <><span className="adm-distribution-preview__swatch" style={{ background: sector.color }} />{sector.name}</> : 'No sector'}
+                        {sector ? <><span className="adm-distribution-preview__swatch adm-swatch" style={{ '--adm-swatch-color': sector.color }} />{sector.name}</> : 'No sector'}
                       </div>
                     </div>
                     <div className="adm-text-right">

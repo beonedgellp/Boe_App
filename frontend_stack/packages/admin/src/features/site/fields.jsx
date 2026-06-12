@@ -13,7 +13,7 @@ export function TextField({ label, value, onChange, placeholder, help, error, re
   const describedBy = [help && !error ? helpId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <label className="ash-label" htmlFor={inputId}>
         {label}
         {required && <span aria-hidden="true"> *</span>}
@@ -43,7 +43,7 @@ export function TextAreaField({ label, value, onChange, placeholder, help, error
   const describedBy = [help && !error ? helpId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <label className="ash-label" htmlFor={inputId}>
         {label}
         {required && <span aria-hidden="true"> *</span>}
@@ -68,7 +68,7 @@ export function TextAreaField({ label, value, onChange, placeholder, help, error
 
 export function SelectField({ label, value, onChange, options, help, error, disabled, tooltip }) {
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <label className="ash-label">
         {label}
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -92,7 +92,7 @@ export function SelectField({ label, value, onChange, options, help, error, disa
 
 export function CheckboxField({ label, checked, onChange, help, disabled, tooltip }) {
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <label className="ash-check">
         <input
           type="checkbox"
@@ -131,7 +131,7 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
   }
 
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <span className="ash-label">
         {label}
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -175,7 +175,7 @@ export function ListEditor({ label, items, onChange, placeholder, max, addLabel 
 export function LinkField({ label, value, onChange, hrefHelp, tooltip }) {
   const link = value || { label: '', href: '' };
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <span className="ash-label">
         {label}
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -224,7 +224,7 @@ export function ObjectListEditor({ label, items, onChange, itemFields, newItem, 
   }
 
   return (
-    <div className="ash-field">
+    <div className="ash-field" data-field-label={label || undefined} data-field-desc={tooltip || undefined}>
       <span className="ash-label">
         {label}
         {tooltip && <HelpTooltip text={tooltip} />}

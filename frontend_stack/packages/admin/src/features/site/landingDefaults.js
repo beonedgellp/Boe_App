@@ -126,13 +126,13 @@ export const LANDING_DEFAULTS = {
 };
 
 export const LANDING_SECTION_LIST = [
-  { id: 'hero', label: 'Hero' },
-  { id: 'explore', label: 'Explore tiles' },
-  { id: 'socialProof', label: 'Social proof' },
-  { id: 'premium', label: 'Premium benefits' },
-  { id: 'learningMethod', label: 'Learning method' },
-  { id: 'news', label: 'News digests' },
-  { id: 'leadForm', label: 'Lead form' },
-  { id: 'nav', label: 'Navigation' },
-  { id: 'meta', label: 'Site meta' },
+  { id: 'hero', label: 'Hero', description: 'Top block of the landing page: eyebrow, headline, lead paragraph, the two buttons, and the hero image. This is the first thing every visitor sees.' },
+  { id: 'explore', label: 'Explore tiles', description: 'Tile grid below the hero that routes visitors to courses, plans, and other site areas. Each tile has a title, supporting line, and destination.' },
+  { id: 'socialProof', label: 'Social proof', description: 'Statistics and learner quotes shown mid-page to build credibility. Numbers appear exactly as entered.' },
+  { id: 'premium', label: 'Premium benefits', description: 'Benefit list for the premium membership section, including its heading and the per-benefit lines.' },
+  { id: 'learningMethod', label: 'Learning method', description: 'Numbered steps that explain how the BeOnEdge learning approach works, in the order listed here.' },
+  { id: 'news', label: 'News digests', description: 'News digest cards on the landing page: titles, summaries, and source labels.' },
+  { id: 'leadForm', label: 'Lead form', description: 'Heading and supporting copy around the email capture form near the end of the page.' },
+  { id: 'nav', label: 'Navigation', description: 'Header links and brand area of the public site. Order here is the order shown in the header.' },
+  { id: 'meta', label: 'Site meta', description: 'Brand name, page title, and footer text used across the whole public site.' },
 ];

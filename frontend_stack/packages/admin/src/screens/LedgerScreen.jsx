@@ -6,6 +6,7 @@ import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
 import { fmtInt } from '../helpers/formatters.js';
+import './admin-screens-shared.css';
 
 function LedgerScreen({ rows = [], loading = false }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +48,7 @@ function LedgerScreen({ rows = [], loading = false }) {
             <span className="be-eyebrow">Reconciliation</span>
             <h2 className="adm-card-title">Ledger</h2>
           </div>
-          <div className="adm-card-actions" style={{ gap: 8, display: 'flex', alignItems: 'center' }}>
+          <div className="adm-card-actions adm-card-actions--responsive">
             <div className="adm-search">
               <I icon={Search} size={14} />
               <input

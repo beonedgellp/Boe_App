@@ -26,6 +26,7 @@ import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/servic
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
 import '../styles/mobile/admin.css';
+import './admin-screens-shared.css';
 import I from '../components/I.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';
 import { fmtMoney } from '@beonedge/shared/format.js';
@@ -77,7 +78,6 @@ function AumCapitalTab({ funds }) {
   }
 
   const txTypeLabel = { allocation: 'Allocate', unallocation: 'Unallocate', inflow: 'Inflow', outflow: 'Outflow' };
-  const txTypeColor = { allocation: 'var(--be-green)', unallocation: 'var(--be-amber)', inflow: 'var(--be-green)', outflow: 'var(--be-red)' };
 
   return (
     <div className="adm-fund-pools">
@@ -94,7 +94,7 @@ function AumCapitalTab({ funds }) {
                   {transactions.length === 0 && <EmptyTableRow colSpan={6}>No capital transactions yet.</EmptyTableRow>}
                   {transactions.map(tx => (
                     <tr key={tx.id}>
-                      <td><span style={{ color: txTypeColor[tx.type] || 'var(--be-slate)', fontWeight: 500, fontSize: 12 }}>{txTypeLabel[tx.type] || tx.type}</span></td>
+                      <td><span className={`adm-tx-type adm-tx-type--${tx.type || 'default'}`}>{txTypeLabel[tx.type] || tx.type}</span></td>
                       <td>{funds.find(f => f.id === tx.fundId)?.name || tx.fundId.slice(0, 8)}</td>
                       <td className="be-money">₹{(tx.amount || 0).toLocaleString()}</td>
                       <td className="adm-cell-sub">{tx.source} → {tx.target}</td>
@@ -129,7 +129,7 @@ function AumCapitalTab({ funds }) {
                 </div>
                 <div className="adm-stat adm-stat--sm">
                   <div className="be-eyebrow">Cash</div>
-                  <div className="adm-stat-value adm-stat-value--sm be-money" style={{ color: 'var(--be-green)' }}>
+                  <div className="adm-stat-value adm-stat-value--sm be-money be-gain">
                     {fmtMoney((fund.totalPoolSize || 0) - (fund.analytics?.totalInvested || 0))}
                   </div>
                 </div>

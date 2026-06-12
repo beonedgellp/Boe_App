@@ -23,18 +23,18 @@ export default function Profile() {
       </div>
 
       <div className="be-eyebrow">Account</div>
-      <div className="be-card" style={{ padding: 0 }}>
+      <div className="be-card be-card--flush">
         <Row label="Email" meta={user?.email || 'Not added'} />
         <Row label="Phone" meta={user?.phoneMasked || 'Not added'} />
       </div>
 
       <div className="be-eyebrow">Account Details</div>
-      <div className="be-card" style={{ padding: 0 }}>
+      <div className="be-card be-card--flush">
         <Row label="KYC & Compliance" onClick={() => navigate('/app/profile/kyc')} badgeStatus={user?.kycStatus === 'approved' ? 'active' : 'paused'} />
       </div>
 
       <div className="be-eyebrow">Settings</div>
-      <div className="be-card" style={{ padding: 0 }}>
+      <div className="be-card be-card--flush">
         <Row label="Notifications" onClick={() => navigate('/app/notifications')} />
         <Row label="Security & PIN" onClick={() => navigate('/app/profile/security')} />
         <Row label="Statements" onClick={() => navigate('/app/statements')} />
@@ -44,7 +44,7 @@ export default function Profile() {
 
       <button className="be-btn be-btn-danger be-btn-block" onClick={onSignOut}>Sign out</button>
 
-      <div className="be-disclosure" style={{ textAlign: 'center', marginTop: 8 }}>
+      <div className="be-disclosure apk-profile-disclosure">
         BeOnEdge account access
       </div>
     </div>

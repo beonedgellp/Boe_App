@@ -1,5 +1,14 @@
 export { default as ClientApp } from './ClientApp.jsx';
 
+// Layout primitives
+export { default as Screen } from './layout/Screen.jsx';
+export { default as PageHeader } from './layout/PageHeader.jsx';
+export { default as Section } from './layout/Section.jsx';
+export { default as Card } from './layout/Card.jsx';
+export { MetricGrid, Metric } from './layout/MetricGrid.jsx';
+export { default as ActionBar } from './layout/ActionBar.jsx';
+export { default as BottomSheet } from './layout/BottomSheet.jsx';
+
 export { SessionProvider, useSession } from './store/SessionContext.jsx';
 export { AdminSessionProvider, useAdminSession } from './store/AdminSessionContext.jsx';
 

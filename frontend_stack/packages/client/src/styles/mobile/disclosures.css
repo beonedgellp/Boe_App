@@ -193,3 +193,19 @@
 .apk-grievance-footer {
   padding: 8px 0 16px;
 }
+
+
+/* Inline-style replacements */
+.apk-legal-screen { padding-bottom: 40px; }
+
+.apk-skel--h-180 { height: 180px; }
+.apk-skel--h-240 { height: 240px; }
+
+.apk-grievance-action { margin-top: 8px; }
+
+.apk-charter-contact-address,
+.apk-grievance-contact-address { margin-top: 12px; }
+
+.apk-contact-address { white-space: pre-line; }
+
+.apk-inline-flex { display: inline-flex; }

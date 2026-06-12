@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Clock3, Download, Receipt, Repeat, ShieldCheck } from 'lucide-react';
+import { EmptyState, Skeleton } from '@beonedge/shared';
 import * as transactionsApi from '../services/transactionsApi.js';
 import * as ordersApi from '../services/ordersApi.js';
 import { fmtMoney, fmtDate, fmtUnits } from '../utils/format.js';
@@ -18,12 +19,12 @@ const PAYMENT_TABS = new Set(['pending', 'failed', 'approval']);
 const TAB_KEYS = new Set(TABS.map(([key]) => key));
 
 const EMPTY_STATE = {
-  all:     { icon: Receipt,      text: 'No transactions yet. Once your first SIP runs, it appears here.' },
-  sip:     { icon: Repeat,       text: 'No SIP transactions yet.' },
-  lumpsum: { icon: Receipt,      text: 'No lumpsum transactions yet.' },
-  pending: { icon: Clock3,       text: 'No pending payments.' },
-  failed:  { icon: AlertTriangle, text: 'No failed payments.' },
-  approval:{ icon: ShieldCheck,  text: 'No payments waiting for admin approval.' },
+  all:     { icon: Receipt,       title: 'No transactions yet', description: 'Once your first SIP runs, it appears here.' },
+  sip:     { icon: Repeat,        title: 'No SIP transactions yet', description: 'Start a SIP to see transactions here.' },
+  lumpsum: { icon: Receipt,       title: 'No lumpsum transactions yet', description: 'Make a one-time investment to see it here.' },
+  pending: { icon: Clock3,        title: 'No pending payments', description: 'All your payments are up to date.' },
+  failed:  { icon: AlertTriangle, title: 'No failed payments', description: 'All your payments went through.' },
+  approval:{ icon: ShieldCheck,   title: 'No approvals pending', description: 'No payments are waiting for admin approval.' },
 };
 
 function fundDisplayName(item) {
@@ -94,26 +95,21 @@ export default function Transactions() {
     return 'apk-tx-dot--lumpsum';
   }
 
-  const EmptyState = ({ tabKey }) => {
-    const { icon: Icon, text } = EMPTY_STATE[tabKey] || EMPTY_STATE.all;
-    return (
-      <div className="be-card apk-empty apk-empty--tx">
-        <div className="apk-empty-icon-wrap"><Icon size={28} strokeWidth={1.5} /></div>
-        <p>{text}</p>
-      </div>
-    );
+  const TxEmptyState = ({ tabKey }) => {
+    const { icon: Icon, title, description } = EMPTY_STATE[tabKey] || EMPTY_STATE.all;
+    return <EmptyState icon={<Icon size={28} strokeWidth={1.5} />} title={title} description={description} />;
   };
 
   const PaymentState = () => {
     if (payments === null) {
       return (
         <div className="be-card apk-list-card apk-tx-skeleton--mobile">
-          {[0, 1, 2].map((i) => <div key={i} className="apk-skel apk-row-skel" />)}
+          <Skeleton variant="text" height="56px" count={3} />
         </div>
       );
     }
 
-    if (payments.length === 0) return <EmptyState tabKey={tab} />;
+    if (payments.length === 0) return <TxEmptyState tabKey={tab} />;
 
     return payments.map((payment) => {
       const amount = payment.amount ?? payment.paymentAmount ?? 0;
@@ -182,10 +178,10 @@ export default function Transactions() {
       {!PAYMENT_TABS.has(tab) && (
         items === null ? (
           <div className="be-card apk-list-card apk-tx-skeleton--mobile">
-            {[0,1,2,3,4].map(i => <div key={i} className="apk-skel apk-row-skel" />)}
+            <Skeleton variant="text" height="56px" count={5} />
           </div>
         ) : items.length === 0 ? (
-          <EmptyState tabKey={tab} />
+          <TxEmptyState tabKey={tab} />
         ) : (
           <div className="be-card apk-tx-list apk-list-card">
             <div className="apk-tx-list-mobile">

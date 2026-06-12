@@ -120,8 +120,7 @@ function FundCard({ fund, onNotify, index }) {
             <span className="apk-fc-cta">View details &rarr;</span>
           ) : (
             <button
-              className="be-btn be-btn-primary be-btn-sm"
-              style={{ width: '100%', justifyContent: 'center' }}
+              className="be-btn be-btn-primary be-btn-sm apk-fc-notify-btn"
               onClick={(e) => { e.stopPropagation(); onNotify?.(`We'll notify you when ${fund.name} opens for investment.`); }}
             >
               <Bell size={14} strokeWidth={2} /> Notify me when open
@@ -142,7 +141,7 @@ function FeaturedCard({ fund, index }) {
         <div className="apk-fund-header">
           <div>
             <h3>{fund.name}</h3>
-            <p className="apk-fund-tagline" style={{ marginTop: 4 }}>{fund.tagline}</p>
+            <p className="apk-fund-tagline apk-featured-tagline">{fund.tagline}</p>
           </div>
           <span className={`apk-fund-status apk-fund-status--${fund.status}`}>
             {fund.status === 'active' ? 'Active' : 'Coming Soon'}
@@ -347,7 +346,7 @@ export default function Explore() {
         <FadeIn direction="up" distance={10} duration={400} delay={240}>
           <div className="apk-sort-bar">
             <SlidersHorizontal size={14} strokeWidth={2} />
-            <span className="be-eyebrow" style={{ fontSize: 10 }}>Sort by</span>
+            <span className="be-eyebrow apk-sort-eyebrow">Sort by</span>
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
@@ -367,11 +366,11 @@ export default function Explore() {
           {!filtered ? (
             <div className="apk-strategy-grid">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="be-card" style={{ padding: 14 }}>
+                <div key={i} className="be-card apk-fc-skeleton">
                   <Skeleton variant="text" width="30%" height={14} />
                   <Skeleton variant="text" width="50%" height={28} delay={40} />
                   <Skeleton variant="text" width="100%" height={56} delay={80} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                  <div className="apk-fc-skeleton-grid">
                     <Skeleton variant="text" width="80%" height={14} delay={120} />
                     <Skeleton variant="text" width="80%" height={14} delay={120} />
                     <Skeleton variant="text" width="80%" height={14} delay={160} />
@@ -415,7 +414,7 @@ export default function Explore() {
             {!research ? (
               <div className="apk-research-grid">
                 {[0,1,2].map(i => (
-                  <div key={i} style={{ padding: '14px 0' }}>
+                  <div key={i} className="apk-research-skel-item">
                     <Skeleton variant="text" width="40%" height={14} />
                     <Skeleton variant="text" width="60%" height={12} delay={40} />
                     <Skeleton variant="text" width="30%" height={18} delay={80} />
@@ -438,7 +437,7 @@ export default function Explore() {
                           <div className="apk-research-bar-track">
                             <div
                               className="apk-research-bar-fill"
-                              style={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }}
+                              style={{ '--w': `${Math.min(Math.max(pct, 0), 100)}%` }}
                             />
                           </div>
                         )}

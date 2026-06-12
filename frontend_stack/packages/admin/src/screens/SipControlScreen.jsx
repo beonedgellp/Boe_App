@@ -9,6 +9,7 @@ import EmptyTableRow from '../components/EmptyTableRow.jsx';
 import SkeletonTile from '../components/SkeletonTile.jsx';
 import SkeletonTableRow from '../components/SkeletonTableRow.jsx';
 import { fmtInt } from '../helpers/formatters.js';
+import './admin-screens-shared.css';
 
 function SipControlStatusBadge({ status }) {
   const map = {
@@ -16,9 +17,10 @@ function SipControlStatusBadge({ status }) {
     approved: { bg: 'var(--be-green-soft)', color: 'var(--be-green)', label: 'Approved' },
     rejected: { bg: 'var(--be-red-soft)', color: 'var(--be-red)', label: 'Rejected' },
   };
-  const s = map[String(status).toLowerCase()] || { bg: 'var(--be-slate-soft)', color: 'var(--be-slate)', label: status || '—' };
+  const normalized = String(status).toLowerCase();
+  const s = map[normalized] || { bg: 'var(--be-slate-soft)', color: 'var(--be-slate)', label: status || '—' };
   return (
-    <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500, background: s.bg, color: s.color }}>
+    <span className={`adm-status-badge adm-status-badge--${normalized}`}>
       {s.label}
     </span>
   );
@@ -121,7 +123,7 @@ export default function SipControlScreen() {
         </div>
 
         {error && (
-          <div className="adm-validation-banner adm-validation-banner--error" style={{ margin: '12px 16px 0' }}>
+          <div className="adm-validation-banner adm-validation-banner--error adm-validation-banner--inline">
             {error}
           </div>
         )}

@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
+import { StickyActionBar } from '@beonedge/shared';
 import EmptyTableRow from './EmptyTableRow.jsx';
 import IndeterminateCheckbox from './IndeterminateCheckbox.jsx';
+import './DataTable.css';
 
 /**
  * DataTable — responsive table that switches to a card view on mobile.
@@ -9,11 +11,15 @@ import IndeterminateCheckbox from './IndeterminateCheckbox.jsx';
  * auto-generate `data-label` attributes for the mobile card view, so each
  * cell shows its label without duplicating markup.
  *
+ * `renderCell` is the preferred column renderer; `render` is kept for
+ * backward compatibility.
+ *
  * Example:
  *   <DataTable
  *     columns={[
- *       { key: 'name', title: 'Course', render: (c) => c.name },
- *       { key: 'price', title: 'Price', render: (c) => formatPrice(c.pricePaise), align: 'right' },
+ *       { key: 'name', title: 'Course', renderCell: (c) => <UserCell name={c.name} /> },
+ *       { key: 'price', title: 'Price', renderCell: (c) => <CurrencyCell amount={c.pricePaise / 100} />, align: 'right' },
+ *       { key: 'updated', title: 'Updated', renderCell: (c) => <DateCell date={c.updatedAt} /> },
  *     ]}
  *     rows={courses}
  *     loading={loading}
@@ -21,6 +27,16 @@ import IndeterminateCheckbox from './IndeterminateCheckbox.jsx';
  *     onRowClick={(c) => setEditing(c)}
  *   />
  */
+
+function alignClass(align) {
+  if (align === 'right') return 'adm-align-right';
+  if (align === 'center') return 'adm-align-center';
+  return 'adm-align-left';
+}
+
+function classNames(...parts) {
+  return parts.filter(Boolean).join(' ');
+}
 export default function DataTable({
   columns,
   rows,
@@ -59,10 +75,9 @@ export default function DataTable({
   return (
     <div className="ash-table-wrap">
       {selectionEnabled && bulkActions && selectedCount > 0 && (
-        <div className="adm-bulk-bar">
-          <span className="adm-bulk-count">{selectedCount} selected</span>
-          <div className="adm-bulk-actions">{bulkActions}</div>
-        </div>
+        <StickyActionBar actions={bulkActions}>
+          <span>{selectedCount} selected</span>
+        </StickyActionBar>
       )}
       <table className="ash-table">
         <thead>
@@ -80,8 +95,7 @@ export default function DataTable({
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={col.className}
-                style={{ textAlign: col.align === 'right' ? 'right' : col.align === 'center' ? 'center' : 'left' }}
+                className={classNames(col.className, alignClass(col.align))}
               >
                 {col.title}
               </th>
@@ -138,13 +152,13 @@ export default function DataTable({
                   </td>
                 )}
                 {columns.map((col, colIndex) => {
-                  const cell = col.render(row, rowIndex);
+                  const renderFn = col.renderCell ?? col.render;
+                  const cell = renderFn ? renderFn(row, rowIndex) : null;
                   return (
                     <td
                       key={col.key}
                       data-label={labels[colIndex + (selectionEnabled ? 1 : 0)]}
-                      className={col.cellClassName}
-                      style={{ textAlign: col.align === 'right' ? 'right' : col.align === 'center' ? 'center' : 'left' }}
+                      className={classNames(col.cellClassName, alignClass(col.align))}
                     >
                       {cell}
                     </td>

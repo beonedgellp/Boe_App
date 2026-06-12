@@ -1,10 +1,11 @@
 import React from 'react';
+import './DataFreshnessBadge.css';
 import { fmtDate } from '../format.js';
 
 const SOURCE_META = {
   real: { dotColor: 'var(--be-green)', label: 'Live data' },
   mock: { dotColor: 'var(--be-amber)', label: 'Test data' },
-  derived: { dotColor: 'var(--be-blue)', label: 'Computed' },
+  derived: { dotColor: 'var(--be-slate)', label: 'Computed' },
   stale: { dotColor: 'var(--be-red)', label: 'Stale' },
 };
 
@@ -13,31 +14,14 @@ export default function DataFreshnessBadge({ source, asOf, stale, className = ''
   const dateStr = asOf ? fmtDate(asOf) : '';
 
   return (
-    <span
-      className={`be-freshness-badge ${className}`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        fontSize: '10px',
-        fontWeight: 500,
-        letterSpacing: '0.02em',
-        flexWrap: 'wrap',
-      }}
-    >
+    <span className={`be-freshness-badge ${className}`}>
       <span
         className="be-freshness-dot"
-        style={{
-          width: '6px',
-          height: '6px',
-          borderRadius: '999px',
-          background: meta.dotColor,
-          flexShrink: 0,
-        }}
+        style={{ background: meta.dotColor }}
       />
       <span>{stale && dateStr ? `Stale — as of ${dateStr}` : meta.label}</span>
       {!stale && asOf && (
-        <span style={{ color: 'var(--be-slate)', fontWeight: 400 }}>
+        <span className="be-freshness-date">
           {fmtDate(asOf)}
         </span>
       )}

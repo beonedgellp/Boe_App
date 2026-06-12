@@ -8,7 +8,10 @@
 
 /* With preview: rail | editor | preview */
 .be-split-layout.has-preview {
-  grid-template-columns: var(--split-rail-w, var(--be-sidebar-w)) minmax(0, var(--split-editor-max, 560px)) 1fr;
+  grid-template-columns:
+    var(--split-rail-w, var(--be-sidebar-w))
+    minmax(0, var(--split-editor-max, 560px))
+    minmax(280px, 1fr);
 }
 
 .be-split-rail {
@@ -30,11 +33,11 @@
 
 .be-split-preview {
   position: sticky;
-  top: var(--be-space-4);
-  height: calc(100dvh - var(--be-space-8));
+  top: calc(var(--be-nav-h-web, 60px) + var(--be-space-4));
+  height: calc(100dvh - var(--be-nav-h-web, 60px) - var(--be-space-8));
   display: flex;
   flex-direction: column;
-  min-width: 320px;
+  min-width: 280px;
   max-width: 100%;
   border: var(--be-border-1);
   border-radius: var(--be-radius-md);

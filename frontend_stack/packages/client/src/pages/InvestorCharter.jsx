@@ -20,8 +20,8 @@ export default function InvestorCharter() {
       <>
         <AppBar title="Investor Charter" />
         <div className="apk-screen">
-          <div className="be-card apk-skel" style={{ height: 180 }} />
-          <div className="be-card apk-skel" style={{ height: 240 }} />
+          <div className="be-card apk-skel apk-skel--h-180" />
+          <div className="be-card apk-skel apk-skel--h-240" />
         </div>
       </>
     );
@@ -64,14 +64,14 @@ export default function InvestorCharter() {
               <span>{charter.contact.hours}</span>
             </div>
           </div>
-          <div className="apk-charter-contact-item" style={{ marginTop: 12 }}>
+          <div className="apk-charter-contact-item apk-charter-contact-address">
             <MapPin size={16} strokeWidth={1.5} />
-            <span style={{ whiteSpace: 'pre-line' }}>{charter.contact.address}</span>
+            <span className="apk-contact-address">{charter.contact.address}</span>
           </div>
         </div>
 
         <div className="apk-charter-footer">
-          <Link to="/app/explore" className="apk-back-link" style={{ display: 'inline-flex' }}>
+          <Link to="/app/explore" className="apk-back-link apk-inline-flex">
             <ArrowLeft size={16} strokeWidth={1.5} />
             <span>Back to strategies</span>
           </Link>
