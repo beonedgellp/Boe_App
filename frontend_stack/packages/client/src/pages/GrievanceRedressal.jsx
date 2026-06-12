@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AppBar from '../layout/AppBar.jsx';
+import Skeleton from '@beonedge/shared/components/Skeleton.jsx';
 import * as disclosureApi from '../services/disclosureApi.js';
 import { Mail, Phone, Clock, MapPin, ArrowLeft, ExternalLink, ChevronRight, Clock3 } from 'lucide-react';
 
@@ -21,8 +22,8 @@ export default function GrievanceRedressal() {
       <>
         <AppBar title="Grievance Redressal" />
         <div className="apk-screen">
-          <div className="be-card apk-skel apk-skel--h-180" />
-          <div className="be-card apk-skel apk-skel--h-240" />
+          <Skeleton variant="card" height={180} />
+          <Skeleton variant="card" height={240} />
         </div>
       </>
     );
@@ -53,19 +54,19 @@ export default function GrievanceRedressal() {
                   </div>
                   {step.actionLabel && step.actionRoute && (
                     <button
-                      className="apk-link apk-inline-link apk-grievance-action"
+                      className="apk-link apk-inline-link apk-mt-2"
                       onClick={() => navigate(step.actionRoute)}
                     >
                       {step.actionLabel} <ChevronRight size={12} strokeWidth={2} />
                     </button>
                   )}
                   {step.contactEmail && (
-                    <a className="apk-link apk-inline-link apk-grievance-action" href={`mailto:${step.contactEmail}`}>
+                    <a className="apk-link apk-inline-link apk-mt-2" href={`mailto:${step.contactEmail}`}>
                       {step.contactEmail} <ExternalLink size={12} strokeWidth={2} />
                     </a>
                   )}
                   {step.externalUrl && (
-                    <a className="apk-link apk-inline-link apk-grievance-action" href={step.externalUrl} target="_blank" rel="noopener noreferrer">
+                    <a className="apk-link apk-inline-link apk-mt-2" href={step.externalUrl} target="_blank" rel="noopener noreferrer">
                       Visit portal <ExternalLink size={12} strokeWidth={2} />
                     </a>
                   )}
@@ -105,9 +106,9 @@ export default function GrievanceRedressal() {
               <span>{content.contact.hours}</span>
             </div>
           </div>
-          <div className="apk-grievance-contact-item apk-grievance-contact-address">
+          <div className="apk-grievance-contact-item apk-contact-address">
             <MapPin size={16} strokeWidth={1.5} />
-            <span className="apk-contact-address">{content.contact.address}</span>
+            <span className="apk-pre-line">{content.contact.address}</span>
           </div>
         </div>
 

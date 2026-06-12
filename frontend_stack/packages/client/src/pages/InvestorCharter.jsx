@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppBar from '../layout/AppBar.jsx';
+import Skeleton from '@beonedge/shared/components/Skeleton.jsx';
 import * as disclosureApi from '../services/disclosureApi.js';
 import { Mail, Phone, Clock, MapPin, ArrowLeft, ShieldCheck } from 'lucide-react';
 
@@ -20,8 +21,8 @@ export default function InvestorCharter() {
       <>
         <AppBar title="Investor Charter" />
         <div className="apk-screen">
-          <div className="be-card apk-skel apk-skel--h-180" />
-          <div className="be-card apk-skel apk-skel--h-240" />
+          <Skeleton variant="card" height={180} />
+          <Skeleton variant="card" height={240} />
         </div>
       </>
     );
@@ -64,9 +65,9 @@ export default function InvestorCharter() {
               <span>{charter.contact.hours}</span>
             </div>
           </div>
-          <div className="apk-charter-contact-item apk-charter-contact-address">
+          <div className="apk-charter-contact-item apk-contact-address">
             <MapPin size={16} strokeWidth={1.5} />
-            <span className="apk-contact-address">{charter.contact.address}</span>
+            <span className="apk-pre-line">{charter.contact.address}</span>
           </div>
         </div>
 

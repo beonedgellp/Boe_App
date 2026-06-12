@@ -15,7 +15,7 @@ export default function Legal() {
   return (
     <>
       <AppBar title="Legal & disclosures" />
-      <div className="apk-screen apk-legal-screen">
+      <div className="apk-screen apk-screen-legal">
         {SECTIONS.map((s) => (
           <div key={s.h} className="apk-legal-section">
             <h3>{s.h}</h3>

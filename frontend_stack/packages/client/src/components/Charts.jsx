@@ -289,11 +289,11 @@ export function LineComparisonChart({
       {showLegend && (
         <div className="apk-line-chart-legend">
           <span className="apk-line-chart-legend-item">
-            <span className="apk-line-chart-swatch" style={{ background: fundColor }} />
+            <span className="apk-line-chart-swatch" style={{ '--be-chart-swatch-color': fundColor }} />
             {legendFundLabel}
           </span>
           <span className="apk-line-chart-legend-item">
-            <span className="apk-line-chart-swatch" style={{ background: benchmarkColor }} />
+            <span className="apk-line-chart-swatch" style={{ '--be-chart-swatch-color': benchmarkColor }} />
             {legendBenchmarkLabel}
           </span>
         </div>

@@ -7,8 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "build:android": "VITE_BEO_APP_TARGET=client vite build --mode android && node scripts/check-android-dist.mjs",
+    "build:android:prod": "VITE_BEO_APP_TARGET=client vite build --mode android-prod && node scripts/check-android-dist.mjs",
     "preview": "vite preview",
     "android:sync": "npm run build:android && cap sync android",
+    "android:sync:prod": "npm run build:android:prod && cap sync android",
     "android:open": "npm run android:sync && cap open android",
     "android:run": "npm run android:sync && cap run android"
   },

@@ -3,7 +3,10 @@
   "appName": "BeOnEdge",
   "webDir": "dist",
   "server": {
-    "androidScheme": "http",
+    "androidScheme": "https",
     "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
   }
 }

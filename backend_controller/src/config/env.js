@@ -136,9 +136,14 @@ export function assertProductionConfig(config) {
   if (!config.signupProxySecret && !config.signupAllowedOrigin) {
     errors.push('SIGNUP_PROXY_SECRET or SIGNUP_ALLOWED_ORIGIN must be set in production/live mode.');
   }
-  const hasLocalhostCors = config.corsOrigins.some((o) => o.includes('localhost') || o.includes('127.0.0.1'));
+  // Capacitor APKs present these WebView origins even in production
+  // (androidScheme=https); they cannot be claimed by a plain-http dev server.
+  const capacitorAppOrigins = new Set(['https://localhost', 'capacitor://localhost']);
+  const hasLocalhostCors = config.corsOrigins.some(
+    (o) => !capacitorAppOrigins.has(o) && (o.includes('localhost') || o.includes('127.0.0.1')),
+  );
   if (hasLocalhostCors) {
-    errors.push('CORS_ORIGIN must not contain localhost or 127.0.0.1 in production/live mode.');
+    errors.push('CORS_ORIGIN must not contain localhost or 127.0.0.1 in production/live mode (the Capacitor app origins https://localhost and capacitor://localhost are exempt).');
   }
   if (config.corsOrigins.length === 0 || config.corsOrigins.includes('*')) {
     errors.push('CORS_ORIGIN must be an explicit non-wildcard list in production/live mode.');

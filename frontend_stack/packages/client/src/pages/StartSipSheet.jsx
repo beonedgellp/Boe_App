@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CreditCard } from 'lucide-react';
 import AppBar from '../layout/AppBar.jsx';
+import Skeleton from '@beonedge/shared/components/Skeleton.jsx';
 import * as fundsApi from '../services/fundsApi.js';
 import * as ordersApi from '../services/ordersApi.js';
 import { useAppConfig } from '../hooks/useAppConfig.js';
@@ -31,7 +32,7 @@ export default function StartSipSheet() {
 
   useEffect(() => { fundsApi.getFund(fundId).then(setFund).catch(() => setFund(null)); }, [fundId, appConfig.publishedAt]);
 
-  if (!fund) return (<><AppBar title="Start SIP" /><div className="apk-screen"><div className="apk-skel apk-skel--h-200" /></div></>);
+  if (!fund) return (<><AppBar title="Start SIP" /><div className="apk-screen"><Skeleton variant="card" height={200} /></div></>);
 
   const minSip = Number(fund.minSip) || 0;
   const minDurationMonths = Number(settings.minDurationMonths) || 0;
@@ -149,10 +150,10 @@ export default function StartSipSheet() {
         <AppBar title="Review SIP" />
         <div className="apk-screen">
           <div className="be-eyebrow">Review your SIP</div>
-          <h1 className="apk-h-sm apk-mt-6">{fund.name}</h1>
-          <p className="apk-sheet-tagline">{fund.tagline}</p>
+          <h1 className="apk-h-sm apk-mt-1">{fund.name}</h1>
+          <p className="apk-review-tagline">{fund.tagline}</p>
 
-          <div className="be-card-flat apk-review-card apk-flex-col apk-gap-10">
+          <div className="be-card-flat apk-review-summary">
             <div className="apk-sheet-summary-row"><span>Amount per month</span><strong className="be-money"><MoneyValue amount={amountNumber} source="derived" asOf={new Date().toISOString()} showBadge={false} /></strong></div>
             <div className="apk-sheet-summary-row"><span>Duration</span><strong>{durationText}</strong></div>
             <div className="apk-sheet-summary-row"><span>Debit day</span><strong>{debitDayText}</strong></div>
@@ -160,20 +161,20 @@ export default function StartSipSheet() {
             <div className="apk-sheet-summary-row"><span>Mandate cap</span><strong className="be-money"><MoneyValue amount={mandateCap} source="derived" asOf={new Date().toISOString()} showBadge={false} /></strong></div>
           </div>
 
-          <div className="be-disclosure apk-mt-14">{riskDisclosure}</div>
+          <div className="be-disclosure apk-mt-4">{riskDisclosure}</div>
 
-          <label className="apk-consent-row apk-mt-10">
+          <label className="apk-consent-row apk-mt-2">
             <input type="checkbox" checked={reviewConsent} onChange={(e) => setReviewConsent(e.target.checked)} />
             <span>I understand that investments are subject to market risks and have read the scheme-related documents.</span>
           </label>
 
-          {err && <div className="apk-banner apk-banner-red apk-mt-10">{err}</div>}
+          {err && <div className="apk-banner apk-banner-red apk-mt-2">{err}</div>}
 
-        <div className="apk-review-actions apk-flex-col apk-gap-10">
+        <div className="apk-review-actions">
             <button className="be-btn be-btn-primary be-btn-block be-btn-lg" disabled={!canConfirm} onClick={onConfirm}>
               {submitting ? 'Setting up SIP…' : (
                 <>
-                  <CreditCard size={18} strokeWidth={2} className="apk-btn-icon" /> Continue to Razorpay
+                  <CreditCard size={18} strokeWidth={2} /> Continue to Razorpay
                 </>
               )}
             </button>
@@ -253,8 +254,8 @@ export default function StartSipSheet() {
         {settings.stepUpEnabled && (
           <div className="apk-stepup-toggle" onClick={() => setStepUpOn((v) => !v)} role="button" aria-pressed={stepUpOn}>
             <div>
-              <div className="apk-stepup-title">{disclosures.stepUpTitle}</div>
-              <div className="apk-stepup-body">{disclosures.stepUpBody}</div>
+              <div className="apk-toggle-label">{disclosures.stepUpTitle}</div>
+              <div className="apk-toggle-hint">{disclosures.stepUpBody}</div>
             </div>
             <div className={'apk-toggle' + (stepUpOn ? ' is-on' : '')} />
           </div>
@@ -266,7 +267,7 @@ export default function StartSipSheet() {
                 <button key={p} className={'apk-chip' + (stepUpPct === p ? ' is-active' : '')} onClick={() => setStepUpPct(p)}>{p}%</button>
               ))}
             </div>
-            <div className="be-disclosure apk-mt-8">Your SIP amount will increase by {stepUpPct}% every 12 months. You can change or cancel this from Profile → Mandates.</div>
+            <div className="be-disclosure apk-mt-2">Your SIP amount will increase by {stepUpPct}% every 12 months. You can change or cancel this from Profile → Mandates.</div>
           </div>
         )}
 
@@ -287,7 +288,7 @@ export default function StartSipSheet() {
           <div className="apk-sheet-summary-row"><span>Total over {months || 'configured'} mo</span><strong className="be-money"><MoneyValue amount={amountNumber * monthsNumber} source="derived" asOf={new Date().toISOString()} showBadge={false} /></strong></div>
           <div className="apk-sheet-summary-row"><span>Mandate cap preview</span><strong className="be-money"><MoneyValue amount={mandateCap} source="derived" asOf={new Date().toISOString()} showBadge={false} /></strong></div>
           {stepUpOn && <div className="apk-sheet-summary-row"><span>Step-up</span><strong>+{stepUpPct}% every 12 mo</strong></div>}
-          <div className="be-disclosure apk-mt-6">{disclosures.paymentDisclosure}</div>
+          <div className="be-disclosure apk-mt-1">{disclosures.paymentDisclosure}</div>
         </div>
 
         {err && <div className="apk-banner apk-banner-red">{err}</div>}

@@ -15,11 +15,12 @@ export default function Blocked() {
   const { user, logout } = useSession();
   const cfg = COPY[user?.status] || COPY.pending_review;
   const Icon = cfg.Icon;
+  const statusClass = user?.status || 'pending_review';
 
   return (
     <div className="apk-blocked">
       <div className="be-card apk-blocked-card">
-        <div className="apk-blocked-icon" style={{ color: cfg.color }}>
+        <div className={`apk-blocked-icon is-${statusClass}`}>
           <Icon size={28} strokeWidth={1.5} />
         </div>
         <h2 className="apk-h-sm apk-blocked-title">{cfg.headline}</h2>

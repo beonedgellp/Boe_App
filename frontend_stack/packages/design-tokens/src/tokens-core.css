@@ -46,7 +46,6 @@
   --be-border-strong-color: var(--be-slate-rule-strong);
   --be-border:       var(--be-border-color);
   --be-border-strong: var(--be-border-strong-color);
-  --be-border-focus: 1.5px solid var(--be-ink);
   --be-surface:      var(--be-bg-elevated);
 
   /* Text on colored soft backgrounds — ensures accessible contrast --------- */
@@ -116,6 +115,7 @@
   /* Borders ---------------------------------------------------------------- */
   --be-border-1: 1px solid var(--be-border-color);
   --be-border-1-strong: 1px solid var(--be-border-strong-color);
+  --be-border-focus: 1.5px solid var(--be-ink);
 
   /* Shadows ---------------------------------------------------------------- */
   --be-shadow-1: 0 1px 2px color-mix(in srgb, var(--be-ink) 6%, transparent), 0 1px 1px color-mix(in srgb, var(--be-ink) 4%, transparent);
@@ -151,7 +151,7 @@
   --be-section-gap:      var(--be-space-6);   /* 24px */
   --be-card-pad:         var(--be-space-5);   /* 20px */
   --be-card-gap:         var(--be-space-4);   /* 16px */
-  --be-content-max:      var(--be-container-admin);
+  --be-content-max:      var(--be-container-reading);
 
   --be-nav-h-web:        60px;
   --be-appbar-h:         52px;
@@ -173,8 +173,14 @@
   --be-opacity-disabled: 0.4;
   --be-opacity-backdrop: 0.5;
 
-  /* Breakpoints (documented constants; CSS custom props cannot be used in @media) */
-  /* sm: 375px | md: 430px | lg: 768px | sidebar-collapse: 1100px | mobile: 768px */
+  /* Breakpoints ------------------------------------------------------------
+   * CSS custom properties cannot be used inside @media, so these are
+   * documented constants for reference in media queries.
+   *   sm:              375px
+   *   md:              430px
+   *   lg / mobile:     768px
+   *   sidebar-collapse: 1100px
+   */
 
   /* Icon sizes ------------------------------------------------------------- */
   --be-icon-xs: 12px;
@@ -403,14 +409,14 @@ html[data-theme="dark"] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Semantic surface / elevation utilities                                   */
+/* Surface / elevation utilities                                            */
 /* -------------------------------------------------------------------------- */
 
 .be-surface { background: var(--be-surface); color: var(--be-fg); }
 .be-surface-elevated { background: var(--be-bg-elevated); color: var(--be-fg); }
 .be-inverse { background: var(--be-bg-inverse); color: var(--be-fg-inverse); }
-.be-border { border-color: var(--be-border-color); }
-.be-border-strong { border-color: var(--be-border-strong-color); }
+.be-border { border-color: var(--be-border); }
+.be-border-strong { border-color: var(--be-border-strong); }
 
 /* -------------------------------------------------------------------------- */
 /* Layout utilities                                                         */
@@ -424,9 +430,8 @@ html[data-theme="dark"] {
   padding-right: var(--be-page-pad-x);
   box-sizing: border-box;
 }
-
 .be-container-reading { max-width: var(--be-container-reading); }
-.be-container-admin   { max-width: var(--be-container-admin); }
+.be-container-admin { max-width: var(--be-container-admin); }
 
 .be-stack-1  { display: flex; flex-direction: column; gap: var(--be-space-1); }
 .be-stack-2  { display: flex; flex-direction: column; gap: var(--be-space-2); }
@@ -439,16 +444,16 @@ html[data-theme="dark"] {
 .be-stack-9  { display: flex; flex-direction: column; gap: var(--be-space-9); }
 .be-stack-10 { display: flex; flex-direction: column; gap: var(--be-space-10); }
 
-.be-inline-1  { display: flex; align-items: center; gap: var(--be-space-1); }
-.be-inline-2  { display: flex; align-items: center; gap: var(--be-space-2); }
-.be-inline-3  { display: flex; align-items: center; gap: var(--be-space-3); }
-.be-inline-4  { display: flex; align-items: center; gap: var(--be-space-4); }
-.be-inline-5  { display: flex; align-items: center; gap: var(--be-space-5); }
-.be-inline-6  { display: flex; align-items: center; gap: var(--be-space-6); }
-.be-inline-7  { display: flex; align-items: center; gap: var(--be-space-7); }
-.be-inline-8  { display: flex; align-items: center; gap: var(--be-space-8); }
-.be-inline-9  { display: flex; align-items: center; gap: var(--be-space-9); }
-.be-inline-10 { display: flex; align-items: center; gap: var(--be-space-10); }
+.be-gap-1  { gap: var(--be-space-1); }
+.be-gap-2  { gap: var(--be-space-2); }
+.be-gap-3  { gap: var(--be-space-3); }
+.be-gap-4  { gap: var(--be-space-4); }
+.be-gap-5  { gap: var(--be-space-5); }
+.be-gap-6  { gap: var(--be-space-6); }
+.be-gap-7  { gap: var(--be-space-7); }
+.be-gap-8  { gap: var(--be-space-8); }
+.be-gap-9  { gap: var(--be-space-9); }
+.be-gap-10 { gap: var(--be-space-10); }
 
 .be-wrap { flex-wrap: wrap; }
 .be-min-w-0 { min-width: 0; }

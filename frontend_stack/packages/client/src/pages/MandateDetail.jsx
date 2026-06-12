@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppBar from '../layout/AppBar.jsx';
+import Skeleton from '@beonedge/shared/components/Skeleton.jsx';
 import * as ordersApi from '../services/ordersApi.js';
 import { fmtMoney, fmtDate } from '../utils/format.js';
 
@@ -26,7 +27,7 @@ export default function MandateDetail() {
     }).catch(() => setMandate(null));
   }, [mandateId]);
 
-  if (!mandate) return (<><AppBar title="Mandate" /><div className="apk-screen"><div className="apk-skel apk-skel--h-200" /></div></>);
+  if (!mandate) return (<><AppBar title="Mandate" /><div className="apk-screen"><Skeleton variant="card" height={200} /></div></>);
 
   const isRazorpayPending = mandate.provider === 'razorpay' && !mandate.providerMandateId;
 
@@ -49,7 +50,7 @@ export default function MandateDetail() {
       <AppBar title="Mandate" />
       <div className="apk-screen">
         <div className="be-card apk-mandate-card">
-          <div className="apk-sheet-summary-row">
+          <div className="apk-mandate-head">
             <div className="apk-fund-name">{order?.type === 'sip' ? `SIP · ${fmtMoney(order.amount)}/mo` : 'Mandate'}</div>
             <span className={'be-badge ' + (mandate.status === 'active' ? 'be-badge-active' : 'be-badge-paused')}>
               <span className="be-badge-dot" />{mandate.status.replace('_', ' ')}
@@ -61,8 +62,8 @@ export default function MandateDetail() {
 
         <div className="be-eyebrow">Manage SIP</div>
         {isRazorpayPending ? (
-          <div className="be-card apk-mandate-empty">
-            <p className="apk-mandate-empty-text">
+          <div className="be-card be-pad-4 apk-text-center">
+            <p className="apk-body-text">
               AutoPay setup is pending. Management options will appear after your first successful payment.
             </p>
           </div>
@@ -74,13 +75,13 @@ export default function MandateDetail() {
           </div>
         )}
 
-        <div className="be-eyebrow apk-mt-12">My recent requests</div>
+        <div className="be-eyebrow apk-mt-3">My recent requests</div>
         {requests.length === 0 ? (
           <div className="be-card apk-empty"><p>No requests yet.</p></div>
         ) : (
-          <div className="be-card apk-mandate-list-card">
+          <div className="be-card apk-pad-x">
             {requests.map((r) => (
-              <div key={r.id} className="apk-list-row apk-mandate-list-row">
+              <div key={r.id} className="apk-list-row apk-list-row-thin">
                 <div>
                   <div className="apk-list-l">{r.requestType.replace('_', ' ')}{r.requestedValue ? ` → ${fmtMoney(r.requestedValue)}` : ''}</div>
                   <div className="apk-list-meta">{fmtDate(r.createdAt, { withTime: true })}</div>
@@ -101,24 +102,24 @@ export default function MandateDetail() {
           <div className="apk-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="apk-sheet-handle" />
             <h2 className="apk-h-sm">Confirm {confirm.type.replace('_', ' ')} request</h2>
-            <p className="apk-mandate-desc">
+            <p className="apk-body-text apk-mt-1">
               {confirm.type === 'pause' && 'Pausing stops future debits. Your current investments remain active. You can resume later from this screen.'}
               {confirm.type === 'cancel' && 'Cancelling stops all future debits and terminates the mandate. This cannot be undone.'}
               {confirm.type === 'change_amount' && 'This updates your monthly SIP amount. The change takes effect after review.'}
             </p>
             {confirm.type === 'change_amount' && (
-              <div className="be-field apk-mt-12">
+              <div className="be-field apk-mt-3">
                 <label>New monthly amount</label>
                 <div className="apk-amount-row">
                   <span className="apk-amount-prefix">₹</span>
                   <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={order?.amount ? Math.round(order.amount * 0.5) : 0} step="500" value={newAmount} onChange={(e) => setNewAmount(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} placeholder="0" />
                 </div>
                 {newAmount !== '' && Number(newAmount) < (order?.amount ? Math.round(order.amount * 0.5) : 0) && (
-                  <div className="be-field-error apk-mt-6">Minimum is {fmtMoney(order?.amount ? Math.round(order.amount * 0.5) : 0)}.</div>
+                  <div className="be-field-error apk-mt-1">Minimum is {fmtMoney(order?.amount ? Math.round(order.amount * 0.5) : 0)}.</div>
                 )}
               </div>
             )}
-            <div className="apk-mandate-actions-row">
+            <div className="apk-sheet-actions">
               <button className="be-btn be-btn-secondary apk-flex-1" onClick={() => setConfirm(null)} disabled={submitting}>Cancel</button>
               <button
                 className="be-btn be-btn-primary apk-flex-1"

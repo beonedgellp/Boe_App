@@ -14,7 +14,7 @@
 .apk-line-chart svg { display: block; width: 100%; height: auto; }
 .apk-line-chart-legend { display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--be-slate); }
 .apk-line-chart-legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.apk-line-chart-swatch { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+.apk-line-chart-swatch { width: 12px; height: 3px; border-radius: 2px; display: inline-block; background: var(--be-chart-swatch-color); }
 
 /* ---- Flat donut ---- */
 .apk-donut { display: block; margin: 0 auto; }

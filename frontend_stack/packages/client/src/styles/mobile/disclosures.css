@@ -194,9 +194,9 @@
   padding: 8px 0 16px;
 }
 
-
 /* Inline-style replacements */
 .apk-legal-screen { padding-bottom: 40px; }
+.apk-screen-legal { padding-bottom: var(--be-space-10); }
 
 .apk-skel--h-180 { height: 180px; }
 .apk-skel--h-240 { height: 240px; }
@@ -206,6 +206,10 @@
 .apk-charter-contact-address,
 .apk-grievance-contact-address { margin-top: 12px; }
 
-.apk-contact-address { white-space: pre-line; }
+.apk-contact-address {
+  white-space: pre-line;
+  margin-top: var(--be-space-3);
+}
 
 .apk-inline-flex { display: inline-flex; }
+.apk-pre-line { white-space: pre-line; }

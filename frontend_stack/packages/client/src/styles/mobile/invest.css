@@ -125,6 +125,28 @@
 
 /* Mandate detail */
 .apk-mandate-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.apk-mandate-card { padding: var(--be-space-4); display: flex; flex-direction: column; gap: var(--be-space-1); }
+.apk-mandate-head { display: flex; justify-content: space-between; align-items: center; gap: var(--be-space-3); flex-wrap: wrap; }
+.apk-mandate-head .apk-fund-name { flex: 1 1 0%; min-width: 0; }
+.apk-body-text { color: var(--be-slate); font-size: var(--be-text-sm); line-height: 1.6; margin: 0; }
+.apk-text-center { text-align: center; }
+.apk-mt-1 { margin-top: var(--be-space-1); }
+.apk-mt-2 { margin-top: var(--be-space-2); }
+.apk-mt-3 { margin-top: var(--be-space-3); }
+.apk-mt-4 { margin-top: var(--be-space-4); }
+.apk-pad-x { padding-left: var(--be-space-4); padding-right: var(--be-space-4); }
+.apk-list-row-thin { padding: var(--be-space-3) 0; }
+.apk-sheet-actions { display: flex; gap: var(--be-space-2); margin-top: var(--be-space-4); }
+.apk-flex-1 { flex: 1 1 0%; min-width: 0; }
+.apk-auth-icon { color: var(--be-gold); margin-bottom: var(--be-space-3); }
+.apk-auth-title { margin: 0 0 var(--be-space-2); font-size: var(--be-text-base); }
+.apk-steps-list { margin: 0; padding: 0; list-style: none; }
+
+.apk-review-tagline { font-size: var(--be-text-sm); color: var(--be-slate); margin-top: var(--be-space-1); margin-bottom: 0; }
+.apk-review-summary { margin-top: var(--be-space-5); display: flex; flex-direction: column; gap: var(--be-space-2); }
+.apk-review-actions { margin-top: auto; padding-top: var(--be-space-5); display: flex; flex-direction: column; gap: var(--be-space-2); }
+.apk-toggle-label { font-size: var(--be-text-base); font-weight: 500; }
+.apk-toggle-hint { font-size: var(--be-text-xs); color: var(--be-slate); margin-top: var(--be-space-1); }
 
 /* Payment status */
 .apk-payment-state {
