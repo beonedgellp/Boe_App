@@ -274,3 +274,33 @@
     padding: var(--be-space-6);
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Standard responsive patterns — use these instead of per-screen hacks       */
+/* -------------------------------------------------------------------------- */
+
+/* Scroll wrapper for wide tables: table keeps its natural width and scrolls
+ * horizontally inside the page at any viewport. Pair with .adm-table/.ash-table. */
+.be-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+}
+
+.be-table-wrap table {
+  width: 100%;
+  min-width: max-content;
+}
+
+/* Filter/search rows: children share the row fluidly and wrap on narrow
+ * viewports — replaces per-screen width:100% overrides. */
+.be-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--be-space-3);
+}
+
+.be-filter-bar > * {
+  flex: 1 1 clamp(160px, 20vw, 260px);
+  min-width: 0;
+}

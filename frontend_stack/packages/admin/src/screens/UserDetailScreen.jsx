@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@beonedge/client/services/_util.js';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import './admin-screens-shared.css';
 import I from '../components/I.jsx';
 import EmptyState from '@beonedge/shared/components/EmptyState.jsx';
