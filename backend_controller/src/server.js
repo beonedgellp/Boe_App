@@ -8,6 +8,17 @@ export function createBackendServer({ config = loadConfig(), logger = createLogg
   return createServer((req, res) => router.handle(req, res));
 }
 
+export function handleListenError({ error, config, logger, exit = process.exit }) {
+  if (error?.code !== 'EADDRINUSE') {
+    throw error;
+  }
+
+  logger.error(`Port already in use: http://${config.host}:${config.port}`);
+  logger.error('Stop the existing backend process or set PORT to a different value.');
+  logger.error(`Find the process with: lsof -nP -iTCP:${config.port} -sTCP:LISTEN`);
+  exit(1);
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const warnings = assertRuntimeConfig(config);
@@ -20,6 +31,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   const server = createBackendServer({ config, logger });
+  server.on('error', (error) => handleListenError({ error, config, logger }));
 
   server.listen(config.port, config.host, () => {
     logger.info(`BeOnEdge backend listening on http://${config.host}:${config.port}`);
