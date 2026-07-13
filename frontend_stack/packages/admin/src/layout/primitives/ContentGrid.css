@@ -14,7 +14,7 @@
 
 /* Responsive: auto-fit with minmax */
 .be-grid--responsive {
-  grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col, 240px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-col, var(--be-col-min-card)), 1fr));
 }
 
 /* Tablet: force 2-col for 3-6 col grids */

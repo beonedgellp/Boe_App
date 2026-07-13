@@ -25,7 +25,6 @@ import PlansPage from '../features/site/PlansPage.jsx';
 import FaqsPage from '../features/site/FaqsPage.jsx';
 import LandingContentPage from '../features/site/LandingContentPage.jsx';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import '../styles/desktop/shell.css';
 import '../styles/desktop/site.css';
 

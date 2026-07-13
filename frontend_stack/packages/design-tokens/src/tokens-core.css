@@ -188,6 +188,33 @@
   --be-icon-md: 20px;
   --be-icon-lg: 24px;
   --be-icon-xl: 32px;
+
+  /* Fluid layout (additive — adopted by the admin surface first) ------------
+   * Viewport-scaled page padding and sidebar width. Surfaces opt in by
+   * re-pointing their scoped --be-page-pad-* / --be-sidebar-w at these. */
+  --be-page-pad-x-fluid: clamp(var(--be-space-4), 2.5vw, var(--be-space-14));
+  --be-page-pad-y-fluid: clamp(var(--be-space-4), 1.8vw, var(--be-space-8));
+  --be-sidebar-w-fluid:  clamp(208px, 16vw, 256px);
+  --be-sidebar-w-rail:   60px;
+
+  /* Component sizes ---------------------------------------------------------
+   * Tokenizes dimensions previously hardcoded across surface CSS. */
+  --be-avatar-sm:   26px;
+  --be-avatar-md:   32px;
+  --be-avatar-lg:   40px;
+  --be-icon-btn-sm: 36px;
+  --be-icon-btn-md: 44px;
+  --be-control-h:    40px;
+  --be-control-h-sm: 32px;
+
+  /* Table density ------------------------------------------------------------ */
+  --be-table-cell-pad-y: var(--be-space-3);
+  --be-table-cell-pad-x: var(--be-space-3);
+
+  /* Auto-fit grid column minimums --------------------------------------------
+   * For repeat(auto-fit, minmax(var(--be-col-min-*), 1fr)) responsive grids. */
+  --be-col-min-stat: clamp(180px, 18vw, 240px);
+  --be-col-min-card: clamp(260px, 24vw, 340px);
 }
 
 /* -------------------------------------------------------------------------- */

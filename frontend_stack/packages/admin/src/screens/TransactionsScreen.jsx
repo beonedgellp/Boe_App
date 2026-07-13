@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, ArrowLeft, ArrowRight } from 'lucide-react';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';

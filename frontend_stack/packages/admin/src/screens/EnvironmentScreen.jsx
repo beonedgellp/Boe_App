@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Shield, AlertTriangle, CheckCircle2, Database, Server } from 'lucide-react';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import { apiRequest } from '@beonedge/client/services/_util.js';

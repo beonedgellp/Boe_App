@@ -4,7 +4,6 @@ import { useAdminSession } from '@beonedge/client/store/AdminSessionContext.jsx'
 import logo from '@beonedge/shared/assets/logo.svg';
 import '@beonedge/client/styles/mobile/index.css';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 
 function safeAdminPath(value) {
   if (!value) return '/admin';

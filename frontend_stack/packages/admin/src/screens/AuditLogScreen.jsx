@@ -3,7 +3,6 @@ import {
   Search, Filter, History, User, FileText, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import StatTile from '../components/StatTile.jsx';
 import EmptyTableRow from '../components/EmptyTableRow.jsx';

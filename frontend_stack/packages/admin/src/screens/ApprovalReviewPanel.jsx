@@ -25,7 +25,6 @@ import { useAdminSession } from '@beonedge/client/store/AdminSessionContext.jsx'
 import { apiRequest, listFromPayload, useHttpApi } from '@beonedge/client/services/_util.js';
 import { listPendingApprovals } from '@beonedge/client/services/authApi.js';
 import '../styles/desktop/admin.css';
-import '../styles/mobile/admin.css';
 import I from '../components/I.jsx';
 import ApprovalStatusBadge from '../components/ApprovalStatusBadge.jsx';
 import { initials } from '../helpers/formatters.js';
