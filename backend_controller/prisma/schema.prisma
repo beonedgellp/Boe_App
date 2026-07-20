@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  client
+  admin
+  operations
+  support
+  system
+}
+
+enum UserStatus {
+  draft
+  pending_review
+  kyc_pending
+  approved
+  rejected
+  suspended
+  closed
+}
+
+enum ReviewStatus {
+  not_started
+  pending
+  in_review
+  approved
+  rejected
+  needs_more_information
+}
+
+
+enum RiskCategory {
+  conservative
+  balanced
+  growth
+  aggressive
+}
+
+enum InvestmentPlanType {
+  sip
+  one_time
+}
+
+enum InvestmentPlanStatus {
+  draft
+  submitted
+  pending_first_payment
+  first_payment_failed
+  pending_mandate_setup
+  mandate_pending_user_auth
+  active
+  installment_due
+  installment_processing
+  installment_success
+  installment_failed
+  skip_requested
+  paused
+  step_up_scheduled
+  change_requested
+  cancel_requested
+  cancelled
+  matured
+  withdrawal_requested
+  closed
+}
+
+enum TransactionType {
+  sip_installment
+  one_time_investment
+  redemption
+  fee
+  adjustment
+  refund
+}
+
+enum TransactionStatus {
+  draft
+  submitted
+  payment_pending
+  payment_failed
+  payment_confirmed
+  allotted
+  cancelled
+  reversed
+}
+
+
+enum PaymentStatus {
+  created
+  gateway_initiated
+  pending
+  success
+  failed
+  expired
+  refunded
+  reconciled
+}
+
+enum MandateStatus {
+  not_required
+  setup_required
+  created
+  pending_user_auth
+  active
+  paused
+  revoked
+  failed
+  expired
+}
+
+enum StatementStatus {
+  queued
+  generated
+  failed
+  voided
+}
+
+model User {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName           String       @map("first_name")
+  lastName            String       @map("last_name")
+  email               String       @unique
+  phone               String?      @unique
+  username            String?      @unique
+  passwordHash        String?      @map("password_hash")
+  role                UserRole     @default(client)
+  status              UserStatus   @default(draft)
+  riskProfileStatus   ReviewStatus @default(not_started) @map("risk_profile_status")
+  kycStatus           ReviewStatus @default(not_started) @map("kyc_status")
+  approvedAt          DateTime?    @map("approved_at")
+  rejectedAt          DateTime?    @map("rejected_at")
+  suspendedAt         DateTime?    @map("suspended_at")
+  closedAt            DateTime?    @map("closed_at")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  deviceSessions      DeviceSession[]
+  kycProfile          KycProfile?
+  investmentPlans     InvestmentPlan[]
+  transactions        Transaction[]
+  mandates            Mandate[]
+  payments            Payment[]
+  notifications       Notification[]
+  supportTickets      SupportTicket[]
+  timelineEvents      TimelineEvent[]
+  portfolioSnapshots  PortfolioSnapshot[]
+
+  @@map("users")
+}
+
+
+model DeviceSession {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  deviceId         String    @map("device_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  userAgent        String?   @map("user_agent")
+  ipAddress        String?   @map("ip_address")
+  lastSeenAt       DateTime  @default(now()) @map("last_seen_at")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([refreshTokenHash])
+  @@index([userId])
+  @@map("device_sessions")
+}
+
+model KycProfile {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String       @unique @map("user_id") @db.Uuid
+  panNumberEncrypted String?     @map("pan_number_encrypted")
+  panLast4          String?      @map("pan_last4")
+  aadhaarLast4      String?      @map("aadhaar_last4")
+  addressJson       Json         @default("{}") @map("address_json")
+  documentRefsJson  Json         @default("[]") @map("document_refs_json")
+  reviewStatus      ReviewStatus @default(not_started) @map("review_status")
+  adminNotes        String?      @map("admin_notes")
+  reviewedBy        String?      @map("reviewed_by") @db.Uuid
+  reviewedAt        DateTime?    @map("reviewed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_profiles")
+}
+
+
+model InvestmentPlan {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String               @map("user_id") @db.Uuid
+  productId      String               @map("product_id") @db.Uuid
+  type           InvestmentPlanType
+  amount         Decimal              @db.Decimal(18, 2)
+  durationMonths Int?                 @map("duration_months")
+  debitDay       Int?                 @map("debit_day")
+  status         InvestmentPlanStatus @default(draft)
+  mandateId      String?              @map("mandate_id") @db.Uuid
+  startDate      DateTime?            @map("start_date") @db.Date
+  nextDueDate    DateTime?            @map("next_due_date") @db.Date
+  completedAt    DateTime?            @map("completed_at")
+  cancelledAt    DateTime?            @map("cancelled_at")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  user           User                 @relation(fields: [userId], references: [id])
+  transactions   Transaction[]
+
+  @@index([userId, status])
+  @@map("investment_plans")
+}
+
+model Transaction {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String            @map("user_id") @db.Uuid
+  productId        String            @map("product_id") @db.Uuid
+  investmentPlanId String?           @map("investment_plan_id") @db.Uuid
+  type             TransactionType
+  amount           Decimal           @db.Decimal(18, 2)
+  nav              Decimal?          @db.Decimal(18, 6)
+  units            Decimal?          @db.Decimal(24, 8)
+  status           TransactionStatus @default(draft)
+  idempotencyKey   String?           @unique @map("idempotency_key")
+  requestedAt      DateTime          @default(now()) @map("requested_at")
+  paymentConfirmedAt DateTime?       @map("payment_confirmed_at")
+  allottedAt       DateTime?         @map("allotted_at")
+  cancelledAt      DateTime?         @map("cancelled_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at")
+
+  user             User              @relation(fields: [userId], references: [id])
+  investmentPlan   InvestmentPlan?   @relation(fields: [investmentPlanId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("transactions")
+}
+
+
+model Payment {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String        @map("user_id") @db.Uuid
+  transactionId     String?       @map("transaction_id") @db.Uuid
+  provider          String
+  providerPaymentId String?       @map("provider_payment_id")
+  amount            Decimal       @db.Decimal(18, 2)
+  currency          String        @default("INR") @db.Char(3)
+  mode              String?
+  status            PaymentStatus @default(created)
+  failureReason     String?       @map("failure_reason")
+  idempotencyKey    String?       @unique @map("idempotency_key")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  confirmedAt       DateTime?     @map("confirmed_at")
+  reconciledAt      DateTime?     @map("reconciled_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  user              User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Mandate {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String        @map("user_id") @db.Uuid
+  investmentPlanId    String?       @map("investment_plan_id") @db.Uuid
+  provider            String
+  providerMandateId   String?       @map("provider_mandate_id")
+  maxAmount           Decimal       @db.Decimal(18, 2) @map("max_amount")
+  frequency           String
+  debitDay            Int?          @map("debit_day")
+  status              MandateStatus @default(setup_required)
+  idempotencyKey      String?       @unique @map("idempotency_key")
+  validFrom           DateTime?     @map("valid_from") @db.Date
+  validTo             DateTime?     @map("valid_to") @db.Date
+  lastDebitAt         DateTime?     @map("last_debit_at")
+  nextDebitAt         DateTime?     @map("next_debit_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  user                User          @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("mandates")
+}
+
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  kind      String
+  title     String?
+  body      String?
+  status    String   @default("unread")
+  readAt    DateTime? @map("read_at")
+  payload   Json     @default("{}") 
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  subject         String
+  category        String?
+  status          String   @default("open")
+  priority        String?
+  assignedAdminId String?  @map("assigned_admin_id") @db.Uuid
+  metadata        Json     @default("{}") 
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        SupportTicketMessage[]
+
+  @@index([userId, status])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId    String   @map("ticket_id") @db.Uuid
+  authorId    String?  @map("author_id") @db.Uuid
+  authorRole  String   @map("author_role")
+  body        String
+  attachments Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("support_ticket_messages")
+}
+
+
+model TimelineEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  kind           String
+  occurredAt     DateTime @default(now()) @map("occurred_at")
+  payload        Json     @default("{}")
+  idempotencyKey String?  @unique @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("timeline_events")
+}
+
+model PortfolioSnapshot {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  asOfDate      DateTime @map("as_of_date") @db.Date
+  totalValue    Decimal? @map("total_value") @db.Decimal(20, 2)
+  investedValue Decimal? @map("invested_value") @db.Decimal(20, 2)
+  payload       Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, asOfDate])
+  @@map("portfolio_snapshots")
+}
+
+model Fund {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  lifecycleStage String   @default("draft") @map("lifecycle_stage")
+  currency       String   @default("INR")
+  minSip         Decimal? @map("min_sip") @db.Decimal(18, 2)
+  minLumpsum     Decimal? @map("min_lumpsum") @db.Decimal(18, 2)
+  aumCash        Decimal  @default(0) @map("aum_cash") @db.Decimal(20, 2)
+  aumAllocated   Decimal  @default(0) @map("aum_allocated") @db.Decimal(20, 2)
+  metadata       Json     @default("{}")
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([lifecycleStage])
+  @@map("funds")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String?  @map("admin_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  beforeJson Json?    @map("before_json")
+  afterJson  Json?    @map("after_json")
+  reason     String?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@map("admin_audit_logs")
+}
+
+model RequestIdempotency {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key            String    @unique
+  route          String
+  userId         String?   @map("user_id") @db.Uuid
+  requestHash    String    @map("request_hash")
+  status         String    @default("pending")
+  responseStatus Int?      @map("response_status")
+  responseBody   Json?     @map("response_body")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  completedAt    DateTime? @map("completed_at")
+  expiresAt      DateTime  @default(dbgenerated("now() + interval '24 hours'")) @map("expires_at")
+
+  @@map("request_idempotency")
+}

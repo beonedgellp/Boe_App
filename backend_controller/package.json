@@ -1,36 +1,52 @@
 {
   "name": "beonedge-backend-controller",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "BeOnEdge HTTP API scaffold and PostgreSQL migration runner.",
+  "description": "BeOnEdge HTTP API — Express + Prisma + TypeScript.",
   "engines": {
     "node": ">=20"
   },
   "imports": {
-    "#router": "./src/router.js",
-    "#config/*": "./src/config/*",
-    "#db/*": "./src/db/*",
-    "#http/*": "./src/http/*",
-    "#security/*": "./src/security/*",
-    "#shared/*": "./src/shared/*",
-    "#client/*": "./src/client/*",
-    "#admin/*": "./src/admin/*",
-    "#website/*": "./src/website/*"
+    "#config/*": "./dist/config/*",
+    "#db/*": "./dist/db/*",
+    "#http/*": "./dist/http/*",
+    "#security/*": "./dist/security/*",
+    "#shared/*": "./dist/shared/*",
+    "#client/*": "./dist/client/*",
+    "#admin/*": "./dist/admin/*",
+    "#website/*": "./dist/website/*"
   },
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "db:check": "node scripts/check-db.js",
-    "routes": "node scripts/print-routes.js",
-    "authz:admin-rbac": "node scripts/check-admin-rbac-routes.js",
-    "authz:403": "node scripts/check-auth-403-envelope.js",
-    "migrate": "node scripts/migrate.js up",
-    "migrate:status": "node scripts/migrate.js status",
-    "seed:auth": "node scripts/seed-auth.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "routes": "tsx scripts/print-routes.ts"
   },
   "dependencies": {
-    "pg": "^8.20.0",
-    "razorpay": "^2.9.6"
+    "@prisma/client": "^5.22.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "razorpay": "^2.9.6",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.9.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
   }
 }
