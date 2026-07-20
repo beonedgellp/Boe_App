@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "npm --workspace app run dev",
     "build": "npm --workspace app run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "landing:dev": "npm --prefix packages/landing_page run dev",
     "landing:build": "npm --prefix packages/landing_page run build",
     "landing:test": "npm --prefix packages/landing_page test",
@@ -18,5 +19,11 @@
     "android:open": "npm --workspace app run android:open",
     "android:run": "npm --workspace app run android:run",
     "preview": "npm --workspace app run preview"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.2"
   }
 }

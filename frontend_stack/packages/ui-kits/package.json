@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./apk": "./src/apk/Components.jsx",
-    "./website": "./src/website/Components.jsx",
-    "./admin": "./src/admin/Components.jsx",
+    ".": "./src/index.ts",
+    "./apk": "./src/apk/Components.tsx",
+    "./website": "./src/website/Components.tsx",
+    "./admin": "./src/admin/Components.tsx",
     "./apk.css": "./src/apk/apk.css",
     "./website.css": "./src/website/website.css",
     "./admin.css": "./src/admin/admin.css"

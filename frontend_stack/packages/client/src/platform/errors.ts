@@ -1,0 +1,16 @@
+export const PlatformError = {
+  BIOMETRIC_UNAVAILABLE: 'BIOMETRIC_UNAVAILABLE',
+  BIOMETRIC_NOT_ENROLLED: 'BIOMETRIC_NOT_ENROLLED',
+  BIOMETRIC_CANCELLED: 'BIOMETRIC_CANCELLED',
+  BIOMETRIC_FAILED: 'BIOMETRIC_FAILED',
+  PIN_REQUIRED: 'PIN_REQUIRED',
+  BAD_PIN: 'BAD_PIN',
+  INVALID_PIN: 'INVALID_PIN',
+  STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
+};
+
+export function platformError(code, message) {
+  const err = new Error(message);
+  (err as any).code = code;
+  return err;
+}
