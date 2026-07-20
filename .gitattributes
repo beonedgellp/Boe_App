@@ -1,0 +1,13 @@
+# Tell GitHub Linguist to ignore generated/vendored files
+package-lock.json linguist-generated=true
+**/package-lock.json linguist-generated=true
+
+# Backend scripts are tooling, not the main codebase
+backend_controller/scripts/** linguist-vendored=true
+
+# Next.js config
+frontend_stack/packages/landing_page/next.config.mjs linguist-generated=true
+
+# Android build scripts
+frontend_stack/app/scripts/** linguist-vendored=true
+frontend_stack/app/android/** linguist-vendored=true
