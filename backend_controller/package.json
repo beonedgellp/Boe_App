@@ -26,23 +26,27 @@
     "build": "tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "db:check": "tsx scripts/check-db.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx scripts/seed-auth.ts",
     "routes": "tsx scripts/print-routes.ts",
     "authz:admin-rbac": "tsx scripts/check-admin-rbac-routes.ts",
     "authz:403": "tsx scripts/check-auth-403-envelope.ts",
-    "migrate": "tsx scripts/migrate.ts up",
-    "migrate:status": "tsx scripts/migrate.ts status",
     "seed:auth": "tsx scripts/seed-auth.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "express": "^4.21.0",
-    "pg": "^8.20.0",
     "razorpay": "^2.9.6",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.0",
-    "@types/pg": "^8.11.10",
+    "prisma": "^5.22.0",
     "typescript": "^5.7.2"
   }
 }

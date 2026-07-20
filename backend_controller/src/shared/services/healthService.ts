@@ -1,4 +1,4 @@
-import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { AppConfig } from '#types/index.js';
 import { assertRuntimeConfig } from '#config/env.js';
 import { databaseStatus, hasDatabaseConfig } from '#db/client.js';
 

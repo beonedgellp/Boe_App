@@ -2,11 +2,7 @@ import type { OrderBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import {
-  readJsonStore,
-  atomicCompositeWrite,
-  updateJsonStore,
-} from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
@@ -29,19 +25,23 @@ function shortReceipt(prefix: any, id: string) {
 /* ---------- getOrder ---------- */
 
 export async function getOrder(config: AppConfig, actor: Actor, orderId: string) {
-  const store = await readJsonStore(config);
-  const plan = (store.investmentPlans || []).find((o) => o.id === orderId)
-    || (store.orders || []).find((o) => o.id === orderId);
+  const plan = await prisma.investmentPlan.findFirst({ where: { id: orderId } });
+  let order = plan as any;
 
-  if (!plan) {
+  if (!order) {
+    const orderRecord = await prisma.order.findFirst({ where: { id: orderId } });
+    order = orderRecord;
+  }
+
+  if (!order) {
     throw new HttpError(404, 'ORDER_NOT_FOUND', 'Order not found.');
   }
 
-  if (plan.userId !== actor?.userId) {
+  if (order.userId !== actor?.userId) {
     throw new HttpError(403, 'FORBIDDEN', 'Order does not belong to you.');
   }
 
-  return plan;
+  return order;
 }
 
 /* ---------- createLumpsumOrder ---------- */
@@ -59,24 +59,26 @@ async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: OrderB
     throw new HttpError(400, 'INVALID_PRODUCT', 'Product ID is required.');
   }
 
-  const store = await readJsonStore(config);
-  const fund = (store.funds || []).find((f) => f.id === productId);
+  const fund = await prisma.fund.findFirst({ where: { id: productId } });
   if (!fund) {
     throw new HttpError(404, 'PRODUCT_NOT_FOUND', `Product ${productId} not found.`);
   }
+  const fundMetadata = (fund.metadata as any) || {};
   if (!CLIENT_VISIBLE_STAGES.has(fund.lifecycleStage)) {
     throw new HttpError(400, 'PRODUCT_NOT_AVAILABLE', 'Product is not available for investment.');
   }
 
   // Idempotency: prevent duplicate lumpsum creation within 5 minutes for same user+fund+amount
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  const existingPlan = (store.investmentPlans || []).find((p) =>
-    p.userId === actor.userId &&
-    p.productId === productId &&
-    p.type === 'one_time' &&
-    p.amount === amount &&
-    new Date(p.createdAt).getTime() > fiveMinutesAgo
-  );
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const existingPlan = await prisma.investmentPlan.findFirst({
+    where: {
+      userId: actor.userId,
+      productId,
+      type: 'one_time',
+      amount,
+      createdAt: { gt: fiveMinutesAgo },
+    },
+  });
   if (existingPlan) {
     return existingPlan;
   }
@@ -86,55 +88,11 @@ async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: OrderB
     throw new HttpError(400, 'BELOW_MINIMUM_AMOUNT', `Minimum lumpsum amount is ₹${minLumpsum}.`);
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
   const planId = randomUUID();
   const transactionId = randomUUID();
   const paymentId = randomUUID();
-
-  const plan = {
-    id: planId,
-    userId: actor.userId,
-    productId,
-    type: 'one_time',
-    amount,
-    durationMonths: null,
-    debitDay: null,
-    status: 'submitted',
-    transactionId,
-    paymentId,
-    mandateId: null,
-    consentTextVersion: payload.consentTextVersion || null,
-    consentedAt: payload.consentedAt || null,
-    disclosureVersionSnapshot: fund.disclosureVersion || null,
-    disclosureTextSnapshot: fund.disclosureText || null,
-    disclosureTextHash: hashDisclosureText(fund.disclosureText),
-    startDate: null,
-    nextDueDate: null,
-    completedAt: null,
-    cancelledAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const transaction = {
-    id: transactionId,
-    userId: actor.userId,
-    productId,
-    investmentPlanId: planId,
-    type: 'lumpsum',
-    amount,
-    date: now,
-    nav: null,
-    units: null,
-    status: 'submitted',
-    idempotencyKey: randomUUID(),
-    requestedAt: now,
-    paymentConfirmedAt: null,
-    allottedAt: null,
-    cancelledAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
 
   const provider = getPaymentProvider(config);
   const order = await provider.createPaymentOrder({
@@ -144,38 +102,19 @@ async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: OrderB
     notes: { planId, userId: actor.userId },
   });
 
-  const payment = {
-    id: paymentId,
-    userId: actor.userId,
-    transactionId,
-    provider: provider.name,
-    providerOrderId: order.id,
-    providerPaymentId: order.id,
-    amount,
-    currency: 'INR',
-    mode: 'upi',
-    status: 'created',
-    failureReason: null,
-    lastFailureReason: null,
-    attemptCount: 0,
-    idempotencyKey: requestContext.idempotencyKey
-      ? `lumpsum_${actor.userId}_${requestContext.idempotencyKey}_payment`
-      : `lumpsum_${planId}_payment`,
-    createdAt: now,
-    confirmedAt: null,
-    reconciledAt: null,
-    updatedAt: now,
-  };
+  const idempotencyKey = requestContext.idempotencyKey
+    ? `lumpsum_${actor.userId}_${requestContext.idempotencyKey}_payment`
+    : `lumpsum_${planId}_payment`;
 
-  plan.status = 'pending_payment';
-  plan.updatedAt = now;
-
-  const existingPayment = store.payments.find((p) => p.idempotencyKey === payment.idempotencyKey);
+  // Check if payment with same idempotency key already exists
+  const existingPayment = await prisma.payment.findFirst({
+    where: { idempotencyKey },
+  });
   if (existingPayment) {
     return {
       planId,
       paymentId: existingPayment.id,
-      status: plan.status,
+      status: 'pending_payment',
       nextAction: 'complete_payment',
       providerOrderId: existingPayment.providerPaymentId || null,
       providerKeyId: config.razorpayKeyId || null,
@@ -185,37 +124,82 @@ async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: OrderB
     };
   }
 
-  const auditLog = {
-    id: randomUUID(),
-    adminId: actor?.userId || null,
-    action: 'lumpsum.create',
-    entityType: 'investment_plan',
-    entityId: planId,
-    before: null,
-    after: plan,
-    reason: 'Client created lumpsum investment plan.',
-    ipAddress: requestContext.ipAddress || null,
-    userAgent: requestContext.userAgent || null,
-    createdAt: now,
-  };
-
-  await atomicCompositeWrite(config, [
-    { collection: 'investmentPlans', record: plan },
-    { collection: 'transactions', record: transaction },
-    { collection: 'payments', record: payment },
-    { collection: 'adminAuditLogs', record: auditLog },
+  await prisma.$transaction([
+    prisma.investmentPlan.create({
+      data: {
+        id: planId,
+        userId: actor.userId,
+        productId,
+        type: 'one_time',
+        amount,
+        durationMonths: null,
+        debitDay: null,
+        status: 'pending_first_payment',
+        mandateId: null,
+        startDate: null,
+        nextDueDate: null,
+        completedAt: null,
+        cancelledAt: null,
+      },
+    }),
+    prisma.transaction.create({
+      data: {
+        id: transactionId,
+        userId: actor.userId,
+        productId,
+        investmentPlanId: planId,
+        type: 'one_time_investment',
+        amount,
+        nav: null,
+        units: null,
+        status: 'submitted',
+        idempotencyKey: randomUUID(),
+        requestedAt: now,
+        paymentConfirmedAt: null,
+        allottedAt: null,
+        cancelledAt: null,
+      },
+    }),
+    prisma.payment.create({
+      data: {
+        id: paymentId,
+        userId: actor.userId,
+        transactionId,
+        provider: provider.name,
+        providerPaymentId: order.id,
+        amount,
+        currency: 'INR',
+        mode: 'upi',
+        status: 'created',
+        failureReason: null,
+        idempotencyKey,
+      },
+    }),
+    prisma.adminAuditLog.create({
+      data: {
+        adminId: actor.userId || null,
+        action: 'lumpsum.create',
+        entityType: 'investment_plan',
+        entityId: planId,
+        beforeJson: null,
+        afterJson: { planId, productId, amount, type: 'one_time', status: 'pending_payment' } as any,
+        reason: 'Client created lumpsum investment plan.',
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    }),
   ]);
 
   return {
     planId,
     paymentId,
-    status: plan.status,
+    status: 'pending_payment',
     nextAction: 'complete_payment',
     providerOrderId: order.id,
     providerKeyId: config.razorpayKeyId || null,
     providerName: provider.name,
-    amount: payment.amount,
-    currency: payment.currency,
+    amount,
+    currency: 'INR',
   };
 }
 
@@ -239,8 +223,7 @@ async function _payPendingInstallment(config: AppConfig, actor: Actor, orderId: 
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to pay an installment.');
   }
 
-  const store = await readJsonStore(config);
-  const plan = (store.investmentPlans || []).find((o) => o.id === orderId);
+  const plan = await prisma.investmentPlan.findFirst({ where: { id: orderId } });
 
   if (!plan) {
     throw new HttpError(404, 'ORDER_NOT_FOUND', 'Order not found.');
@@ -251,75 +234,66 @@ async function _payPendingInstallment(config: AppConfig, actor: Actor, orderId: 
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const isDue = plan.nextDueDate && plan.nextDueDate <= today;
+  const nextDueStr = plan.nextDueDate ? plan.nextDueDate.toISOString().slice(0, 10) : null;
+  const isDue = nextDueStr && nextDueStr <= today;
   const isPayableStatus = ['active', 'pending_installment', 'pending_first_payment'].includes(plan.status);
 
   if (!isPayableStatus && !isDue) {
     throw new HttpError(400, 'INSTALLMENT_NOT_DUE', 'No installment is currently due for this plan.');
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
   const paymentId = randomUUID();
 
   const provider = getPaymentProvider(config);
   const order = await provider.createPaymentOrder({
-    amount: plan.amount,
+    amount: Number(plan.amount),
     currency: 'INR',
     receipt: shortReceipt('installment', plan.id),
     notes: { planId: plan.id, userId: actor.userId },
   });
 
-  const payment = {
-    id: paymentId,
-    userId: actor.userId,
-    transactionId: plan.transactionId || null,
-    provider: provider.name,
-    providerPaymentId: order.id,
-    amount: plan.amount,
-    currency: 'INR',
-    mode: 'upi_autopay',
-    status: 'created',
-    failureReason: null,
-    lastFailureReason: null,
-    attemptCount: 0,
-    idempotencyKey: options.idempotencyKey
-      ? `installment_${plan.id}_${actor.userId}_${options.idempotencyKey}`
-      : `installment_${plan.id}_${Date.now()}`,
-    createdAt: now,
-    confirmedAt: null,
-    reconciledAt: null,
-    updatedAt: now,
-  };
+  const idempotencyKey = options.idempotencyKey
+    ? `installment_${plan.id}_${actor.userId}_${options.idempotencyKey}`
+    : `installment_${plan.id}_${Date.now()}`;
 
-  const auditLog = {
-    id: randomUUID(),
-    adminId: actor?.userId || null,
-    action: 'installment.pay',
-    entityType: 'investment_plan',
-    entityId: plan.id,
-    before: { status: plan.status },
-    after: { status: 'installment_processing' },
-    reason: 'Client paid pending installment.',
-    ipAddress: null,
-    userAgent: null,
-    createdAt: now,
-  };
-
-  await updateJsonStore(config, (s) => {
-    if (!Array.isArray(s.payments)) s.payments = [];
-    if (!Array.isArray(s.adminAuditLogs)) s.adminAuditLogs = [];
-    if (!Array.isArray(s.investmentPlans)) s.investmentPlans = [];
-
-    s.payments.push(payment);
-    s.adminAuditLogs.push(auditLog);
-
-    const idx = s.investmentPlans.findIndex((p) => p.id === plan.id);
-    if (idx !== -1) {
-      s.investmentPlans[idx].status = 'installment_processing';
-      s.investmentPlans[idx].updatedAt = now;
-    }
-    return { paymentId, status: 'created' };
-  });
+  await prisma.$transaction([
+    prisma.payment.create({
+      data: {
+        id: paymentId,
+        userId: actor.userId,
+        transactionId: null,
+        provider: provider.name,
+        providerPaymentId: order.id,
+        amount: Number(plan.amount),
+        currency: 'INR',
+        mode: 'upi_autopay',
+        status: 'created',
+        failureReason: null,
+        idempotencyKey: String(idempotencyKey),
+      },
+    }),
+    prisma.investmentPlan.update({
+      where: { id: plan.id },
+      data: {
+        status: 'installment_processing',
+        updatedAt: now,
+      },
+    }),
+    prisma.adminAuditLog.create({
+      data: {
+        adminId: actor.userId || null,
+        action: 'installment.pay',
+        entityType: 'investment_plan',
+        entityId: plan.id,
+        beforeJson: { status: plan.status } as any,
+        afterJson: { status: 'installment_processing' } as any,
+        reason: 'Client paid pending installment.',
+        ipAddress: null,
+        userAgent: null,
+      },
+    }),
+  ]);
 
   return { paymentId, status: 'created' };
 }
@@ -329,9 +303,6 @@ export const payPendingInstallment = withReceipt(_payPendingInstallment, 'instal
   entityId: (result: any) => result.paymentId,
   afterState: (result: any) => result.status,
   amount: (result: any, args: any) => {
-    const config = args[0];
-    // We don't have easy access to the plan amount here without re-reading;
-    // withReceipt will default to null for amount if undefined.
     return undefined;
   },
   currency: () => 'INR',

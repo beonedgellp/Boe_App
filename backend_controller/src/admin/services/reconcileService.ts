@@ -2,7 +2,7 @@ import type { PaymentReconcileBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
@@ -15,69 +15,67 @@ async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: str
   const providerName = String(body?.provider || 'mock').trim();
   const provider = getPaymentProvider(config, providerName);
 
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  const result = await updateJsonStore(config, (store) => {
-    const payment = (store.payments || []).find((p) => p.id === paymentId);
-    if (!payment) return null;
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
 
-    const before = { ...payment };
+  const before = { ...payment };
 
-    // If provider is razorpay, fetch fresh state from Razorpay
-    let providerStatus = null;
-    if (providerName === 'razorpay' && payment.providerPaymentId) {
-      try {
-        const providerPayment = provider.fetchPayment(payment.providerPaymentId);
-        providerStatus = providerPayment.status;
-      } catch {
-        providerStatus = null;
-      }
+  // If provider is razorpay, fetch fresh state from Razorpay
+  let providerStatus: string | null = null;
+  if (providerName === 'razorpay' && payment.providerPaymentId) {
+    try {
+      const providerPayment = (provider as any).fetchPayment(payment.providerPaymentId);
+      providerStatus = providerPayment.status;
+    } catch {
+      providerStatus = null;
     }
+  }
 
-    payment.status = 'reconciled';
-    payment.reconciledAt = now;
-    payment.reconciledBy = actor?.userId || null;
-    payment.reconcileReason = reason;
-    payment.providerStatus = providerStatus || payment.status;
-
-    // Write reconciliation ledger entry
-    const ledgerEntry = {
-      id: randomUUID(),
-      paymentId: payment.id,
-      userId: payment.userId,
-      amount: payment.amount,
-      currency: payment.currency,
-      previousStatus: before.status,
-      reconciledStatus: 'reconciled',
-      providerStatus,
-      reason,
-      reconciledBy: actor?.userId || null,
-      createdAt: now,
-    };
-    if (!Array.isArray(store.reconciliationLedger)) store.reconciliationLedger = [];
-    store.reconciliationLedger.push(ledgerEntry);
-
-    // Audit log
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.reconcile',
-      entityType: 'payment',
-      entityId: payment.id,
-      before,
-      after: { ...payment },
-      reason,
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'reconciled',
+        reconciledAt: now,
+        updatedAt: now,
+      },
     });
 
-    return { ...payment, ledgerEntry };
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'payment.reconcile',
+        entityType: 'payment',
+        entityId: payment.id,
+        beforeJson: before as any,
+        afterJson: { ...updatedPayment, providerStatus } as any,
+        reason,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
+      },
+    });
+
+    return updatedPayment;
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
-  return result;
+  const ledgerEntry = {
+    id: randomUUID(),
+    paymentId: payment.id,
+    userId: payment.userId,
+    amount: payment.amount,
+    currency: payment.currency,
+    previousStatus: before.status,
+    reconciledStatus: 'reconciled',
+    providerStatus,
+    reason,
+    reconciledBy: actor?.userId || null,
+    createdAt: now.toISOString(),
+  };
+
+  return { ...result, ledgerEntry };
 }
 
 export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconciled', {
@@ -90,13 +88,14 @@ export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconcil
 });
 
 export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: { paymentId?: string; limit?: number } = {}) {
-  const store = await readJsonStore(config);
-  let items = store.reconciliationLedger || [];
-  if (paymentId) {
-    items = items.filter((entry) => entry.paymentId === paymentId);
-  }
-  items = items
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, limit);
+  const where: any = { action: 'payment.reconcile' };
+  if (paymentId) where.entityId = paymentId;
+
+  const items = await prisma.adminAuditLog.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
   return { items, count: items.length };
 }

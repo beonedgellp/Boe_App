@@ -1,7 +1,7 @@
 import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
-import { updateSipControlRequest } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 export async function reviewSipControlRequest(config: AppConfig, actor: Actor, requestId: string, body: Record<string, unknown> = {}) {
   const nextStatus = String(body.status || '').trim().toLowerCase();
@@ -9,15 +9,19 @@ export async function reviewSipControlRequest(config: AppConfig, actor: Actor, r
     throw new HttpError(400, 'INVALID_STATUS', 'Status must be approved or rejected.');
   }
 
-  const updated = await updateSipControlRequest(config, requestId, (request) => {
-    if (!request) return null;
-    const now = new Date().toISOString();
-    request.status = nextStatus;
-    request.reviewedAt = now;
-    request.updatedAt = now;
-    return request;
+  const request = await prisma.sipControlRequest.findFirst({ where: { id: requestId } });
+  if (!request) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'SIP control request not found.');
+
+  const now = new Date();
+
+  const updated = await prisma.sipControlRequest.update({
+    where: { id: requestId },
+    data: {
+      status: nextStatus,
+      reviewedAt: now,
+      updatedAt: now,
+    },
   });
 
-  if (!updated) throw new HttpError(404, 'REQUEST_NOT_FOUND', 'SIP control request not found.');
   return updated;
 }

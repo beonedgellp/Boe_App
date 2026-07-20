@@ -3,7 +3,7 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 import type { PaymentRow, TransactionRow, InvestmentPlanRow, FundRow } from '#types/models.js';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { findRecord, updateJsonStore, updatePayment } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 function verifyRazorpayCheckoutSignature(orderId: string, paymentId: string, signature: any, secret: any) {
@@ -36,18 +36,19 @@ function fundSnapshot(fund: any, fundId: string) {
     return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
   }
   const trackingId = fundTrackingId(fund);
+  const metadata = (fund.metadata as any) || {};
   return {
     id: fund.id,
     name: fund.name || fund.title || fund.id,
     title: fund.title || fund.name || fund.id,
     trackingId,
     fundCode: trackingId,
-    status: fund.status || '',
+    status: fund.status || metadata.status || '',
     lifecycleStage: fund.lifecycleStage || '',
-    riskLabel: fund.riskLabel || '',
+    riskLabel: metadata.riskLabel || '',
     minSip: fund.minSip ?? null,
     minLumpsum: fund.minLumpsum ?? null,
-    totalPoolSize: fund.totalPoolSize ?? null,
+    totalPoolSize: metadata.totalPoolSize ?? null,
   };
 }
 
@@ -58,23 +59,28 @@ function paymentTypeFrom(mode: any, type: any) {
   return 'manual';
 }
 
-function paymentResponse(payment: any, store: any, config: AppConfig) {
-  const transaction = (store.transactions || []).find((item: TransactionRow) => item.id === payment.transactionId) || null;
-  const plans = store.investmentPlans || store.orders || [];
-  const plan = transaction
-    ? plans.find((item: InvestmentPlanRow) => item.id === transaction.investmentPlanId)
-    : plans.find((item: InvestmentPlanRow) => item.paymentId === payment.id || item.id === payment.orderId) || null;
-  const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  const fund = fundId ? (store.funds || []).find((item: FundRow) => item.id === fundId) : null;
+async function buildPaymentResponse(payment: any, config: AppConfig) {
+  const transaction = payment.transactionId
+    ? await prisma.transaction.findFirst({ where: { id: payment.transactionId } })
+    : null;
+
+  let plan: any = null;
+  if (transaction?.investmentPlanId) {
+    plan = await prisma.investmentPlan.findFirst({ where: { id: transaction.investmentPlanId } });
+  }
+
+  const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || null;
+  const fund = fundId ? await prisma.fund.findFirst({ where: { id: fundId } }) : null;
   const type = visibleTransactionType(transaction?.type || plan?.type);
-  const mode = payment.mode || transaction?.mode || '';
+  const mode = payment.mode || '';
+
   return {
     ...payment,
     orderId: plan?.id || payment.orderId || '',
     planId: plan?.id || null,
     fundId,
     fund: fundSnapshot(fund, fundId),
-    fundName: fund?.name || fund?.title || fundId || '',
+    fundName: fund?.name || fundId || '',
     type,
     paymentType: paymentTypeFrom(mode, type),
     transaction: transaction ? {
@@ -83,7 +89,7 @@ function paymentResponse(payment: any, store: any, config: AppConfig) {
       rawType: transaction.type || '',
       status: transaction.status || '',
       amount: transaction.amount ?? null,
-      date: transaction.date || transaction.createdAt || '',
+      date: transaction.requestedAt?.toISOString() || transaction.createdAt?.toISOString() || '',
     } : null,
     plan: plan ? {
       id: plan.id,
@@ -99,41 +105,52 @@ function paymentResponse(payment: any, store: any, config: AppConfig) {
 }
 
 export async function getPayment(config: AppConfig, actor: Actor, paymentId: string) {
-  let { item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId);
+  let payment = await prisma.payment.findFirst({ where: { id: paymentId } });
   if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   if (payment.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
 
+  // Auto-confirm mock payments
   if (payment.provider === 'mock' && payment.status === 'created') {
-    payment = await updatePayment(config, paymentId, (current, store) => {
-      if (current.userId !== actor?.userId) {
-        throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
-      }
-      const now = new Date().toISOString();
-      current.status = 'success';
-      current.confirmedAt = current.confirmedAt || now;
-      current.updatedAt = now;
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: 'success',
+          confirmedAt: payment!.confirmedAt || now,
+          updatedAt: now,
+        },
+      });
 
-      const transaction = (store.transactions || []).find((t: TransactionRow) => t.id === current.transactionId);
-      if (transaction) {
-        transaction.status = 'awaiting_approval';
-        transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
-        transaction.updatedAt = now;
-      }
+      if (payment!.transactionId) {
+        const transaction = await tx.transaction.findFirst({ where: { id: payment!.transactionId } });
+        if (transaction) {
+          await tx.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              status: 'payment_confirmed',
+              paymentConfirmedAt: transaction.paymentConfirmedAt || now,
+              updatedAt: now,
+            },
+          });
 
-      const plan = transaction
-        ? (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.id === transaction.investmentPlanId)
-        : (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.paymentId === current.id);
-      if (plan) {
-        plan.status = 'pending_admin_approval';
-        plan.updatedAt = now;
+          if (transaction.investmentPlanId) {
+            await tx.investmentPlan.update({
+              where: { id: transaction.investmentPlanId },
+              data: {
+                status: 'active',
+                updatedAt: now,
+              },
+            });
+          }
+        }
       }
-
-      return current;
     });
-    ({ item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId));
+
+    payment = await prisma.payment.findFirst({ where: { id: paymentId } });
   }
 
-  return paymentResponse(payment, store, config);
+  return buildPaymentResponse(payment, config);
 }
 
 export async function confirmRazorpayPayment(config: AppConfig, actor: Actor, paymentId: string, body: any) {
@@ -145,141 +162,171 @@ export async function confirmRazorpayPayment(config: AppConfig, actor: Actor, pa
     throw new HttpError(401, 'INVALID_RAZORPAY_SIGNATURE', 'Razorpay payment signature verification failed.');
   }
 
-  const result = await updateJsonStore(config, (store) => {
-    const payment = (store.payments || []).find((p) => p.id === paymentId);
-    if (!payment) return null;
-    if (payment.userId !== actor?.userId) {
-      throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
-    }
-    if (payment.provider !== 'razorpay') {
-      throw new HttpError(400, 'PAYMENT_PROVIDER_NOT_RAZORPAY', 'Only Razorpay payments can be confirmed with this endpoint.');
-    }
-    const expectedOrderId = payment.providerOrderId || payment.providerPaymentId;
-    if (expectedOrderId !== razorpayOrderId) {
-      throw new HttpError(400, 'RAZORPAY_ORDER_MISMATCH', 'Razorpay order id does not match this payment.');
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
+  if (payment.userId !== actor?.userId) {
+    throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
+  }
+  if (payment.provider !== 'razorpay') {
+    throw new HttpError(400, 'PAYMENT_PROVIDER_NOT_RAZORPAY', 'Only Razorpay payments can be confirmed with this endpoint.');
+  }
+  const expectedOrderId = payment.providerPaymentId;
+  if (expectedOrderId !== razorpayOrderId) {
+    throw new HttpError(400, 'RAZORPAY_ORDER_MISMATCH', 'Razorpay order id does not match this payment.');
+  }
+
+  const now = new Date();
+  const beforePayment = { ...payment };
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        providerPaymentId: razorpayPaymentId,
+        status: 'success',
+        confirmedAt: payment.confirmedAt || now,
+        updatedAt: now,
+      },
+    });
+
+    if (payment.transactionId) {
+      const transaction = await tx.transaction.findFirst({ where: { id: payment.transactionId } });
+      if (transaction) {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'payment_confirmed',
+            paymentConfirmedAt: transaction.paymentConfirmedAt || now,
+            updatedAt: now,
+          },
+        });
+
+        if (transaction.investmentPlanId) {
+          await tx.investmentPlan.update({
+            where: { id: transaction.investmentPlanId },
+            data: {
+              status: 'active',
+              updatedAt: now,
+            },
+          });
+        }
+      }
     }
 
-    const now = new Date().toISOString();
-    const beforePayment = { ...payment };
-    payment.providerOrderId = razorpayOrderId;
-    payment.providerPaymentId = razorpayPaymentId;
-    payment.status = 'success';
-    payment.confirmedAt = payment.confirmedAt || now;
-    payment.updatedAt = now;
-
-    const transaction = (store.transactions || []).find((t) => t.id === payment.transactionId);
-    if (transaction) {
-      transaction.status = 'awaiting_approval';
-      transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
-      transaction.updatedAt = now;
-    }
-
-    const plan = transaction
-      ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
-      : null;
-    if (plan) {
-      plan.status = 'pending_admin_approval';
-      plan.updatedAt = now;
-    }
-
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.razorpay_confirm',
-      entityType: 'payment',
-      entityId: payment.id,
-      before: beforePayment,
-      after: { ...payment },
-      reason: 'Client confirmed Razorpay Checkout signature.',
-      ipAddress: null,
-      userAgent: null,
-      createdAt: now,
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor.userId || null,
+        action: 'payment.razorpay_confirm',
+        entityType: 'payment',
+        entityId: paymentId,
+        beforeJson: beforePayment as any,
+        afterJson: { ...updated } as any,
+        reason: 'Client confirmed Razorpay Checkout signature.',
+        ipAddress: null,
+        userAgent: null,
+      },
     });
 
     return {
-      ...payment,
+      ...updated,
       providerKeyId: config.razorpayKeyId || null,
     };
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   return result;
 }
 
 async function _retryPayment(config: AppConfig, actor: Actor, paymentId: string, options: RetryPaymentOptions = {}) {
-  // options.idempotencyKey is the route-level Idempotency-Key, used by the
-  // outer middleware in src/http/idempotency.js. Accepted here for forward
-  // compatibility / call-site symmetry; the existing payment row's own
-  // idempotencyKey field is unchanged so receipts/audit trail are stable.
   void options;
-  const result = await updatePayment(config, paymentId, (payment, store) => {
-    if (payment.userId !== actor?.userId) {
-      throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
-    }
-    const owner = (store.users || []).find((user: any) => user.id === payment.userId);
-    if (!owner || owner.status !== 'approved') {
-      throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to retry a payment.', {
-        status: owner?.status || 'missing',
-      });
-    }
-    const duplicate = store.payments.find(
-      (p: PaymentRow) => p.idempotencyKey === payment.idempotencyKey && p.id !== payment.id
-    );
+
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
+  if (payment.userId !== actor?.userId) {
+    throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
+  }
+
+  const owner = await prisma.user.findFirst({ where: { id: payment.userId } });
+  if (!owner || owner.status !== 'approved') {
+    throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to retry a payment.', {
+      status: owner?.status || 'missing',
+    });
+  }
+
+  if (payment.idempotencyKey) {
+    const duplicate = await prisma.payment.findFirst({
+      where: {
+        idempotencyKey: payment.idempotencyKey,
+        id: { not: payment.id },
+      },
+    });
     if (duplicate) {
       throw new HttpError(409, 'DUPLICATE_IDEMPOTENCY_KEY', 'Duplicate idempotency key detected.');
     }
-    if (payment.status === 'created') {
-      return payment;
-    }
-    if (!['failed', 'expired'].includes(payment.status)) {
-      throw new HttpError(400, 'PAYMENT_NOT_RETRYABLE', 'Only failed or expired payments can be retried.');
-    }
-    const now = new Date().toISOString();
-    const before = { ...payment };
-    payment.status = 'created';
-    payment.attemptCount = (payment.attemptCount || 0) + 1;
-    payment.lastFailureReason = null;
-    payment.failureReason = null;
-    payment.updatedAt = now;
+  }
 
-    const transaction = (store.transactions || []).find((t: TransactionRow) => t.id === payment.transactionId);
-    if (transaction) {
-      transaction.status = 'payment_pending';
-      transaction.failureReason = null;
-      transaction.updatedAt = now;
-    }
-
-    const plan = transaction
-      ? (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.id === transaction.investmentPlanId)
-      : (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.paymentId === payment.id);
-    if (plan) {
-      plan.status = plan.type === 'sip' ? 'pending_first_payment' : 'pending_payment';
-      plan.updatedAt = now;
-    }
-
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.retry',
-      entityType: 'payment',
-      entityId: payment.id,
-      before,
-      after: {
-        payment: { ...payment },
-        transaction: transaction ? { ...transaction } : null,
-        investmentPlan: plan ? { ...plan } : null,
-      },
-      reason: 'Client requested retry.',
-      ipAddress: null,
-      userAgent: null,
-      createdAt: now,
-    });
+  if (payment.status === 'created') {
     return payment;
+  }
+  if (!['failed', 'expired'].includes(payment.status)) {
+    throw new HttpError(400, 'PAYMENT_NOT_RETRYABLE', 'Only failed or expired payments can be retried.');
+  }
+
+  const now = new Date();
+  const before = { ...payment };
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'created',
+        failureReason: null,
+        updatedAt: now,
+      },
+    });
+
+    if (payment.transactionId) {
+      const transaction = await tx.transaction.findFirst({ where: { id: payment.transactionId } });
+      if (transaction) {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'payment_pending',
+            updatedAt: now,
+          },
+        });
+
+        if (transaction.investmentPlanId) {
+          const plan = await tx.investmentPlan.findFirst({ where: { id: transaction.investmentPlanId } });
+          if (plan) {
+            await tx.investmentPlan.update({
+              where: { id: plan.id },
+              data: {
+                status: plan.type === 'sip' ? 'pending_first_payment' : 'pending_first_payment',
+                updatedAt: now,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor.userId || null,
+        action: 'payment.retry',
+        entityType: 'payment',
+        entityId: paymentId,
+        beforeJson: before as any,
+        afterJson: { ...updated } as any,
+        reason: 'Client requested retry.',
+        ipAddress: null,
+        userAgent: null,
+      },
+    });
+
+    return updated;
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   return result;
 }
 

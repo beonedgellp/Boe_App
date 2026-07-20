@@ -1,7 +1,7 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 export async function replyToTicket(config: AppConfig, actor: Actor, ticketId: string, body: Record<string, unknown>) {
   const message = String(body?.message || '').trim();
@@ -9,45 +9,48 @@ export async function replyToTicket(config: AppConfig, actor: Actor, ticketId: s
     throw new HttpError(400, 'MESSAGE_REQUIRED', 'Reply message is required.');
   }
 
-  const now = new Date().toISOString();
+  const ticket = await prisma.supportTicket.findFirst({ where: { id: ticketId } });
+  if (!ticket) {
+    throw new HttpError(404, 'TICKET_NOT_FOUND', 'Support ticket not found.');
+  }
 
-  return updateJsonStore(config, (store) => {
-    const ticket = (store.supportTickets || []).find((t) => t.id === ticketId);
-    if (!ticket) {
-      throw new HttpError(404, 'TICKET_NOT_FOUND', 'Support ticket not found.');
-    }
+  const now = new Date();
 
-    const reply = {
-      id: randomUUID(),
-      ticketId,
-      authorId: actor?.userId || 'system',
-      authorRole: 'admin',
-      body: message,
-      createdAt: now,
-    };
+  const [reply, updatedTicket] = await prisma.$transaction(async (tx) => {
+    const reply = await tx.supportTicketMessage.create({
+      data: {
+        id: randomUUID(),
+        ticketId,
+        authorId: actor?.userId || null,
+        authorRole: 'admin',
+        body: message,
+      },
+    });
 
-    if (!Array.isArray(store.supportTicketMessages)) store.supportTicketMessages = [];
-    store.supportTicketMessages.push(reply);
+    const newStatus = ticket.status === 'open' ? 'in_progress' : ticket.status;
+    const updatedTicket = await tx.supportTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: newStatus,
+        updatedAt: now,
+      },
+    });
 
-    if (ticket.status === 'open') {
-      ticket.status = 'in_progress';
-    }
-    ticket.updatedAt = now;
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'support_ticket.reply',
+        entityType: 'support_ticket',
+        entityId: ticketId,
+        beforeJson: { status: ticket.status },
+        afterJson: { status: newStatus },
+        reason: `Admin replied to support ticket`,
+      },
+    });
 
-    const auditLog = {
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'support_ticket.reply',
-      entityType: 'support_ticket',
-      entityId: ticketId,
-      before: { status: ticket.status },
-      after: { status: ticket.status },
-      reason: `Admin replied to support ticket`,
-      createdAt: now,
-    };
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push(auditLog);
-
-    return { reply, ticket };
+    return [reply, updatedTicket];
   });
+
+  return { reply, ticket: updatedTicket };
 }

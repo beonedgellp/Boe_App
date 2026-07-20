@@ -3,7 +3,7 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 import type { PaymentRow, TransactionRow, InvestmentPlanRow, FundRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const RECONCILABLE_PAYMENT_STATUSES = new Set([
@@ -45,171 +45,66 @@ function requireDecisionReason(body: any, code: any, message: any) {
   return reason;
 }
 
-function findPaymentPlan(store: any, payment: any, transaction: any) {
-  const plans = store.investmentPlans || store.orders || [];
-  if (transaction?.investmentPlanId) {
-    const byTransaction = plans.find((item: any) => item.id === transaction.investmentPlanId);
-    if (byTransaction) return byTransaction;
-  }
-  if (payment.investmentPlanId) {
-    const byPaymentPlanId = plans.find((item: any) => item.id === payment.investmentPlanId);
-    if (byPaymentPlanId) return byPaymentPlanId;
-  }
-  if (payment.id) {
-    const byPaymentId = plans.find((item: any) => item.paymentId === payment.id);
-    if (byPaymentId) return byPaymentId;
-  }
-  return null;
-}
-
-function resolvePaymentFund(store: any, payment: any, transaction: any, plan: any) {
-  const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  if (!fundId) {
-    throw new HttpError(400, 'PAYMENT_FUND_NOT_FOUND', 'Payment is not linked to a fund pool.');
-  }
-  const fund = (store.funds || []).find((item: any) => item.id === fundId);
-  if (!fund) {
-    throw new HttpError(404, 'PAYMENT_FUND_NOT_FOUND', `Fund ${fundId} not found for this payment.`);
-  }
-  return { fundId, fund };
-}
-
-function updateInvestmentState(transaction: any, plan: any, now: any) {
-  if (transaction) {
-    transaction.status = 'awaiting_approval';
-    transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
-    transaction.updatedAt = now;
-  }
-
-  if (plan) {
-    plan.status = 'pending_admin_approval';
-    plan.updatedAt = now;
-  }
-}
-
-function approveInvestmentState(transaction: any, plan: any, now: any) {
-  if (transaction) {
-    transaction.status = 'approved';
-    transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
-    transaction.allottedAt = transaction.allottedAt || now;
-    transaction.updatedAt = now;
-  }
-
-  if (plan) {
-    plan.status = 'active';
-    plan.startDate = plan.startDate || now;
-    plan.updatedAt = now;
-  }
-}
-
-function portfolioKey(userId: string) {
-  return `portfolio_${userId}`;
-}
-
-function postApprovedPaymentToPortfolio(store: any, { payment, transaction, plan, fund, fundId, amount, now }: Record<string, any>) {
-  const userId = payment.userId || transaction?.userId || plan?.userId;
-  if (!userId) return null;
-
-  const key = portfolioKey(userId);
-  const portfolio = store[key] || {
-    invested: 0,
-    currentValue: 0,
-    allTimeGain: 0,
-    allTimeGainPct: 0,
-    todayChange: 0,
-    xirrPct: 0,
-    asOf: now,
-    holdings: [],
-  };
-
-  if (!Array.isArray(portfolio.holdings)) portfolio.holdings = [];
-  const holding = portfolio.holdings.find((item: any) => item.fundId === fundId);
-  const nav = Number(transaction?.nav || fund?.nav || 1) || 1;
-  const units = Number(transaction?.units || 0) || amount / nav;
-
-  if (holding) {
-    const beforeInvested = Number(holding.invested || 0);
-    const beforeUnits = Number(holding.units || 0);
-    holding.invested = beforeInvested + amount;
-    holding.units = beforeUnits + units;
-    holding.avgCost = holding.units > 0 ? holding.invested / holding.units : holding.avgCost || nav;
-    holding.currentValue = Number(holding.currentValue || beforeInvested) + amount;
-    holding.status = 'units_allotted';
-    holding.asOf = now;
-    holding.updatedAt = now;
-  } else {
-    portfolio.holdings.push({
-      id: fundId,
-      fundId,
-      fundName: fund?.name || fund?.title || fundId,
-      units,
-      avgCost: nav,
-      invested: amount,
-      currentValue: amount,
-      status: 'units_allotted',
-      asOf: now,
-      updatedAt: now,
-      source: 'payment_approval',
-    });
-  }
-
-  portfolio.invested = portfolio.holdings.reduce((sum: any, item: any) => sum + (Number(item.invested) || 0), 0);
-  portfolio.currentValue = portfolio.holdings.reduce((sum: any, item: any) => sum + (Number(item.currentValue ?? item.invested) || 0), 0);
-  portfolio.allTimeGain = portfolio.currentValue - portfolio.invested;
-  portfolio.allTimeGainPct = portfolio.invested > 0 ? (portfolio.allTimeGain / portfolio.invested) * 100 : 0;
-  portfolio.asOf = now;
-  portfolio.source = 'payment_approval';
-  store[key] = portfolio;
-  return portfolio;
-}
-
 async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: string, body: PaymentReconcileBody = {}, requestContext: RequestContext = {}) {
   const reason = requireReason(body);
   const providerReference = String(body.providerReference || body.providerRef || '').trim() || null;
   const settlementReference = String(body.settlementReference || '').trim() || null;
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  const result = await updateJsonStore(config, (store) => {
-    const payment = (store.payments || []).find((item) => item.id === paymentId);
-    if (!payment) return null;
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
 
-    if (payment.status === 'reconciled') {
-      throw new HttpError(409, 'PAYMENT_ALREADY_RECONCILED', 'Payment is already reconciled.');
+  if (payment.status === 'reconciled') {
+    throw new HttpError(409, 'PAYMENT_ALREADY_RECONCILED', 'Payment is already reconciled.');
+  }
+
+  if (!RECONCILABLE_PAYMENT_STATUSES.has(payment.status)) {
+    throw new HttpError(400, 'PAYMENT_NOT_RECONCILABLE', 'Payment cannot be reconciled from its current state.', {
+      status: payment.status,
+    });
+  }
+
+  const beforePayment = { ...payment };
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'reconciled',
+        reconciledAt: now,
+        ...(providerReference ? { providerPaymentId: providerReference } : {}),
+        updatedAt: now,
+      },
+    });
+
+    let transaction: any = null;
+    if (payment.transactionId) {
+      transaction = await tx.transaction.findFirst({ where: { id: payment.transactionId } });
+      if (transaction) {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'payment_confirmed',
+            paymentConfirmedAt: transaction.paymentConfirmedAt || now,
+            updatedAt: now,
+          },
+        });
+      }
     }
 
-    if (!RECONCILABLE_PAYMENT_STATUSES.has(payment.status)) {
-      throw new HttpError(400, 'PAYMENT_NOT_RECONCILABLE', 'Payment cannot be reconciled from its current state.', {
-        status: payment.status,
-      });
+    let plan: any = null;
+    if (transaction?.investmentPlanId) {
+      plan = await tx.investmentPlan.findFirst({ where: { id: transaction.investmentPlanId } });
+      if (plan) {
+        await tx.investmentPlan.update({
+          where: { id: plan.id },
+          data: {
+            status: 'active',
+            updatedAt: now,
+          },
+        });
+      }
     }
-
-    const beforePayment = { ...payment };
-    const beforeTransaction = null;
-    const beforePlan = null;
-
-    payment.status = 'reconciled';
-    payment.reconciledAt = now;
-    payment.reconciledBy = actor?.userId || null;
-    payment.reconciliationReason = reason;
-    if (providerReference) payment.providerPaymentId = providerReference;
-    if (settlementReference) payment.settlementReference = settlementReference;
-    payment.updatedAt = now;
-
-    const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId);
-    let transactionBefore: any = beforeTransaction;
-    if (transaction) {
-      transactionBefore = { ...transaction };
-    }
-
-    const plan = transaction
-      ? (store.investmentPlans || []).find((item) => item.id === transaction.investmentPlanId)
-      : null;
-    let planBefore: any = beforePlan;
-    if (plan) {
-      planBefore = { ...plan };
-    }
-
-    updateInvestmentState(transaction, plan, now);
 
     const ledgerEntry = {
       id: randomUUID(),
@@ -223,48 +118,44 @@ async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: str
       amount: payment.amount ?? null,
       currency: payment.currency || 'INR',
       previousStatus: beforePayment.status,
-      reconciledStatus: payment.status,
+      reconciledStatus: updatedPayment.status,
       reason,
       reconciledBy: actor?.userId || null,
-      createdAt: now,
+      createdAt: now.toISOString(),
     };
 
-    if (!Array.isArray(store.reconciliationLedger)) store.reconciliationLedger = [];
-    store.reconciliationLedger.push(ledgerEntry);
-
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.reconcile',
-      entityType: 'payment',
-      entityId: payment.id,
-      before: {
-        payment: beforePayment,
-        transaction: transactionBefore,
-        investmentPlan: planBefore,
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'payment.reconcile',
+        entityType: 'payment',
+        entityId: payment.id,
+        beforeJson: {
+          payment: beforePayment,
+          transaction: transaction ? { ...transaction } : null,
+          investmentPlan: plan ? { ...plan } : null,
+        },
+        afterJson: {
+          payment: { ...updatedPayment },
+          transaction: transaction ? { ...transaction } : null,
+          investmentPlan: plan ? { ...plan } : null,
+          reconciliationLedger: ledgerEntry,
+        },
+        reason,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
       },
-      after: {
-        payment: { ...payment },
-        transaction: transaction ? { ...transaction } : null,
-        investmentPlan: plan ? { ...plan } : null,
-        reconciliationLedger: ledgerEntry,
-      },
-      reason,
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
     });
 
     return {
-      payment: { ...payment },
+      payment: updatedPayment,
       ledgerEntry,
-      transaction: transaction ? { ...transaction } : null,
-      investmentPlan: plan ? { ...plan } : null,
+      transaction,
+      investmentPlan: plan,
     };
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   return result;
 }
 
@@ -276,122 +167,96 @@ export async function approvePayment(config: AppConfig, actor: Actor, paymentId:
   );
   const providerReference = String(body.providerReference || body.providerRef || '').trim() || null;
   const settlementReference = String(body.settlementReference || '').trim() || null;
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  const result = await updateJsonStore(config, (store) => {
-    const payment = (store.payments || []).find((item) => item.id === paymentId);
-    if (!payment) return null;
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
 
-    if (payment.status === 'approved' || payment.approvedAt || payment.poolPostedAt) {
-      throw new HttpError(409, 'PAYMENT_ALREADY_APPROVED', 'Payment is already approved.');
-    }
+  if (payment.status === 'approved' || (payment as any).approvedAt || (payment as any).poolPostedAt) {
+    throw new HttpError(409, 'PAYMENT_ALREADY_APPROVED', 'Payment is already approved.');
+  }
 
-    if (!APPROVABLE_PAYMENT_STATUSES.has(payment.status)) {
-      throw new HttpError(400, 'PAYMENT_NOT_APPROVABLE', 'Payment cannot be approved from its current state.', {
-        status: payment.status,
-      });
-    }
+  if (!APPROVABLE_PAYMENT_STATUSES.has(payment.status)) {
+    throw new HttpError(400, 'PAYMENT_NOT_APPROVABLE', 'Payment cannot be approved from its current state.', {
+      status: payment.status,
+    });
+  }
 
-    const amount = Number(payment.amount || 0);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new HttpError(400, 'INVALID_PAYMENT_AMOUNT', 'Payment amount must be greater than 0.');
-    }
+  const amount = Number(payment.amount || 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new HttpError(400, 'INVALID_PAYMENT_AMOUNT', 'Payment amount must be greater than 0.');
+  }
 
-    const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId) || null;
-    const plan = findPaymentPlan(store, payment, transaction);
-    const { fundId, fund } = resolvePaymentFund(store, payment, transaction, plan);
-    const existingCapitalTransaction = (store.capitalTransactions || []).find((item) => (
-      item.paymentId === payment.id && item.type === 'payment_approval'
-    ));
-    if (existingCapitalTransaction) {
-      throw new HttpError(409, 'PAYMENT_POOL_ALREADY_POSTED', 'Payment has already been posted to the fund pool.');
-    }
+  const beforePayment = { ...payment };
 
-    const beforePayment = { ...payment };
-    const beforeTransaction = transaction ? { ...transaction } : null;
-    const beforePlan = plan ? { ...plan } : null;
-    const beforeFund = { ...fund };
-
-    payment.status = 'approved';
-    payment.approvedAt = now;
-    payment.approvedBy = actor?.userId || null;
-    payment.approvalReason = reason;
-    payment.poolPostedAt = now;
-    payment.poolPostedAmount = amount;
-    payment.poolPostedFundId = fundId;
-    if (providerReference) payment.providerPaymentId = providerReference;
-    if (settlementReference) payment.settlementReference = settlementReference;
-    payment.updatedAt = now;
-
-    approveInvestmentState(transaction, plan, now);
-
-    fund.totalPoolSize = Number(fund.totalPoolSize || 0) + amount;
-    fund.updatedAt = now;
-    const portfolio = postApprovedPaymentToPortfolio(store, {
-      payment,
-      transaction,
-      plan,
-      fund,
-      fundId,
-      amount,
-      now,
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'success',
+        confirmedAt: now,
+        ...(providerReference ? { providerPaymentId: providerReference } : {}),
+        updatedAt: now,
+      },
     });
 
-    if (!Array.isArray(store.capitalTransactions)) store.capitalTransactions = [];
-    const capitalTransaction = {
-      id: randomUUID(),
-      fundId,
-      type: 'payment_approval',
-      amount,
-      source: 'payment',
-      target: 'pool',
-      reason,
-      createdBy: actor?.userId || null,
-      paymentId: payment.id,
-      transactionId: payment.transactionId || null,
-      userId: payment.userId || null,
-      createdAt: now,
-    };
-    store.capitalTransactions.push(capitalTransaction);
+    let transaction: any = null;
+    if (payment.transactionId) {
+      transaction = await tx.transaction.findFirst({ where: { id: payment.transactionId } });
+      if (transaction) {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'allotted',
+            paymentConfirmedAt: transaction.paymentConfirmedAt || now,
+            allottedAt: transaction.allottedAt || now,
+            updatedAt: now,
+          },
+        });
+      }
+    }
 
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.approve',
-      entityType: 'payment',
-      entityId: payment.id,
-      before: {
-        payment: beforePayment,
-        transaction: beforeTransaction,
-        investmentPlan: beforePlan,
-        fund: beforeFund,
+    let plan: any = null;
+    if (transaction?.investmentPlanId) {
+      plan = await tx.investmentPlan.findFirst({ where: { id: transaction.investmentPlanId } });
+      if (plan) {
+        await tx.investmentPlan.update({
+          where: { id: plan.id },
+          data: {
+            status: 'active',
+            startDate: plan.startDate || now,
+            updatedAt: now,
+          },
+        });
+      }
+    }
+
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'payment.approve',
+        entityType: 'payment',
+        entityId: payment.id,
+        beforeJson: { payment: beforePayment },
+        afterJson: {
+          payment: { ...updatedPayment },
+          transaction: transaction ? { ...transaction } : null,
+          investmentPlan: plan ? { ...plan } : null,
+        },
+        reason,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
       },
-      after: {
-        payment: { ...payment },
-        transaction: transaction ? { ...transaction } : null,
-        investmentPlan: plan ? { ...plan } : null,
-        fund: { ...fund },
-        portfolio,
-        capitalTransaction,
-      },
-      reason,
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
     });
 
     return {
-      payment: { ...payment },
-      transaction: transaction ? { ...transaction } : null,
-      investmentPlan: plan ? { ...plan } : null,
-      fund: { ...fund },
-      portfolio,
-      capitalTransaction,
+      payment: updatedPayment,
+      transaction,
+      investmentPlan: plan,
     };
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   return result;
 }
 
@@ -401,70 +266,89 @@ export async function rejectPayment(config: AppConfig, actor: Actor, paymentId: 
     'REJECTION_REASON_REQUIRED',
     'Rejection reason is required.',
   );
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  const result = await updateJsonStore(config, (store) => {
-    const payment = (store.payments || []).find((item) => item.id === paymentId);
-    if (!payment) return null;
+  const payment = await prisma.payment.findFirst({ where: { id: paymentId } });
+  if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
 
-    if (payment.status === 'rejected' || payment.rejectedAt) {
-      throw new HttpError(409, 'PAYMENT_ALREADY_REJECTED', 'Payment is already rejected.');
-    }
+  if (payment.status === 'failed' && (payment as any).rejectedAt) {
+    throw new HttpError(409, 'PAYMENT_ALREADY_REJECTED', 'Payment is already rejected.');
+  }
 
-    if (payment.status === 'approved' || payment.poolPostedAt) {
-      throw new HttpError(409, 'PAYMENT_ALREADY_APPROVED', 'Approved payments cannot be rejected.');
-    }
+  if (payment.status === 'success' && (payment as any).confirmedAt) {
+    throw new HttpError(409, 'PAYMENT_ALREADY_APPROVED', 'Approved payments cannot be rejected.');
+  }
 
-    if (!REJECTABLE_PAYMENT_STATUSES.has(payment.status)) {
-      throw new HttpError(400, 'PAYMENT_NOT_REJECTABLE', 'Payment cannot be rejected from its current state.', {
-        status: payment.status,
-      });
-    }
+  if (!REJECTABLE_PAYMENT_STATUSES.has(payment.status)) {
+    throw new HttpError(400, 'PAYMENT_NOT_REJECTABLE', 'Payment cannot be rejected from its current state.', {
+      status: payment.status,
+    });
+  }
 
-    const beforePayment = { ...payment };
+  const beforePayment = { ...payment };
 
-    payment.status = 'rejected';
-    payment.rejectedAt = now;
-    payment.rejectedBy = actor?.userId || null;
-    payment.rejectionReason = reason;
-    payment.updatedAt = now;
-
-    const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId);
-    if (transaction) {
-      transaction.status = 'approval_rejected';
-      transaction.failureReason = reason;
-      transaction.updatedAt = now;
-    }
-
-    const plan = findPaymentPlan(store, payment, transaction);
-    if (plan) {
-      plan.status = 'approval_rejected';
-      plan.updatedAt = now;
-    }
-
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'payment.reject',
-      entityType: 'payment',
-      entityId: payment.id,
-      before: { payment: beforePayment },
-      after: {
-        payment: { ...payment },
-        transaction: transaction ? { ...transaction } : null,
-        investmentPlan: plan ? { ...plan } : null,
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'failed',
+        failureReason: reason,
+        updatedAt: now,
       },
-      reason,
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
     });
 
-    return { payment: { ...payment } };
+    let transaction: any = null;
+    if (payment.transactionId) {
+      transaction = await tx.transaction.findFirst({ where: { id: payment.transactionId } });
+      if (transaction) {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'cancelled',
+            cancelledAt: now,
+            updatedAt: now,
+          },
+        });
+      }
+    }
+
+    let plan: any = null;
+    if (transaction?.investmentPlanId) {
+      plan = await tx.investmentPlan.findFirst({ where: { id: transaction.investmentPlanId } });
+      if (plan) {
+        await tx.investmentPlan.update({
+          where: { id: plan.id },
+          data: {
+            status: 'cancelled',
+            cancelledAt: now,
+            updatedAt: now,
+          },
+        });
+      }
+    }
+
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'payment.reject',
+        entityType: 'payment',
+        entityId: payment.id,
+        beforeJson: { payment: beforePayment },
+        afterJson: {
+          payment: { ...updatedPayment },
+          transaction: transaction ? { ...transaction } : null,
+          investmentPlan: plan ? { ...plan } : null,
+        },
+        reason,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
+      },
+    });
+
+    return { payment: updatedPayment };
   });
 
-  if (!result) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   return result;
 }
 
@@ -487,13 +371,15 @@ export function paymentReconcileRequestContext(headers: Record<string, string | 
 }
 
 export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: { paymentId?: string; limit?: number } = {}) {
-  const store = await readJsonStore(config);
-  let items = store.reconciliationLedger || [];
-  if (paymentId) {
-    items = items.filter((entry) => entry.paymentId === paymentId);
-  }
-  items = items
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, limit);
+  const where: any = {};
+  if (paymentId) where.entityId = paymentId;
+  where.action = 'payment.reconcile';
+
+  const items = await prisma.adminAuditLog.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
   return { items, count: items.length };
 }

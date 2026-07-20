@@ -2,7 +2,7 @@ import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const FATCA_STATUSES = new Set(['not_started', 'pending', 'completed', 'exempt']);
@@ -53,30 +53,6 @@ function validateNominees(nominees: any) {
   }
 }
 
-function defaultKycProfile(userId: string) {
-  const now = new Date().toISOString();
-  return {
-    id: randomUUID(),
-    userId,
-    panNumberEncrypted: null,
-    panLast4: null,
-    aadhaarLast4: null,
-    addressJson: {},
-    documentRefsJson: [],
-    fatcaStatus: 'not_started',
-    fatcaDeclaration: null,
-    nominees: [],
-    reKycDueDate: null,
-    reKycTriggerReason: null,
-    reviewStatus: 'not_started',
-    adminNotes: null,
-    reviewedBy: null,
-    reviewedAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
 function toApiKycProfile(profile: any, user: any) {
   return {
     id: profile.id,
@@ -85,11 +61,11 @@ function toApiKycProfile(profile: any, user: any) {
     aadhaarLast4: profile.aadhaarLast4 || null,
     addressJson: profile.addressJson || {},
     documentRefsJson: profile.documentRefsJson || [],
-    fatcaStatus: profile.fatcaStatus || 'not_started',
-    fatcaDeclaration: profile.fatcaDeclaration || null,
-    nominees: profile.nominees || [],
-    reKycDueDate: profile.reKycDueDate || null,
-    reKycTriggerReason: profile.reKycTriggerReason || null,
+    fatcaStatus: (profile.addressJson as any)?.fatcaStatus || 'not_started',
+    fatcaDeclaration: (profile.addressJson as any)?.fatcaDeclaration || null,
+    nominees: (profile.documentRefsJson as any)?.nominees || [],
+    reKycDueDate: (profile.addressJson as any)?.reKycDueDate || null,
+    reKycTriggerReason: (profile.addressJson as any)?.reKycTriggerReason || null,
     reviewStatus: profile.reviewStatus || 'not_started',
     adminNotes: profile.adminNotes || null,
     reviewedAt: profile.reviewedAt || null,
@@ -108,18 +84,19 @@ function toApiKycProfile(profile: any, user: any) {
 }
 
 export async function getKycStatus(config: AppConfig, actor: Actor) {
-  const store = await readJsonStore(config);
-  let profile = store.kycProfiles.find((p) => p.userId === actor.userId);
-  let user = store.users.find((u) => u.id === actor.userId);
+  let profile = await prisma.kycProfile.findFirst({ where: { userId: actor.userId } });
+  const user = await prisma.user.findFirst({ where: { id: actor.userId } });
 
   if (!profile) {
-    const defaultProfile = defaultKycProfile(actor.userId);
-    await updateJsonStore(config, (s) => {
-      if (!Array.isArray(s.kycProfiles)) s.kycProfiles = [];
-      s.kycProfiles.push(defaultProfile);
-      return defaultProfile;
+    profile = await prisma.kycProfile.create({
+      data: {
+        id: randomUUID(),
+        userId: actor.userId,
+        addressJson: {},
+        documentRefsJson: [],
+        reviewStatus: 'not_started',
+      },
     });
-    profile = defaultProfile;
   }
 
   return toApiKycProfile(profile, user);
@@ -166,47 +143,50 @@ async function _updateKycDepth(config: AppConfig, actor: Actor, body: Record<str
     validateNominees(nominees);
   }
 
-  const updated = await updateJsonStore(config, (store) => {
-    let profile = store.kycProfiles.find((p) => p.userId === actor.userId);
-    if (!profile) {
-      profile = defaultKycProfile(actor.userId);
-      store.kycProfiles.push(profile);
-    }
-
-    const now = new Date().toISOString();
-
-    if (fatcaStatus !== undefined) {
-      profile.fatcaStatus = fatcaStatus;
-    }
-    if (fatcaDeclaration !== undefined) {
-      profile.fatcaDeclaration = fatcaDeclaration;
-      if (fatcaDeclaration && profile.fatcaStatus === 'not_started') {
-        profile.fatcaStatus = 'pending';
-      }
-    }
-    if (nominees !== undefined) {
-      profile.nominees = nominees.map((n: any) => ({
-        name: String(n.name).trim(),
-        relationship: String(n.relationship).trim(),
-        dateOfBirth: String(n.dateOfBirth).trim(),
-        percentage: Number(n.percentage),
-        guardianName: isMinor(n.dateOfBirth) ? String(n.guardianName).trim() : null,
-      }));
-    }
-    if (reKycDueDate !== undefined) {
-      profile.reKycDueDate = reKycDueDate;
-    }
-    if (reKycTriggerReason !== undefined) {
-      profile.reKycTriggerReason = reKycTriggerReason;
-    }
-
-    profile.updatedAt = now;
-    return profile;
+  const profile = await prisma.kycProfile.upsert({
+    where: { userId: actor.userId },
+    create: {
+      id: randomUUID(),
+      userId: actor.userId,
+      addressJson: {
+        ...(fatcaStatus !== undefined ? { fatcaStatus } : {}),
+        ...(fatcaDeclaration !== undefined ? { fatcaDeclaration } : {}),
+        ...(reKycDueDate !== undefined ? { reKycDueDate } : {}),
+        ...(reKycTriggerReason !== undefined ? { reKycTriggerReason } : {}),
+      },
+      documentRefsJson: nominees !== undefined
+        ? { nominees: nominees.map((n: any) => ({
+            name: String(n.name).trim(),
+            relationship: String(n.relationship).trim(),
+            dateOfBirth: String(n.dateOfBirth).trim(),
+            percentage: Number(n.percentage),
+            guardianName: isMinor(n.dateOfBirth) ? String(n.guardianName).trim() : null,
+          })) }
+        : [],
+      reviewStatus: 'not_started',
+    },
+    update: {
+      addressJson: {
+        ...(fatcaStatus !== undefined ? { fatcaStatus } : {}),
+        ...(fatcaDeclaration !== undefined ? { fatcaDeclaration } : {}),
+        ...(reKycDueDate !== undefined ? { reKycDueDate } : {}),
+        ...(reKycTriggerReason !== undefined ? { reKycTriggerReason } : {}),
+      },
+      ...(nominees !== undefined ? {
+        documentRefsJson: { nominees: nominees.map((n: any) => ({
+          name: String(n.name).trim(),
+          relationship: String(n.relationship).trim(),
+          dateOfBirth: String(n.dateOfBirth).trim(),
+          percentage: Number(n.percentage),
+          guardianName: isMinor(n.dateOfBirth) ? String(n.guardianName).trim() : null,
+        })) },
+      } : {}),
+      updatedAt: new Date(),
+    },
   });
 
-  const store = await readJsonStore(config);
-  const user = store.users.find((u) => u.id === actor.userId);
-  return toApiKycProfile(updated, user);
+  const user = await prisma.user.findFirst({ where: { id: actor.userId } });
+  return toApiKycProfile(profile, user);
 }
 
 export const updateKycDepth = withReceipt(_updateKycDepth, 'kyc_updated', {

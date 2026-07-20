@@ -2,7 +2,7 @@ import type { MandateAdminBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_MANDATE_STATUSES = new Set([
@@ -38,61 +38,47 @@ async function _updateMandateStatus(config: AppConfig, actor: Actor, mandateId: 
     throw new HttpError(400, 'REASON_REQUIRED', 'Reason is required for mandate cancellation.');
   }
 
-  const now = new Date().toISOString();
+  const mandate = await prisma.mandate.findFirst({ where: { id: mandateId } });
+  if (!mandate) throw new HttpError(404, 'MANDATE_NOT_FOUND', `Mandate ${mandateId} not found.`);
 
-  const result = await updateJsonStore(config, (store) => {
-    const idx = (store.mandates || []).findIndex((m) => m.id === mandateId);
-    if (idx === -1) return null;
+  if (!VALID_MANDATE_STATUSES.has(mandate.status)) {
+    throw new HttpError(400, 'INVALID_MANDATE_STATUS', `Mandate has unrecognized status: ${mandate.status}`);
+  }
 
-    const mandate = store.mandates[idx];
+  if (!transition.from.has(mandate.status)) {
+    throw new HttpError(400, 'INVALID_TRANSITION', `Cannot ${action} a mandate with status '${mandate.status}'.`);
+  }
 
-    if (!VALID_MANDATE_STATUSES.has(mandate.status)) {
-      throw new HttpError(400, 'INVALID_MANDATE_STATUS', `Mandate has unrecognized status: ${mandate.status}`);
-    }
+  const now = new Date();
+  const before = { ...mandate };
 
-    if (!transition.from.has(mandate.status)) {
-      throw new HttpError(400, 'INVALID_TRANSITION', `Cannot ${action} a mandate with status '${mandate.status}'.`);
-    }
-
-    const before = { ...mandate };
-    mandate.status = transition.to;
-    mandate.updatedAt = now;
-
-    if (action === 'cancel') {
-      mandate.cancelledAt = now;
-      mandate.cancelledBy = actor?.userId || null;
-      mandate.cancelReason = reason;
-    }
-
-    if (action === 'pause') {
-      mandate.pausedAt = now;
-      mandate.pausedBy = actor?.userId || null;
-    }
-
-    if (action === 'resume') {
-      mandate.resumedAt = now;
-      mandate.resumedBy = actor?.userId || null;
-    }
-
-    if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: `mandate.${action}`,
-      entityType: 'mandate',
-      entityId: mandate.id,
-      before,
-      after: { ...mandate },
-      reason: reason || `Admin ${action}d mandate.`,
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.mandate.update({
+      where: { id: mandateId },
+      data: {
+        status: transition.to as any,
+        updatedAt: now,
+      },
     });
 
-    return { ...mandate };
+    await tx.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: `mandate.${action}`,
+        entityType: 'mandate',
+        entityId: mandate.id,
+        beforeJson: before as any,
+        afterJson: updated as any,
+        reason: reason || `Admin ${action}d mandate.`,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: requestContext.userAgent || null,
+      },
+    });
+
+    return updated;
   });
 
-  if (!result) throw new HttpError(404, 'MANDATE_NOT_FOUND', `Mandate ${mandateId} not found.`);
   return result;
 }
 

@@ -3,7 +3,7 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 import type { HoldingItem } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import {
   computeFundAge,
@@ -19,10 +19,8 @@ import {
   sanitizeRating,
 } from '#shared/services/fundClientView.js';
 
-// Client-view + analytics live in a single source (fundClientView.js) so the
-// admin and catalog surfaces can never drift. Re-exported to preserve the
-// existing public contract of this module.
 export { computeFundAge, computeFundAnalytics, toClientFund, toClientFunds };
+
 
 function toNumber(value: any, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
@@ -39,8 +37,6 @@ function plainObject(value: any) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-// Build the extended chartConfig (existing 3 visibility gates + 3 new ones).
-// Every gate defaults to visible; client UI hides sections when data is absent.
 function buildChartConfig(incoming: any = {}, existing: any = {}) {
   const base = { ...existing, ...incoming };
   return {
@@ -53,9 +49,6 @@ function buildChartConfig(incoming: any = {}, existing: any = {}) {
   };
 }
 
-// Sanitize the optional Groww-style display fields. Patch semantics: a key is
-// only replaced when present in the payload, otherwise the existing value wins.
-// All fields are optional so legacy fund records remain valid.
 function buildFundDisplayFields(payload: any, existing: any = {}) {
   const has = (key: any) => payload[key] !== undefined;
   return {
@@ -83,6 +76,7 @@ function buildFundDisplayFields(payload: any, existing: any = {}) {
   };
 }
 
+
 function fundTrackingId(id: string) {
   return `FP-${String(id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
 }
@@ -90,14 +84,16 @@ function fundTrackingId(id: string) {
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
 function enrichFundWithAnalytics(fund: any) {
-  const trackingId = fund.trackingId || fund.fundCode || fundTrackingId(fund.id);
-  return { ...fund, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(fund) };
+  const metadata = (fund.metadata as any) || {};
+  const merged = { ...fund, ...metadata };
+  const trackingId = metadata.trackingId || metadata.fundCode || fundTrackingId(fund.id);
+  return { ...merged, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(merged) };
 }
 
 export async function listFunds(config: AppConfig) {
-  const store = await readJsonStore(config);
-  const items = Array.isArray(store.funds) ? store.funds : [];
-  return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
+  const items = await prisma.fund.findMany();
+  const enriched = items.map(enrichFundWithAnalytics);
+  return { items: enriched, count: enriched.length, source: 'prisma' };
 }
 
 export async function createFund(config: AppConfig, actor: Actor, body: FundBody, requestContext: RequestContext = {}) {
@@ -108,29 +104,20 @@ export async function createFund(config: AppConfig, actor: Actor, body: FundBody
     throw new HttpError(400, 'INVALID_FUND', 'Fund name is required.');
   }
 
-  const rawStatus = toTrimmedString(payload.status, 'coming_soon');
-  const status = ['active', 'coming_soon'].includes(rawStatus) ? rawStatus : 'coming_soon';
-
-  const incomingChartConfig = plainObject(payload.chartConfig) ? payload.chartConfig : {};
-
   const fundId = randomUUID();
   const trackingId = fundTrackingId(fundId);
-  const fund = {
-    id: fundId,
+  const incomingChartConfig = plainObject(payload.chartConfig) ? payload.chartConfig : {};
+
+  const metadata = {
     trackingId,
     fundCode: trackingId,
-    name,
     tagline: toTrimmedString(payload.tagline),
-    status,
-    lifecycleStage: ['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
-      ? payload.lifecycleStage
-      : 'draft',
+    status: ['active', 'coming_soon'].includes(toTrimmedString(payload.status, 'coming_soon'))
+      ? toTrimmedString(payload.status, 'coming_soon') : 'coming_soon',
     totalPoolSize: toNumber(payload.totalPoolSize, 0),
     initialInvestment: toNumber(payload.initialInvestment, 0),
     currentValue: toNumber(payload.currentValue, 0),
     launchDate: toTrimmedString(payload.launchDate),
-    minSip: toNumber(payload.minSip, 0),
-    minLumpsum: toNumber(payload.minLumpsum, 0),
     minDurationMonths: toNumber(payload.minDurationMonths, 0),
     lockInText: toTrimmedString(payload.lockInText),
     riskLabel: toTrimmedString(payload.riskLabel),
@@ -138,166 +125,158 @@ export async function createFund(config: AppConfig, actor: Actor, body: FundBody
     investments: Array.isArray(payload.investments) ? payload.investments : [],
     ...buildFundDisplayFields(payload),
     chartConfig: buildChartConfig(incomingChartConfig),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   };
 
-  await updateJsonStore(config, (store) => {
-    store.funds.push(fund);
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.create',
-      entityType: 'fund',
-      entityId: fund.id,
-      before: null,
-      after: fund,
-      reason: payload.reason || 'Admin created fund record.',
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: fund.createdAt,
+
+  const lifecycleStage = ['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
+    ? (payload.lifecycleStage as string) : 'draft';
+
+  const fund = await prisma.$transaction(async (tx) => {
+    const created = await tx.fund.create({
+      data: {
+        id: fundId,
+        name,
+        description: null,
+        lifecycleStage,
+        currency: 'INR',
+        minSip: toNumber(payload.minSip, 0),
+        minLumpsum: toNumber(payload.minLumpsum, 0),
+        aumCash: 0,
+        aumAllocated: 0,
+        metadata: metadata as any,
+        createdBy: actor?.userId || null,
+      },
     });
-    return fund;
+
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.create',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: null,
+        afterJson: { ...created, ...metadata } as any,
+        reason: (payload as any).reason || 'Admin created fund record.',
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
+
+    return created;
   });
 
-  return fund;
+  return enrichFundWithAnalytics(fund);
 }
 
 export async function getFund(config: AppConfig, fundId: string) {
-  const store = await readJsonStore(config);
-  const fund = (store.funds || []).find((f) => f.id === fundId);
-
+  const fund = await prisma.fund.findFirst({ where: { id: fundId } });
   if (!fund) {
     throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
   }
-
-  return fund;
+  return enrichFundWithAnalytics(fund);
 }
+
 
 export async function updateFund(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const payload = body && typeof body === 'object' ? body : {};
 
-  const updated = await updateJsonStore(config, (store) => {
-    const idx = (store.funds || []).findIndex((f) => f.id === fundId);
-    if (idx === -1) return null;
+  const existing = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!existing) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    const existing = store.funds[idx];
-    const now = new Date().toISOString();
+  const existingMeta = (existing.metadata as any) || {};
+  const now = new Date();
+  const incomingChartConfig = payload.chartConfig !== undefined && plainObject(payload.chartConfig)
+    ? payload.chartConfig : {};
 
-    const rawStatus = toTrimmedString(payload.status, existing.status);
-    const status = ['active', 'coming_soon'].includes(rawStatus) ? rawStatus : existing.status;
+  const rawStatus = toTrimmedString(payload.status, existingMeta.status);
+  const status = ['active', 'coming_soon'].includes(rawStatus) ? rawStatus : existingMeta.status;
 
-    const incomingChartConfig = payload.chartConfig !== undefined && plainObject(payload.chartConfig)
-      ? payload.chartConfig
-      : {};
+  const updatedMetadata = {
+    ...existingMeta,
+    ...buildFundDisplayFields(payload, existingMeta),
+    tagline: payload.tagline !== undefined ? toTrimmedString(payload.tagline) : existingMeta.tagline,
+    status,
+    totalPoolSize: payload.totalPoolSize !== undefined ? toNumber(payload.totalPoolSize, existingMeta.totalPoolSize) : existingMeta.totalPoolSize,
+    initialInvestment: payload.initialInvestment !== undefined ? toNumber(payload.initialInvestment, existingMeta.initialInvestment) : existingMeta.initialInvestment,
+    currentValue: payload.currentValue !== undefined ? toNumber(payload.currentValue, existingMeta.currentValue) : existingMeta.currentValue,
+    launchDate: payload.launchDate !== undefined ? toTrimmedString(payload.launchDate) : existingMeta.launchDate,
+    minDurationMonths: payload.minDurationMonths !== undefined ? toNumber(payload.minDurationMonths, existingMeta.minDurationMonths) : existingMeta.minDurationMonths,
+    lockInText: payload.lockInText !== undefined ? toTrimmedString(payload.lockInText) : existingMeta.lockInText,
+    riskLabel: payload.riskLabel !== undefined ? toTrimmedString(payload.riskLabel) : existingMeta.riskLabel,
+    sectors: payload.sectors !== undefined ? (Array.isArray(payload.sectors) ? payload.sectors : existingMeta.sectors) : existingMeta.sectors,
+    investments: payload.investments !== undefined ? (Array.isArray(payload.investments) ? payload.investments : existingMeta.investments) : existingMeta.investments,
+    chartConfig: buildChartConfig(incomingChartConfig, existingMeta.chartConfig || {}),
+  };
 
-    const next = {
-      ...existing,
-      ...buildFundDisplayFields(payload, existing),
-      name: payload.name !== undefined ? toTrimmedString(payload.name, existing.name) : existing.name,
-      tagline: payload.tagline !== undefined ? toTrimmedString(payload.tagline) : existing.tagline,
-      status,
-      lifecycleStage: payload.lifecycleStage !== undefined
-        ? (['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
-            ? payload.lifecycleStage
-            : existing.lifecycleStage)
-        : existing.lifecycleStage,
-      totalPoolSize: payload.totalPoolSize !== undefined ? toNumber(payload.totalPoolSize, existing.totalPoolSize) : existing.totalPoolSize,
-      initialInvestment: payload.initialInvestment !== undefined ? toNumber(payload.initialInvestment, existing.initialInvestment) : existing.initialInvestment,
-      currentValue: payload.currentValue !== undefined ? toNumber(payload.currentValue, existing.currentValue) : existing.currentValue,
-      launchDate: payload.launchDate !== undefined ? toTrimmedString(payload.launchDate) : existing.launchDate,
-      minSip: payload.minSip !== undefined ? toNumber(payload.minSip, existing.minSip) : existing.minSip,
-      minLumpsum: payload.minLumpsum !== undefined ? toNumber(payload.minLumpsum, existing.minLumpsum) : existing.minLumpsum,
-      minDurationMonths: payload.minDurationMonths !== undefined ? toNumber(payload.minDurationMonths, existing.minDurationMonths) : existing.minDurationMonths,
-      lockInText: payload.lockInText !== undefined ? toTrimmedString(payload.lockInText) : existing.lockInText,
-      riskLabel: payload.riskLabel !== undefined ? toTrimmedString(payload.riskLabel) : existing.riskLabel,
-      sectors: payload.sectors !== undefined ? (Array.isArray(payload.sectors) ? payload.sectors : existing.sectors) : existing.sectors,
-      investments: payload.investments !== undefined ? (Array.isArray(payload.investments) ? payload.investments : existing.investments) : existing.investments,
-      chartConfig: buildChartConfig(incomingChartConfig, existing.chartConfig || {}),
-      updatedAt: now,
-    };
+  const lifecycleStage = payload.lifecycleStage !== undefined
+    ? (['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
+        ? (payload.lifecycleStage as string) : existing.lifecycleStage)
+    : existing.lifecycleStage;
 
-    store.funds[idx] = next;
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.update',
-      entityType: 'fund',
-      entityId: (next as any).id,
-      before: existing,
-      after: next,
-      reason: payload.reason || 'Admin updated fund record.',
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.fund.update({
+      where: { id: fundId },
+      data: {
+        name: payload.name !== undefined ? toTrimmedString(payload.name, existing.name) : existing.name,
+        lifecycleStage,
+        minSip: payload.minSip !== undefined ? toNumber(payload.minSip, Number(existing.minSip)) : existing.minSip,
+        minLumpsum: payload.minLumpsum !== undefined ? toNumber(payload.minLumpsum, Number(existing.minLumpsum)) : existing.minLumpsum,
+        metadata: updatedMetadata as any,
+        updatedAt: now,
+      },
     });
 
-    return next;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.update',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: { ...existing, ...existingMeta } as any,
+        afterJson: { ...result, ...updatedMetadata } as any,
+        reason: (payload as any).reason || 'Admin updated fund record.',
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
+
+    return result;
   });
 
-  if (!updated) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return updated;
+  return enrichFundWithAnalytics(updated);
 }
 
 export async function deleteFund(config: AppConfig, actor: Actor, fundId: string, requestContext: RequestContext = {}) {
-  const deleted = await updateJsonStore(config, (store) => {
-    const idx = (store.funds || []).findIndex((f) => f.id === fundId);
-    if (idx === -1) return null;
+  const existing = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!existing) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    const existing = store.funds[idx];
-    const now = new Date().toISOString();
+  await prisma.$transaction(async (tx) => {
+    await tx.fund.delete({ where: { id: fundId } });
 
-    store.funds.splice(idx, 1);
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.delete',
-      entityType: 'fund',
-      entityId: existing.id,
-      before: existing,
-      after: null,
-      reason: 'Admin deleted fund record.',
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.delete',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: existing as any,
+        afterJson: null,
+        reason: 'Admin deleted fund record.',
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
     });
-
-    return existing;
   });
 
-  if (!deleted) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return deleted;
+  return enrichFundWithAnalytics(existing);
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Capital Flow & Allocation Management                                       */
 /* -------------------------------------------------------------------------- */
 
-function getFundFromStore(store: any, fundId: string) {
-  const idx = (store.funds || []).findIndex((f: any) => f.id === fundId);
-  return idx >= 0 ? { fund: store.funds[idx], index: idx } : null;
-}
-
-function addCapitalTransaction(store: any, tx: any) {
-  store.capitalTransactions.push({
-    id: randomUUID(),
-    ...tx,
-    createdAt: new Date().toISOString(),
-  });
-}
-
-function addRedemptionRequestRecord(store: any, req: any) {
-  store.redemptionRequests.push({
-    id: randomUUID(),
-    ...req,
-    requestedAt: new Date().toISOString(),
-  });
-}
-
-/**
- * Allocate cash to an investment (move from cash to a company/sector).
- * Reduces implicit cash, increases investment amount.
- */
 export async function allocateFunds(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
@@ -305,58 +284,60 @@ export async function allocateFunds(config: AppConfig, actor: Actor, fundId: str
   if (!investmentId) throw new HttpError(400, 'INVALID_REQUEST', 'Investment ID is required.');
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
-  const result = await updateJsonStore(config, (store) => {
-    const found = getFundFromStore(store, fundId);
-    if (!found) return null;
-    const { fund } = found;
+  const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    const analytics = computeFundAnalytics(fund)!;
-    const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
-    if (amt > cash) {
-      throw new HttpError(400, 'INSUFFICIENT_CASH', 'Not enough unallocated cash for this allocation.');
-    }
+  const metadata = (fund.metadata as any) || {};
+  const analytics = computeFundAnalytics({ ...fund, ...metadata })!;
+  const cash = (Number(metadata.totalPoolSize) || 0) - analytics.totalInvested;
+  if (amt > cash) {
+    throw new HttpError(400, 'INSUFFICIENT_CASH', 'Not enough unallocated cash for this allocation.');
+  }
 
-    const inv = fund.investments.find((i: any) => i.id === investmentId);
-    if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
+  const investments = metadata.investments || [];
+  const inv = investments.find((i: any) => i.id === investmentId);
+  if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
 
-    inv.amount = (Number(inv.amount) || 0) + amt;
-    fund.updatedAt = new Date().toISOString();
+  inv.amount = (Number(inv.amount) || 0) + amt;
+  const updatedMetadata = { ...metadata, investments };
 
-    addCapitalTransaction(store, {
-      fundId,
-      type: 'allocation',
-      amount: amt,
-      source: 'cash',
-      target: inv.companyName || investmentId,
-      reason: toTrimmedString(reason, 'Fund allocation'),
-      createdBy: actor?.userId || null,
+  await prisma.$transaction(async (tx) => {
+    await tx.fund.update({
+      where: { id: fundId },
+      data: { metadata: updatedMetadata as any, updatedAt: new Date() },
     });
 
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.allocate',
-      entityType: 'fund',
-      entityId: fundId,
-      before: { investmentAmount: inv.amount - amt },
-      after: { investmentAmount: inv.amount },
-      reason: toTrimmedString(reason, 'Fund allocation'),
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: fund.updatedAt,
+    await tx.capitalTransaction.create({
+      data: {
+        fundId,
+        type: 'allocation',
+        amount: amt,
+        reason: toTrimmedString(reason, 'Fund allocation'),
+        actorAdminId: actor?.userId || null,
+        metadata: { source: 'cash', target: inv.companyName || investmentId } as any,
+      },
     });
 
-    return fund;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.allocate',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: { investmentAmount: inv.amount - amt } as any,
+        afterJson: { investmentAmount: inv.amount } as any,
+        reason: toTrimmedString(reason, 'Fund allocation'),
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
   });
 
-  if (!result) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return result;
+  const updated = await prisma.fund.findFirst({ where: { id: fundId } });
+  return enrichFundWithAnalytics(updated);
 }
 
-/**
- * Unallocate funds from an investment (move back to cash).
- * Reduces investment amount, increases implicit cash.
- */
+
 export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
@@ -364,57 +345,59 @@ export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: s
   if (!investmentId) throw new HttpError(400, 'INVALID_REQUEST', 'Investment ID is required.');
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
-  const result = await updateJsonStore(config, (store) => {
-    const found = getFundFromStore(store, fundId);
-    if (!found) return null;
-    const { fund } = found;
+  const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    const inv = fund.investments.find((i: any) => i.id === investmentId);
-    if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
+  const metadata = (fund.metadata as any) || {};
+  const investments = metadata.investments || [];
+  const inv = investments.find((i: any) => i.id === investmentId);
+  if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
 
-    const currentAmount = Number(inv.amount) || 0;
-    if (amt > currentAmount) {
-      throw new HttpError(400, 'OVER_WITHDRAWAL', `Cannot unallocate ₹${amt}. Investment only has ₹${currentAmount}.`);
-    }
+  const currentAmount = Number(inv.amount) || 0;
+  if (amt > currentAmount) {
+    throw new HttpError(400, 'OVER_WITHDRAWAL', `Cannot unallocate ₹${amt}. Investment only has ₹${currentAmount}.`);
+  }
 
-    inv.amount = currentAmount - amt;
-    fund.updatedAt = new Date().toISOString();
+  inv.amount = currentAmount - amt;
+  const updatedMetadata = { ...metadata, investments };
 
-    addCapitalTransaction(store, {
-      fundId,
-      type: 'unallocation',
-      amount: amt,
-      source: inv.companyName || investmentId,
-      target: 'cash',
-      reason: toTrimmedString(reason, 'Fund unallocation'),
-      createdBy: actor?.userId || null,
+  await prisma.$transaction(async (tx) => {
+    await tx.fund.update({
+      where: { id: fundId },
+      data: { metadata: updatedMetadata as any, updatedAt: new Date() },
     });
 
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.unallocate',
-      entityType: 'fund',
-      entityId: fundId,
-      before: { investmentAmount: currentAmount },
-      after: { investmentAmount: inv.amount },
-      reason: toTrimmedString(reason, 'Fund unallocation'),
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: fund.updatedAt,
+    await tx.capitalTransaction.create({
+      data: {
+        fundId,
+        type: 'unallocation',
+        amount: amt,
+        reason: toTrimmedString(reason, 'Fund unallocation'),
+        actorAdminId: actor?.userId || null,
+        metadata: { source: inv.companyName || investmentId, target: 'cash' } as any,
+      },
     });
 
-    return fund;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.unallocate',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: { investmentAmount: currentAmount } as any,
+        afterJson: { investmentAmount: inv.amount } as any,
+        reason: toTrimmedString(reason, 'Fund unallocation'),
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
   });
 
-  if (!result) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return result;
+  const updated = await prisma.fund.findFirst({ where: { id: fundId } });
+  return enrichFundWithAnalytics(updated);
 }
 
-/**
- * Admin external outflow — withdraw funds from the pool entirely.
- * Reduces cash first, then proportionally from investments if needed.
- */
+
 export async function adminOutflow(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
@@ -422,121 +405,126 @@ export async function adminOutflow(config: AppConfig, actor: Actor, fundId: stri
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
   if (!toTrimmedString(reason)) throw new HttpError(400, 'REASON_REQUIRED', 'Reason is required for withdrawals.');
 
-  const result = await updateJsonStore(config, (store) => {
-    const found = getFundFromStore(store, fundId);
-    if (!found) return null;
-    const { fund } = found;
+  const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    const analytics = computeFundAnalytics(fund)!;
-    const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
+  const metadata = (fund.metadata as any) || {};
+  const totalPoolSize = Number(metadata.totalPoolSize) || 0;
+  if (amt > totalPoolSize) {
+    throw new HttpError(400, 'OVER_WITHDRAWAL', `Cannot withdraw ₹${amt}. Pool size is only ₹${totalPoolSize}.`);
+  }
 
-    if (amt > fund.totalPoolSize) {
-      throw new HttpError(400, 'OVER_WITHDRAWAL', `Cannot withdraw ₹${amt}. Pool size is only ₹${fund.totalPoolSize}.`);
-    }
+  const analytics = computeFundAnalytics({ ...fund, ...metadata })!;
+  const cash = totalPoolSize - analytics.totalInvested;
+  const investments = metadata.investments || [];
 
-    // Reduce total pool size
-    fund.totalPoolSize = Math.max(0, fund.totalPoolSize - amt);
-
-    // Reduce cash first, then proportionally from investments
-    let remaining = amt;
-    if (cash >= remaining) {
-      remaining = 0;
-    } else {
-      remaining -= cash;
-      // Reduce proportionally from investments
-      const totalInv = analytics.totalInvested;
-      if (totalInv > 0 && remaining > 0) {
-        for (const inv of fund.investments) {
-          const invAmt = Number(inv.amount) || 0;
-          if (invAmt <= 0) continue;
-          const reduction = Math.min(invAmt, Math.round((invAmt / totalInv) * remaining));
-          inv.amount = invAmt - reduction;
-          remaining -= reduction;
-          if (remaining <= 0) break;
-        }
+  let remaining = amt;
+  if (cash >= remaining) {
+    remaining = 0;
+  } else {
+    remaining -= cash;
+    const totalInv = analytics.totalInvested;
+    if (totalInv > 0 && remaining > 0) {
+      for (const inv of investments) {
+        const invAmt = Number(inv.amount) || 0;
+        if (invAmt <= 0) continue;
+        const reduction = Math.min(invAmt, Math.round((invAmt / totalInv) * remaining));
+        inv.amount = invAmt - reduction;
+        remaining -= reduction;
+        if (remaining <= 0) break;
       }
     }
+  }
 
-    fund.updatedAt = new Date().toISOString();
+  const newPoolSize = Math.max(0, totalPoolSize - amt);
+  const updatedMetadata = { ...metadata, totalPoolSize: newPoolSize, investments };
 
-    addCapitalTransaction(store, {
-      fundId,
-      type: 'outflow',
-      amount: amt,
-      source: 'pool',
-      target: 'external',
-      reason: toTrimmedString(reason),
-      createdBy: actor?.userId || null,
+  await prisma.$transaction(async (tx) => {
+    await tx.fund.update({
+      where: { id: fundId },
+      data: { metadata: updatedMetadata as any, updatedAt: new Date() },
     });
 
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.outflow',
-      entityType: 'fund',
-      entityId: fundId,
-      before: { totalPoolSize: fund.totalPoolSize + amt },
-      after: { totalPoolSize: fund.totalPoolSize },
-      reason: toTrimmedString(reason),
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: fund.updatedAt,
+    await tx.capitalTransaction.create({
+      data: {
+        fundId,
+        type: 'outflow',
+        amount: amt,
+        reason: toTrimmedString(reason),
+        actorAdminId: actor?.userId || null,
+        metadata: { source: 'pool', target: 'external' } as any,
+      },
     });
 
-    return fund;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.outflow',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: { totalPoolSize } as any,
+        afterJson: { totalPoolSize: newPoolSize } as any,
+        reason: toTrimmedString(reason),
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
   });
 
-  if (!result) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return result;
+  const updated = await prisma.fund.findFirst({ where: { id: fundId } });
+  return enrichFundWithAnalytics(updated);
 }
 
-/**
- * Admin inflow — add capital to the pool.
- */
+
 export async function adminInflow(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
-  const result = await updateJsonStore(config, (store) => {
-    const found = getFundFromStore(store, fundId);
-    if (!found) return null;
-    const { fund } = found;
+  const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+  if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
 
-    fund.totalPoolSize = (Number(fund.totalPoolSize) || 0) + amt;
-    fund.updatedAt = new Date().toISOString();
+  const metadata = (fund.metadata as any) || {};
+  const totalPoolSize = (Number(metadata.totalPoolSize) || 0) + amt;
+  const updatedMetadata = { ...metadata, totalPoolSize };
 
-    addCapitalTransaction(store, {
-      fundId,
-      type: 'inflow',
-      amount: amt,
-      source: 'external',
-      target: 'pool',
-      reason: toTrimmedString(reason, 'Capital inflow'),
-      createdBy: actor?.userId || null,
+  await prisma.$transaction(async (tx) => {
+    await tx.fund.update({
+      where: { id: fundId },
+      data: { metadata: updatedMetadata as any, updatedAt: new Date() },
     });
 
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: 'fund.inflow',
-      entityType: 'fund',
-      entityId: fundId,
-      before: { totalPoolSize: fund.totalPoolSize - amt },
-      after: { totalPoolSize: fund.totalPoolSize },
-      reason: toTrimmedString(reason, 'Capital inflow'),
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: fund.updatedAt,
+    await tx.capitalTransaction.create({
+      data: {
+        fundId,
+        type: 'inflow',
+        amount: amt,
+        reason: toTrimmedString(reason, 'Capital inflow'),
+        actorAdminId: actor?.userId || null,
+        metadata: { source: 'external', target: 'pool' } as any,
+      },
     });
 
-    return fund;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'fund.inflow',
+        entityType: 'fund',
+        entityId: fundId,
+        beforeJson: { totalPoolSize: totalPoolSize - amt } as any,
+        afterJson: { totalPoolSize } as any,
+        reason: toTrimmedString(reason, 'Capital inflow'),
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
   });
 
-  if (!result) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-  return result;
+  const updated = await prisma.fund.findFirst({ where: { id: fundId } });
+  return enrichFundWithAnalytics(updated);
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Redemption Requests (User withdrawals)                                     */
@@ -549,96 +537,95 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
   if (!fundId && !holdingId) throw new HttpError(400, 'INVALID_REQUEST', 'Fund ID or Holding ID is required.');
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
-  const result = await updateJsonStore(config, (store) => {
-    let resolvedFundId = fundId;
-    let holding = null;
+  let resolvedFundId = fundId;
+  let holding: HoldingItem | null = null;
 
-    // If holdingId provided, look up the holding and resolve fundId
-    if (holdingId && !resolvedFundId) {
-      const portfolio: any = store[`portfolio_${userId}`];
-      if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: HoldingItem) => (h.id || h.fundId) === holdingId) || null;
-      }
-      if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
-      resolvedFundId = holding.fundId;
-    }
+  // Look up portfolio snapshot for holdings
+  const snapshot = await prisma.portfolioSnapshot.findFirst({
+    where: { userId },
+    orderBy: { asOfDate: 'desc' },
+  });
+  const portfolioPayload = (snapshot?.payload as any) || { holdings: [] };
+  const holdings: HoldingItem[] = portfolioPayload.holdings || [];
 
-    const fund = (store.funds || []).find((f) => f.id === resolvedFundId);
-    if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
-
-    // Find holding by fundId if not already resolved
-    if (!holding) {
-      const portfolio: any = store[`portfolio_${userId}`];
-      if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: HoldingItem) => h.fundId === resolvedFundId) || null;
-      }
-    }
-
+  if (holdingId && !resolvedFundId) {
+    holding = holdings.find((h: HoldingItem) => (h.id || h.fundId) === holdingId) || null;
     if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
+    resolvedFundId = holding.fundId;
+  }
 
-    const holdingValue = toNumber(holding.currentValue, 0);
-    if (amt > holdingValue + 0.001) {
-      throw new HttpError(400, 'INSUFFICIENT_HOLDINGS', `Insufficient holdings. Available: ₹${holdingValue}, requested: ₹${amt}.`);
-    }
+  const fund = await prisma.fund.findFirst({ where: { id: resolvedFundId } });
+  if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
 
-    if (amt < (fund.minSip || 0)) {
-      throw new HttpError(400, 'BELOW_MINIMUM', `Minimum redemption is ₹${fund.minSip || 0}.`);
-    }
+  if (!holding) {
+    holding = holdings.find((h: HoldingItem) => h.fundId === resolvedFundId) || null;
+  }
+  if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
 
-    const redemptionType = type || (amt >= holdingValue - 0.001 ? 'full' : 'partial');
-    if (!['full', 'partial'].includes(redemptionType)) throw new HttpError(400, 'INVALID_TYPE', 'Type must be full or partial.');
+  const holdingValue = toNumber(holding.currentValue, 0);
+  if (amt > holdingValue + 0.001) {
+    throw new HttpError(400, 'INSUFFICIENT_HOLDINGS', `Insufficient holdings. Available: ₹${holdingValue}, requested: ₹${amt}.`);
+  }
 
-    // Decrement holding
-    const oldValue = holdingValue;
-    const oldUnits = toNumber(holding.units, 0);
-    const reservedUnits = oldValue > 0 ? oldUnits * (amt / oldValue) : 0;
-    const newValue = oldValue - amt;
-    if (newValue <= 0.001) {
-      holding.currentValue = 0;
-      holding.units = 0;
-    } else {
-      holding.currentValue = newValue;
-      holding.units = Math.max(0, oldUnits - reservedUnits);
-    }
+  const fundMinSip = Number(fund.minSip) || 0;
+  if (amt < fundMinSip) {
+    throw new HttpError(400, 'BELOW_MINIMUM', `Minimum redemption is ₹${fundMinSip}.`);
+  }
 
-    const requiresDualApproval = amt > DUAL_APPROVAL_THRESHOLD;
-    const request = {
-      id: randomUUID(),
+  const redemptionType = type || (amt >= holdingValue - 0.001 ? 'full' : 'partial');
+  if (!['full', 'partial'].includes(redemptionType)) throw new HttpError(400, 'INVALID_TYPE', 'Type must be full or partial.');
+
+  // Compute reserved units
+  const oldValue = holdingValue;
+  const oldUnits = toNumber(holding.units, 0);
+  const reservedUnits = oldValue > 0 ? oldUnits * (amt / oldValue) : 0;
+
+  const requiresDualApproval = body.requiresDualApproval ?? (amt > DUAL_APPROVAL_THRESHOLD);
+
+  const request = await prisma.redemptionRequest.create({
+    data: {
       userId,
       fundId: resolvedFundId,
-      fundName: fund.name,
       amount: amt,
-      type: redemptionType,
       status: 'pending',
       reason: toTrimmedString(body.reason),
-      requestedAt: new Date().toISOString(),
-      processedAt: null,
-      processedBy: null,
-      requiresDualApproval: body.requiresDualApproval ?? requiresDualApproval,
+      requiresDualApproval,
       dualApprovalThresholdConfigVersion: body.dualApprovalThresholdConfigVersion ?? (requiresDualApproval ? 'default-500000' : null),
-      approvals: body.approvals ?? [],
-      reservedHoldingValue: amt,
-      reservedHoldingUnits: reservedUnits,
-    };
-
-    if (!Array.isArray(store.redemptionRequests)) store.redemptionRequests = [];
-    store.redemptionRequests.push(request);
-    return request;
+      approvals: (body.approvals ?? []) as any,
+      metadata: {
+        fundName: fund.name,
+        type: redemptionType,
+        reservedHoldingValue: amt,
+        reservedHoldingUnits: reservedUnits,
+      } as any,
+    },
   });
 
-  return result;
+  return {
+    id: request.id,
+    userId: request.userId,
+    fundId: request.fundId,
+    fundName: fund.name,
+    amount: Number(request.amount),
+    type: redemptionType,
+    status: request.status,
+    reason: request.reason,
+    requiresDualApproval: request.requiresDualApproval,
+    requestedAt: request.createdAt.toISOString(),
+  };
 }
 
+
 export async function listRedemptionRequests(config: AppConfig, { status, userId, fundId }: any = {}) {
-  const store = await readJsonStore(config);
-  let items = store.redemptionRequests || [];
+  const where: any = {};
+  if (status) where.status = status;
+  if (userId) where.userId = userId;
+  if (fundId) where.fundId = fundId;
 
-  if (status) items = items.filter((r) => r.status === status);
-  if (userId) items = items.filter((r) => r.userId === userId);
-  if (fundId) items = items.filter((r) => r.fundId === fundId);
-
-  // Sort newest first
-  items.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+  const items = await prisma.redemptionRequest.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
 
   return { items, count: items.length };
 }
@@ -649,95 +636,54 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
     throw new HttpError(400, 'INVALID_ACTION', 'Action must be approved or rejected.');
   }
 
-  const result = await updateJsonStore(config, (store) => {
-    const idx = (store.redemptionRequests || []).findIndex((r) => r.id === requestId);
-    if (idx === -1) return null;
+  const req = await prisma.redemptionRequest.findFirst({ where: { id: requestId } });
+  if (!req) throw new HttpError(404, 'REQUEST_NOT_FOUND', `Redemption request ${requestId} not found.`);
 
-    const req = store.redemptionRequests[idx];
-    if (req.status !== 'pending') {
-      throw new HttpError(400, 'ALREADY_PROCESSED', `Request already ${req.status}.`);
-    }
+  if (req.status !== 'pending') {
+    throw new HttpError(400, 'ALREADY_PROCESSED', `Request already ${req.status}.`);
+  }
 
-    const now = new Date().toISOString();
+  const now = new Date();
 
-    // If approved, reduce fund pool size
-    if (action === 'approved') {
-      // Holding was already decremented atomically at creation time; just verify it still exists
-      if (req.fundId) {
-        const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: HoldingItem) => h.fundId === req.fundId);
-        if (!holding) {
-          throw new HttpError(400, 'HOLDING_NOT_FOUND', 'User holding not found for this fund.');
-        }
-      }
-
-      const fundIdx = (store.funds || []).findIndex((f) => f.id === req.fundId);
-      if (fundIdx >= 0) {
-        const fund = store.funds[fundIdx];
-        if (req.amount > fund.totalPoolSize) {
-          throw new HttpError(400, 'INSUFFICIENT_FUNDS', 'Fund does not have enough capital for this redemption.');
-        }
-        fund.totalPoolSize = Math.max(0, fund.totalPoolSize - req.amount);
-        fund.updatedAt = now;
-
-        // Reduce proportionally from investments (cash first, then proportional)
-        const analytics = computeFundAnalytics(fund)!;
-        const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
-        let remaining = req.amount;
-        if (cash >= remaining) {
-          remaining = 0;
-        } else {
-          remaining -= cash;
-          const totalInv = analytics.totalInvested;
-          if (totalInv > 0 && remaining > 0) {
-            for (const inv of fund.investments) {
-              const invAmt = Number(inv.amount) || 0;
-              if (invAmt <= 0) continue;
-              const reduction = Math.min(invAmt, Math.round((invAmt / totalInv) * remaining));
-              inv.amount = invAmt - reduction;
-              remaining -= reduction;
-              if (remaining <= 0) break;
-            }
-          }
-        }
-      }
-    } else if (action === 'rejected') {
-      // Restore user's holding since redemption was rejected
-      if (req.fundId) {
-        const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: HoldingItem) => h.fundId === req.fundId);
-        if (holding) {
-          const restoreValue = toNumber(req.reservedHoldingValue, req.amount);
-          const restoreUnits = toNumber(req.reservedHoldingUnits, 0);
-          holding.currentValue = (Number(holding.currentValue) || 0) + restoreValue;
-          holding.units = (Number(holding.units) || 0) + restoreUnits;
-        }
-      }
-    }
-
-    req.status = action;
-    req.processedAt = now;
-    req.processedBy = actor?.userId || null;
-    req.adminReason = toTrimmedString(reason);
-
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: `redemption.${action}`,
-      entityType: 'redemption',
-      entityId: req.id,
-      before: { status: 'pending' },
-      after: { status: action, amount: req.amount },
-      reason: toTrimmedString(reason, `Redemption ${action}`),
-      ipAddress: requestContext.ipAddress || null,
-      userAgent: requestContext.userAgent || null,
-      createdAt: now,
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.redemptionRequest.update({
+      where: { id: requestId },
+      data: {
+        status: action as string,
+        metadata: {
+          ...((req.metadata as any) || {}),
+          processedAt: now.toISOString(),
+          processedBy: actor?.userId || null,
+          adminReason: toTrimmedString(reason),
+        } as any,
+        updatedAt: now,
+      },
     });
 
-    return req;
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: `redemption.${action}`,
+        entityType: 'redemption',
+        entityId: requestId,
+        beforeJson: { status: 'pending' } as any,
+        afterJson: { status: action, amount: Number(req.amount) } as any,
+        reason: toTrimmedString(reason, `Redemption ${action}`),
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: typeof requestContext.userAgent === 'string' ? requestContext.userAgent : null,
+      },
+    });
+
+    return {
+      id: req.id,
+      userId: req.userId,
+      fundId: req.fundId,
+      amount: Number(req.amount),
+      status: action,
+      reason: req.reason,
+    };
   });
 
-  if (!result) throw new HttpError(404, 'REQUEST_NOT_FOUND', `Redemption request ${requestId} not found.`);
   return result;
 }
 
@@ -751,15 +697,15 @@ export const processRedemptionRequest = withReceipt(_processRedemptionRequest, '
 });
 
 export async function listCapitalTransactions(config: AppConfig, { fundId, type, limit = 50 }: any = {}) {
-  const store = await readJsonStore(config);
-  let items = store.capitalTransactions || [];
+  const where: any = {};
+  if (fundId) where.fundId = fundId;
+  if (type) where.type = type;
 
-  if (fundId) items = items.filter((t) => t.fundId === fundId);
-  if (type) items = items.filter((t) => t.type === type);
-
-  // Sort newest first, limit
-  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  items = items.slice(0, limit);
+  const items = await prisma.capitalTransaction.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
 
   return { items, count: items.length };
 }

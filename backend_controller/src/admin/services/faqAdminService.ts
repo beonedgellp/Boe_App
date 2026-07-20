@@ -2,11 +2,12 @@ import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 export async function listAdminFaqs(config: AppConfig) {
-  const store = await readJsonStore(config);
-  const items = Array.isArray(store.faqs) ? store.faqs : [];
+  const items = await prisma.faq.findMany({
+    orderBy: { displayOrder: 'asc' },
+  });
   return { items, count: items.length };
 }
 
@@ -18,59 +19,49 @@ export async function createFaq(config: AppConfig, actor: Actor, body: Record<st
   if (!question) throw new HttpError(400, 'QUESTION_REQUIRED', 'FAQ question is required.');
   if (!answer) throw new HttpError(400, 'ANSWER_REQUIRED', 'FAQ answer is required.');
 
-  const now = new Date().toISOString();
-  const faq = {
-    id: randomUUID(),
-    question,
-    answer,
-    category,
-    order: Number(body?.order) || 0,
-    status: 'draft',
-    publishedAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await updateJsonStore(config, (store) => {
-    if (!Array.isArray(store.faqs)) store.faqs = [];
-    store.faqs.push(faq);
-    return faq;
+  const faq = await prisma.faq.create({
+    data: {
+      id: randomUUID(),
+      question,
+      answer,
+      category,
+      displayOrder: Number(body?.order) || 0,
+      active: true,
+    },
   });
 
   return faq;
 }
 
 export async function updateFaq(config: AppConfig, actor: Actor, faqId: any, body: Record<string, unknown>) {
-  const now = new Date().toISOString();
+  const existing = await prisma.faq.findFirst({ where: { id: faqId } });
+  if (!existing) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');
 
-  return updateJsonStore(config, (store) => {
-    const idx = (store.faqs || []).findIndex((f) => f.id === faqId);
-    if (idx === -1) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');
+  const data: Record<string, any> = {};
 
-    const existing = store.faqs[idx];
-    if (body.question !== undefined) existing.question = String(body.question).trim();
-    if (body.answer !== undefined) existing.answer = String(body.answer).trim();
-    if (body.category !== undefined) existing.category = String(body.category).trim();
-    if (body.order !== undefined) existing.order = Number(body.order);
-    if (body.status !== undefined) {
-      const newStatus = String(body.status).trim().toLowerCase();
-      if (['published', 'draft'].includes(newStatus)) {
-        existing.status = newStatus;
-        if (newStatus === 'published' && existing.status !== 'published') {
-          existing.publishedAt = now;
-        }
-      }
+  if (body.question !== undefined) data.question = String(body.question).trim();
+  if (body.answer !== undefined) data.answer = String(body.answer).trim();
+  if (body.category !== undefined) data.category = String(body.category).trim();
+  if (body.order !== undefined) data.displayOrder = Number(body.order);
+  if (body.status !== undefined) {
+    const newStatus = String(body.status).trim().toLowerCase();
+    if (['published', 'draft'].includes(newStatus)) {
+      data.active = newStatus === 'published';
     }
-    existing.updatedAt = now;
-    return existing;
+  }
+
+  const updated = await prisma.faq.update({
+    where: { id: faqId },
+    data,
   });
+
+  return updated;
 }
 
 export async function deleteFaq(config: AppConfig, actor: Actor, faqId: any) {
-  return updateJsonStore(config, (store) => {
-    const idx = (store.faqs || []).findIndex((f) => f.id === faqId);
-    if (idx === -1) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');
-    store.faqs.splice(idx, 1);
-    return { deleted: true };
-  });
+  const existing = await prisma.faq.findFirst({ where: { id: faqId } });
+  if (!existing) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');
+
+  await prisma.faq.delete({ where: { id: faqId } });
+  return { deleted: true };
 }

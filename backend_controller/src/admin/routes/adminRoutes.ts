@@ -6,7 +6,7 @@ import { HttpError } from '#http/errors.js';
 import { registerInternalRoutes } from '#shared/routes/internalRoutes.js';
 import { registerAdminReceiptRoutes } from '#shared/routes/receiptRoutes.js';
 import { registerAdminTimelineRoutes } from '#shared/routes/timelineRoutes.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { reviewKyc } from '../services/kycReviewService.js';
 import { getUserDetail } from '../services/userDetailService.js';
 import { replyToTicket } from '../services/supportTicketAdminService.js';
@@ -428,46 +428,46 @@ export function registerAdminRoutes(router: Router) {
     description: 'Publish strategy disclosure.',
   }, async ({ config, actor, params, body, headers }) => {
     const fundId = params.product_id;
-    const store = await readJsonStore(config);
-    const fundExists = (store.funds || []).some((f) => f.id === fundId);
-    if (!fundExists) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
-    const version = String(body?.version || '1.0').trim();
+    const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+    if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
     const title = String(body?.title || '').trim();
     const content = String(body?.content || '').trim();
     if (!title) throw new HttpError(400, 'TITLE_REQUIRED', 'Disclosure title is required.');
     if (!content) throw new HttpError(400, 'CONTENT_REQUIRED', 'Disclosure content is required.');
-    const now = new Date().toISOString();
-    const disclosure = {
-      id: randomUUID(),
-      fundId,
-      version,
-      title,
-      content,
-      status: 'published',
-      publishedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    };
-    const result = await updateJsonStore(config, (store) => {
-      if (!Array.isArray(store.disclosures)) store.disclosures = [];
-      store.disclosures.push(disclosure);
-      if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-      store.adminAuditLogs.push({
-        id: randomUUID(),
-        adminId: actor?.userId || undefined,
-        action: 'disclosure.create',
-        entityType: 'disclosure',
-        entityId: disclosure.id,
-        before: null,
-        after: { ...disclosure },
-        reason: `Disclosure created for product ${fundId}`,
-        ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
-        userAgent: String(headers?.['user-agent'] || '') || undefined,
-        createdAt: now,
+    const now = new Date();
+    const disclosureId = randomUUID();
+
+    const disclosure = await prisma.$transaction(async (tx) => {
+      const created = await tx.disclosure.create({
+        data: {
+          id: disclosureId,
+          slug: `${fundId}-${Date.now()}`,
+          title,
+          body: content,
+          payload: { fundId, status: 'published' },
+          publishedAt: now,
+        },
       });
-      return disclosure;
+
+      await tx.adminAuditLog.create({
+        data: {
+          id: randomUUID(),
+          adminId: actor?.userId || null,
+          action: 'disclosure.create',
+          entityType: 'disclosure',
+          entityId: disclosureId,
+          beforeJson: null,
+          afterJson: { ...created, fundId } as any,
+          reason: `Disclosure created for product ${fundId}`,
+          ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || null,
+          userAgent: String(headers?.['user-agent'] || '') || null,
+        },
+      });
+
+      return created;
     });
-    return result;
+
+    return disclosure;
   });
 
   router.post(Routes.POST_V1_ADMIN_PRODUCTS_PRODUCT_ID_HOLDINGS, {
@@ -476,44 +476,33 @@ export function registerAdminRoutes(router: Router) {
     description: 'Upload strategy holdings.',
   }, async ({ config, actor, params, body, headers }) => {
     const fundId = params.product_id;
-    const store = await readJsonStore(config);
-    const fundExists = (store.funds || []).some((f) => f.id === fundId);
-    if (!fundExists) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
+    const fund = await prisma.fund.findFirst({ where: { id: fundId } });
+    if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', `Fund ${fundId} not found.`);
     const holdings = Array.isArray(body?.holdings) ? body.holdings : [];
     const asOfDate = String(body?.asOfDate || new Date().toISOString().slice(0, 10)).trim();
-    const now = new Date().toISOString();
-    const snapshot = {
-      id: randomUUID(),
-      fundId,
-      holdings: holdings.map((h) => ({
-        symbol: String(h.symbol || '').trim(),
-        name: String(h.name || '').trim(),
-        quantity: Number(h.quantity) || 0,
-        weight: Number(h.weight) || 0,
-      })),
-      asOfDate,
-      createdAt: now,
-    };
-    const result = await updateJsonStore(config, (store) => {
-      if (!Array.isArray(store.productHoldings)) store.productHoldings = [];
-      store.productHoldings.push(snapshot);
-      if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
-      store.adminAuditLogs.push({
-        id: randomUUID(),
-        adminId: actor?.userId || undefined,
-        action: 'holdings.upload',
-        entityType: 'product_holdings',
-        entityId: snapshot.id,
-        before: null,
-        after: { ...snapshot },
-        reason: `Holdings uploaded for product ${fundId}`,
-        ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
-        userAgent: String(headers?.['user-agent'] || '') || undefined,
-        createdAt: now,
+    const now = new Date();
+    const snapshotId = randomUUID();
+
+    const snapshot = await prisma.$transaction(async (tx) => {
+      await tx.adminAuditLog.create({
+        data: {
+          id: randomUUID(),
+          adminId: actor?.userId || null,
+          action: 'holdings.upload',
+          entityType: 'product_holdings',
+          entityId: snapshotId,
+          beforeJson: null,
+          afterJson: { fundId, holdings, asOfDate } as any,
+          reason: `Holdings uploaded for product ${fundId}`,
+          ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || null,
+          userAgent: String(headers?.['user-agent'] || '') || null,
+        },
       });
-      return snapshot;
+
+      return { id: snapshotId, fundId, holdings, asOfDate, createdAt: now.toISOString() };
     });
-    return result;
+
+    return snapshot;
   });
 
   router.post(Routes.POST_V1_ADMIN_PAYMENTS_PAYMENT_ID_RECONCILE, {

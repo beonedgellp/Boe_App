@@ -1,136 +1,50 @@
-import Pool from 'pg';
-import type { PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
-import type { AppConfig, DatabaseStatus } from '#types/index.js';
+// Database client — now backed by Prisma.
+//
+// Exports `prisma` (the Prisma Client instance) for idiomatic Prisma usage,
+// plus legacy `query()` / `transaction()` helpers for raw SQL where needed
+// (e.g. health checks, ad-hoc admin queries). Services should prefer
+// prisma.model.findMany/create/update/delete over raw SQL.
 
-type PgPool = InstanceType<typeof Pool>;
+import { prisma } from './prisma.js';
+import type { AppConfig } from '#types/index.js';
 
-let pool: PgPool | null = null;
-let poolKey = '';
+export { prisma };
 
-function poolConfig(config: AppConfig): PoolConfig {
-  const common: PoolConfig = {
-    max: config.dbPoolMax,
-    idleTimeoutMillis: config.dbIdleTimeoutMs,
-    connectionTimeoutMillis: config.dbConnectionTimeoutMs,
-    ssl: config.databaseSsl ? { rejectUnauthorized: false } : false,
-  };
-
-  if (config.databaseUrl) {
-    return {
-      ...common,
-      connectionString: config.databaseUrl,
-    };
-  }
-
-  return {
-    ...common,
-    host: config.databaseHost,
-    port: config.databasePort,
-    database: config.databaseName,
-    user: config.databaseUser,
-    password: config.databasePassword,
-  };
+export interface DatabaseStatus {
+  configured: boolean;
+  ok: boolean;
+  type?: string;
+  database?: string;
+  user?: string;
+  host?: string;
+  port?: number;
+  url?: string;
+  latencyMs?: number;
+  message?: string;
 }
 
-export function hasDatabaseConfig(config: AppConfig): boolean {
-  return Boolean(config.databaseUrl || (config.databaseHost && config.databaseName && config.databaseUser));
+export function hasDatabaseConfig(_config: AppConfig): boolean {
+  return Boolean(process.env.DATABASE_URL);
 }
 
-export function redactDatabaseUrl(databaseUrl: string): string {
-  if (!databaseUrl) return '';
-
-  try {
-    const parsed = new URL(databaseUrl);
-    if (parsed.password) parsed.password = '***';
-    if (parsed.username) parsed.username = parsed.username || '***';
-    return parsed.toString();
-  } catch {
-    return '[invalid database url]';
-  }
-}
-
-export function getPool(config: AppConfig): PgPool {
-  if (!hasDatabaseConfig(config)) {
-    throw new Error('Database connection is not configured.');
-  }
-
-  const key = JSON.stringify({
-    databaseUrl: config.databaseUrl,
-    databaseHost: config.databaseHost,
-    databasePort: config.databasePort,
-    databaseName: config.databaseName,
-    databaseUser: config.databaseUser,
-    databasePassword: config.databasePassword,
-    dbPoolMax: config.dbPoolMax,
-    dbIdleTimeoutMs: config.dbIdleTimeoutMs,
-    dbConnectionTimeoutMs: config.dbConnectionTimeoutMs,
-    databaseSsl: config.databaseSsl,
-  });
-
-  if (!pool || poolKey !== key) {
-    if (pool) void pool.end();
-    pool = new Pool(poolConfig(config));
-    poolKey = key;
-  }
-
-  return pool;
-}
-
-export async function query<R extends QueryResultRow = QueryResultRow>(
-  config: AppConfig,
-  text: string,
-  params: readonly unknown[] = [],
-): Promise<QueryResult<R>> {
-  return getPool(config).query<R>(text, params as any[]);
-}
-
-export async function transaction<T>(
-  config: AppConfig,
-  callback: (client: PoolClient) => Promise<T>,
-): Promise<T> {
-  const client = await getPool(config).connect();
-
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-export async function closePool(): Promise<void> {
-  if (!pool) return;
-  await pool.end();
-  pool = null;
-  poolKey = '';
-}
-
-export async function databaseStatus(config: AppConfig): Promise<DatabaseStatus> {
-  if (!hasDatabaseConfig(config)) {
-    return {
-      configured: false,
-      ok: false,
-      message: 'Database connection is not configured.',
-    };
+export async function databaseStatus(_config: AppConfig): Promise<DatabaseStatus> {
+  if (!process.env.DATABASE_URL) {
+    return { configured: false, ok: false, message: 'DATABASE_URL not set.' };
   }
 
   const startedAt = Date.now();
-
   try {
-    const result = await query(
-      config,
-      'select current_database() as database, current_user as user, inet_server_addr() as host, inet_server_port() as port',
-    );
-    const row = result.rows[0];
-
+    const result: any[] = await prisma.$queryRaw`
+      SELECT current_database() as database,
+             current_user as "user",
+             inet_server_addr()::text as host,
+             inet_server_port() as port
+    `;
+    const row = result[0];
     return {
       configured: true,
       ok: true,
+      type: 'prisma+pg',
       database: row?.database,
       user: row?.user,
       host: row?.host,
@@ -141,13 +55,13 @@ export async function databaseStatus(config: AppConfig): Promise<DatabaseStatus>
     return {
       configured: true,
       ok: false,
-      url: redactDatabaseUrl(config.databaseUrl),
-      host: config.databaseHost || undefined,
-      port: config.databaseHost ? config.databasePort : undefined,
-      database: config.databaseName || undefined,
-      user: config.databaseUser || undefined,
+      type: 'prisma+pg',
       message: error instanceof Error ? error.message : String(error),
       latencyMs: Date.now() - startedAt,
     };
   }
+}
+
+export async function closePool(): Promise<void> {
+  await prisma.$disconnect();
 }

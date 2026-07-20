@@ -2,7 +2,7 @@ import type { NotificationBody } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 export async function sendNotification(config: AppConfig, actor: Actor, body: NotificationBody) {
   const title = String(body?.title || '').trim();
@@ -15,103 +15,96 @@ export async function sendNotification(config: AppConfig, actor: Actor, body: No
     throw new HttpError(400, 'INVALID_TARGET', 'Target must be "user", "all", or "cohort".');
   }
 
-  const store = await readJsonStore(config);
-  const now = new Date().toISOString();
-  let targetUserIds = [];
+  let targetUserIds: string[] = [];
 
   if (target === 'user') {
     const userId = String(body?.userId || '').trim();
     if (!userId) throw new HttpError(400, 'USER_ID_REQUIRED', 'userId is required when target is "user".');
-    const user = store.users.find((u) => u.id === userId);
+    const user = await prisma.user.findFirst({ where: { id: userId } });
     if (!user) throw new HttpError(404, 'USER_NOT_FOUND', 'Target user not found.');
     targetUserIds = [userId];
   } else if (target === 'all') {
-    targetUserIds = store.users.filter((u) => u.role === 'client').map((u) => u.id);
+    const users = await prisma.user.findMany({ where: { role: 'client' }, select: { id: true } });
+    targetUserIds = users.map((u) => u.id);
   } else {
     // cohort: approved users only
-    targetUserIds = store.users
-      .filter((u) => u.role === 'client' && u.status === 'approved')
-      .map((u) => u.id);
+    const users = await prisma.user.findMany({
+      where: { role: 'client', status: 'approved' },
+      select: { id: true },
+    });
+    targetUserIds = users.map((u) => u.id);
   }
 
-  const notificationIds: any[] = [];
-  await updateJsonStore(config, (s) => {
-    if (!Array.isArray(s.notifications)) s.notifications = [];
-    for (const userId of targetUserIds) {
-      const n = {
-        id: randomUUID(),
+  const notificationIds: string[] = [];
+  const now = new Date();
+
+  for (const userId of targetUserIds) {
+    const id = randomUUID();
+    await prisma.notification.create({
+      data: {
+        id,
         userId,
-        type: 'admin',
+        kind: 'admin',
         title,
         body: messageBody,
-        readAt: null,
+        status: 'unread',
         createdAt: now,
-      };
-      s.notifications.push(n);
-      notificationIds.push(n.id);
-    }
-    return { sentCount: targetUserIds.length, notificationIds };
-  });
+      },
+    });
+    notificationIds.push(id);
+  }
 
   return { sentCount: targetUserIds.length, notificationIds };
 }
 
 export async function notifyUserApproved(config: AppConfig, userId: string, userName: any) {
-  const now = new Date().toISOString();
-  let notificationId;
-  await updateJsonStore(config, (s) => {
-    if (!Array.isArray(s.notifications)) s.notifications = [];
-    const n = {
-      id: randomUUID(),
+  const id = randomUUID();
+  await prisma.notification.create({
+    data: {
+      id,
       userId,
-      type: 'approval',
+      kind: 'approval',
       title: 'Account Approved',
       body: `Welcome aboard, ${userName || 'there'}! Your account has been approved. You can now start investing.`,
-      readAt: null,
-      createdAt: now,
-    };
-    s.notifications.push(n);
-    notificationId = n.id;
-    return n;
+      status: 'unread',
+    },
   });
-  return { notificationId };
+  return { notificationId: id };
 }
 
 export async function notifyUserRejected(config: AppConfig, userId: string, userName: any, reason: any) {
-  const now = new Date().toISOString();
-  let notificationId;
-  await updateJsonStore(config, (s) => {
-    if (!Array.isArray(s.notifications)) s.notifications = [];
-    const n = {
-      id: randomUUID(),
+  const id = randomUUID();
+  await prisma.notification.create({
+    data: {
+      id,
       userId,
-      type: 'rejection',
+      kind: 'rejection',
       title: 'Account Application Update',
       body: `Hi ${userName || 'there'}, your account application could not be approved at this time. Reason: ${reason || 'Not specified'}`,
-      readAt: null,
-      createdAt: now,
-    };
-    s.notifications.push(n);
-    notificationId = n.id;
-    return n;
+      status: 'unread',
+    },
   });
-  return { notificationId };
+  return { notificationId: id };
 }
 
 export async function listAdminNotifications(config: AppConfig, { page = 1, limit = 25 }: { page?: number; limit?: number } = {}) {
-  const store = await readJsonStore(config);
-  let items = Array.isArray(store.notifications) ? store.notifications : [];
-  items = items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-
   const maxLimit = Math.min(100, Math.max(1, Number(limit) || 25));
   const currentPage = Math.max(1, Number(page) || 1);
-  const start = (currentPage - 1) * maxLimit;
-  const paginated = items.slice(start, start + maxLimit);
+  const skip = (currentPage - 1) * maxLimit;
+
+  const [items, total] = await Promise.all([
+    prisma.notification.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: maxLimit,
+    }),
+    prisma.notification.count(),
+  ]);
 
   return {
-    items: paginated,
-    count: paginated.length,
-    total: items.length,
+    items,
+    count: items.length,
+    total,
     page: currentPage,
     limit: maxLimit,
   };

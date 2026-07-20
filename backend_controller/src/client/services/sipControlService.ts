@@ -3,12 +3,12 @@ import type { SipAction } from '#types/services.js';
 import type { SipControlRequestRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
 const VALID_ACTIONS = ['pause', 'resume', 'cancel', 'skip', 'step_up', 'change_amount'];
 
-const STATUS_MAP = {
+const STATUS_MAP: Record<string, string> = {
   pause: 'pause_requested',
   resume: 'active',
   cancel: 'cancel_requested',
@@ -30,59 +30,86 @@ async function _requestSipControl(config: AppConfig, actor: Actor, planId: strin
     throw new HttpError(400, 'PLAN_ID_REQUIRED', 'Plan ID is required.');
   }
 
-  const result = await updateJsonStore(config, (store) => {
-    const order = (store.investmentPlans || store.orders || []).find((o) => o.id === planId);
-    if (!order) return null;
-    if (order.userId !== actor?.userId) {
-      throw new HttpError(403, 'FORBIDDEN', 'Plan does not belong to you.');
-    }
+  const plan = await prisma.investmentPlan.findFirst({ where: { id: planId } });
+  if (!plan) {
+    throw new HttpError(404, 'PLAN_NOT_FOUND', 'Investment plan not found.');
+  }
+  if (plan.userId !== actor?.userId) {
+    throw new HttpError(403, 'FORBIDDEN', 'Plan does not belong to you.');
+  }
 
-    const now = new Date().toISOString();
-    const beforeOrder = { ...order };
+  const now = new Date();
+  const newStatus = STATUS_MAP[action] as any;
+  const beforePlan = { ...plan };
 
-    order.status = STATUS_MAP[action as keyof typeof STATUS_MAP];
-    order.updatedAt = now;
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.investmentPlan.update({
+      where: { id: planId },
+      data: {
+        status: newStatus,
+        updatedAt: now,
+      },
+    });
 
-    const request = {
-      id: randomUUID(),
-      userId: actor?.userId,
-      planId,
-      action,
-      reason: reason || '',
-      status: 'pending',
-      createdAt: now,
-      updatedAt: now,
-    };
+    const request = await tx.sipControlRequest.create({
+      data: {
+        userId: actor.userId,
+        planId,
+        action,
+        reason: reason || '',
+        status: 'pending',
+        confirmed: false,
+      },
+    });
 
-    store.sipControlRequests.push(request);
-
-    store.adminAuditLogs.push({
-      id: randomUUID(),
-      adminId: actor?.userId || null,
-      action: `sip.${action}`,
-      entityType: 'investment_plan',
-      entityId: planId,
-      before: beforeOrder,
-      after: { ...order },
-      reason: reason || `SIP ${action} requested by client.`,
-      ipAddress: null,
-      userAgent: null,
-      createdAt: now,
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor.userId || null,
+        action: `sip.${action}`,
+        entityType: 'investment_plan',
+        entityId: planId,
+        beforeJson: beforePlan as any,
+        afterJson: { ...beforePlan, status: newStatus, updatedAt: now.toISOString() } as any,
+        reason: reason || `SIP ${action} requested by client.`,
+        ipAddress: null,
+        userAgent: null,
+      },
     });
 
     return request;
   });
 
-  if (!result) throw new HttpError(404, 'PLAN_NOT_FOUND', 'Investment plan not found.');
-  return result;
+  return {
+    id: result.id,
+    userId: result.userId,
+    planId: result.planId,
+    action: result.action,
+    reason: result.reason,
+    status: result.status,
+    createdAt: result.createdAt.toISOString(),
+    updatedAt: result.updatedAt.toISOString(),
+  };
 }
 
 export async function listSipControlRequests(config: AppConfig, actor: Actor) {
-  const store = await readJsonStore(config);
-  const items = (store.sipControlRequests || [])
-    .filter((r) => r.userId === actor?.userId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return { items, count: items.length, page: 1, pageSize: items.length, total: items.length, source: 'json' };
+  const items = await prisma.sipControlRequest.findMany({
+    where: { userId: actor?.userId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const mapped = items.map((item) => ({
+    id: item.id,
+    userId: item.userId,
+    planId: item.planId,
+    action: item.action,
+    reason: item.reason,
+    status: item.status,
+    confirmed: item.confirmed,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  }));
+
+  return { items: mapped, count: mapped.length, page: 1, pageSize: mapped.length, total: mapped.length, source: 'prisma' };
 }
 
 export const requestSipControl = withReceipt(_requestSipControl, 'sip_control_requested', {

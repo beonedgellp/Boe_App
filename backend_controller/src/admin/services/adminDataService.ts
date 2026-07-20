@@ -1,28 +1,21 @@
 import type { AdminUserFilters, AdminTransactionFilters, AdminPaymentFilters, UpdateUserStatusBody, RequestContext } from '#types/services.js';
-import type { PoolClient } from 'pg';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import type { FundRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
 import { HttpError } from '#http/errors.js';
-import { query, transaction } from '#db/client.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { notifyUserApproved, notifyUserRejected } from './notificationComposerService.js';
 
 const PENDING_APPROVAL_STATUSES = new Set(['draft', 'pending_review', 'kyc_pending']);
+
 
 function visibleTransactionType(type: any) {
   const value = String(type || '').toLowerCase();
   if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
   if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
   return value;
-}
-
-function transactionTypeMatches(actual: any, expected: any) {
-  const normalizedExpected = visibleTransactionType(expected);
-  if (!normalizedExpected || normalizedExpected === 'all') return true;
-  return visibleTransactionType(actual) === normalizedExpected;
 }
 
 function displayName(user: any) {
@@ -37,15 +30,15 @@ function userPayload(user: any) {
     phone: user.phone || '',
     role: user.role || 'client',
     status: user.status || 'approved',
-    approvalRef: user.approvalRef || user.approval_ref || '',
+    approvalRef: user.approvalRef || '',
     riskProfileStatus: user.riskProfileStatus || 'approved',
     kycStatus: user.kycStatus || 'approved',
-    createdAt: user.createdAt || '',
-    approvedAt: user.approvedAt || '',
+    createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : (user.createdAt || ''),
+    approvedAt: user.approvedAt instanceof Date ? user.approvedAt.toISOString() : (user.approvedAt || ''),
   };
 }
 
-function collection(items: any, source = 'json') {
+function collection(items: any, source = 'prisma') {
   return {
     items,
     count: items.length,
@@ -60,68 +53,27 @@ function emptyForActiveStore(config: AppConfig) {
 function computeAutopaySuccess(mandates: any) {
   if (!Array.isArray(mandates) || mandates.length === 0) return 'N/A';
   const successStatuses = new Set(['active', 'success', 'confirmed']);
-  const successCount = mandates.filter((m) => successStatuses.has(m.status)).length;
+  const successCount = mandates.filter((m: any) => successStatuses.has(m.status)).length;
   return `${Math.round((successCount / mandates.length) * 100)}%`;
-}
-
-function rowUserPayload(row: any) {
-  return userPayload({
-    id: row.id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    email: row.email,
-    phone: row.phone,
-    role: row.role,
-    status: row.status,
-    riskProfileStatus: row.risk_profile_status,
-    kycStatus: row.kyc_status,
-    createdAt: row.created_at,
-    approvedAt: row.approved_at,
-  });
-}
-
-async function postgresUsers(config: AppConfig, whereSql = '', params: any[] = []) {
-  const result = await query(config, `
-    SELECT id, first_name, last_name, email, phone, role::text, status::text,
-           risk_profile_status::text, kyc_status::text, created_at, approved_at
-    FROM users
-    ${whereSql}
-    ORDER BY created_at DESC
-  `, params);
-  return result.rows.map(rowUserPayload);
 }
 
 function pendingApproval(user: any) {
   return (user.role || 'client') === 'client' && PENDING_APPROVAL_STATUSES.has(user.status);
 }
 
-async function jsonCollection(config: AppConfig, key: any) {
-  const store = await readJsonStore(config);
-  return collection(Array.isArray(store[key]) ? store[key] : []);
-}
-
-function todayCount(items: any, dateKey: any) {
-  const today = new Date().toISOString().slice(0, 10);
-  return items.filter((item: any) => String(item[dateKey] || item.createdAt || '').startsWith(today)).length;
-}
 
 export async function adminOverview(config: AppConfig) {
-  const result = await query(config, `
-    SELECT role::text, status::text, kyc_status::text
-    FROM users
-  `);
-  const users = result.rows.map((row) => ({
-    role: row.role,
-    status: row.status,
-    kycStatus: row.kyc_status,
-  }));
+  const users = await prisma.user.findMany({
+    select: { role: true, status: true, kycStatus: true },
+  });
+
   const pendingApprovals = users.filter(pendingApproval);
   const kyc = users.filter((user) => user.role === 'client' && user.kycStatus && user.kycStatus !== 'approved');
   const rejected = users.filter((user) => user.role === 'client' && user.status === 'rejected');
   const approved = users.filter((user) => user.role === 'client' && user.status === 'approved');
 
   return {
-    source: 'postgres',
+    source: 'prisma',
     counts: {
       approvals: pendingApprovals.length,
       kyc: kyc.length,
@@ -151,18 +103,23 @@ export async function adminOverview(config: AppConfig) {
 }
 
 export async function adminUsers(config: AppConfig, { status = 'approved', q, page = 1, limit = 25 }: AdminUserFilters = {}) {
-  let users;
-  let whereSql = "WHERE role = 'client'";
-  const params: any[] = [];
-  if (status) {
-    params.push(status);
-    whereSql += ` AND status = $${params.length}::user_status`;
-  }
+  const where: any = { role: 'client' };
+  if (status) where.status = status;
+
+  const allUsers = await prisma.user.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  let users = allUsers.map(userPayload);
+
   if (q) {
-    params.push(`%${q}%`);
-    whereSql += ` AND (first_name ILIKE $${params.length} OR last_name ILIKE $${params.length} OR email ILIKE $${params.length})`;
+    const lowerQ = q.toLowerCase();
+    users = users.filter((u) =>
+      u.name.toLowerCase().includes(lowerQ) ||
+      u.email.toLowerCase().includes(lowerQ)
+    );
   }
-  users = await postgresUsers(config, whereSql, params);
 
   const total = users.length;
   const start = (Math.max(1, Number(page)) - 1) * Math.max(1, Number(limit));
@@ -175,74 +132,62 @@ export async function adminUsers(config: AppConfig, { status = 'approved', q, pa
     total,
     page: Number(page),
     limit: Number(limit),
-    source: 'postgres',
+    source: 'prisma',
   };
 }
 
-export async function adminTransactions(config: AppConfig, { fundId, status, type, userId, q, page = 1, limit = 25 }: AdminTransactionFilters = {}) {
-  let transactions = [];
 
-  let whereSql = 'WHERE 1=1';
-  const params: any[] = [];
-  if (fundId) {
-    params.push(fundId);
-    whereSql += ` AND product_id = $${params.length}`;
-  }
-  if (status) {
-    params.push(status);
-    whereSql += ` AND status = $${params.length}`;
-  }
+export async function adminTransactions(config: AppConfig, { fundId, status, type, userId, q, page = 1, limit = 25 }: AdminTransactionFilters = {}) {
+  const where: any = {};
+  if (fundId) where.productId = fundId;
+  if (status) where.status = status;
+  if (userId) where.userId = userId;
+
   const normalizedType = visibleTransactionType(type);
   if (normalizedType === 'sip') {
-    params.push(['sip', 'sip_installment', 'installment']);
-    whereSql += ` AND type = ANY($${params.length})`;
+    where.type = { in: ['sip_installment'] };
   } else if (normalizedType === 'lumpsum') {
-    params.push(['lumpsum', 'one_time']);
-    whereSql += ` AND type = ANY($${params.length})`;
+    where.type = { in: ['one_time_investment'] };
   } else if (type) {
-    params.push(type);
-    whereSql += ` AND type = $${params.length}`;
-  }
-  if (userId) {
-    params.push(userId);
-    whereSql += ` AND user_id = $${params.length}`;
+    where.type = type;
   }
 
-  const result = await query(config, `
-    SELECT t.id, t.user_id, t.product_id, t.investment_plan_id, t.type::text,
-           t.amount, t.nav, t.units, t.status::text, t.idempotency_key,
-           t.requested_at, t.payment_confirmed_at, t.allotted_at, t.cancelled_at,
-           t.created_at, t.updated_at,
-           u.first_name, u.last_name, u.email,
-           f.name as fund_name
-    FROM transactions t
-    JOIN users u ON u.id = t.user_id
-    LEFT JOIN funds f ON f.id = t.product_id
-    ${whereSql}
-    ORDER BY t.created_at DESC
-  `, params);
+  const rawTransactions = await prisma.transaction.findMany({
+    where,
+    include: {
+      user: { select: { firstName: true, lastName: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 
-  transactions = result.rows.map((row) => ({
+  // Also load fund names
+  const productIds = [...new Set(rawTransactions.map((t) => t.productId).filter(Boolean))];
+  const funds = productIds.length > 0
+    ? await prisma.fund.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
+    : [];
+  const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+
+  let transactions = rawTransactions.map((row) => ({
     id: row.id,
-    userId: row.user_id,
-    productId: row.product_id,
-    investmentPlanId: row.investment_plan_id,
+    userId: row.userId,
+    productId: row.productId,
+    investmentPlanId: row.investmentPlanId,
     type: row.type,
     amount: row.amount,
-    date: row.requested_at,
+    date: row.requestedAt?.toISOString() || '',
     nav: row.nav,
     units: row.units,
     status: row.status,
-    idempotencyKey: row.idempotency_key,
-    requestedAt: row.requested_at,
-    paymentConfirmedAt: row.payment_confirmed_at,
-    allottedAt: row.allotted_at,
-    cancelledAt: row.cancelled_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    userName: [row.first_name, row.last_name].filter(Boolean).join(' ') || row.email || row.user_id,
-    userEmail: row.email || '',
-    fundName: row.fund_name || row.product_id || '—',
+    idempotencyKey: row.idempotencyKey,
+    requestedAt: row.requestedAt?.toISOString() || '',
+    paymentConfirmedAt: row.paymentConfirmedAt?.toISOString() || null,
+    allottedAt: row.allottedAt?.toISOString() || null,
+    cancelledAt: row.cancelledAt?.toISOString() || null,
+    createdAt: row.createdAt?.toISOString() || '',
+    updatedAt: row.updatedAt?.toISOString() || '',
+    userName: [row.user?.firstName, row.user?.lastName].filter(Boolean).join(' ') || row.user?.email || row.userId,
+    userEmail: row.user?.email || '',
+    fundName: fundMap.get(row.productId) || row.productId || '—',
   }));
 
   if (q) {
@@ -266,117 +211,77 @@ export async function adminTransactions(config: AppConfig, { fundId, status, typ
     total,
     page: Number(page),
     limit: Number(limit),
-    source: 'postgres',
+    source: 'prisma',
   };
 }
+
 
 export async function adminApprovals(config: AppConfig, status = 'pending') {
-  const pendingStatuses = ['draft', 'pending_review', 'kyc_pending'];
-  let users;
-
-  let whereSql = "WHERE role = 'client'";
-  const params: any[] = [];
+  const where: any = { role: 'client' };
 
   if (status === 'pending') {
-    whereSql += ` AND status IN ('draft', 'pending_review', 'kyc_pending')`;
+    where.status = { in: ['draft', 'pending_review', 'kyc_pending'] };
   } else if (status === 'rejected') {
-    whereSql += ` AND status = 'rejected'`;
+    where.status = 'rejected';
   } else if (status === 'approved') {
-    whereSql += ` AND status = 'approved'`;
+    where.status = 'approved';
   }
-  // status === 'all' adds no filter
 
-  users = await postgresUsers(config, whereSql, params);
-
-  return collection(users);
-}
-
-function kycReviewPayload(user: any, kycProfile: any) {
-  return {
-    ...userPayload(user),
-    panLast4: kycProfile?.pan_last4 || kycProfile?.panLast4 || '',
-    aadhaarLast4: kycProfile?.aadhaar_last4 || kycProfile?.aadhaarLast4 || '',
-    kycReviewStatus: kycProfile?.review_status || kycProfile?.reviewStatus || 'not_started',
-    kycAdminNotes: kycProfile?.admin_notes || kycProfile?.adminNotes || '',
-    kycReviewedAt: kycProfile?.reviewed_at || kycProfile?.reviewedAt || '',
-    kycReviewedBy: kycProfile?.reviewed_by || kycProfile?.reviewedBy || '',
-    kycAddress: kycProfile?.address_json || kycProfile?.address || {},
-    kycDocuments: kycProfile?.document_refs_json || kycProfile?.documentRefs || [],
-  };
-}
-
-async function postgresKycReview(config: AppConfig) {
-  const result = await query(config, `
-    SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.role::text, u.status::text,
-           u.risk_profile_status::text, u.kyc_status::text, u.created_at, u.approved_at,
-           k.pan_last4, k.aadhaar_last4, k.review_status::text, k.admin_notes, k.reviewed_at, k.reviewed_by,
-           k.address_json, k.document_refs_json
-    FROM users u
-    LEFT JOIN kyc_profiles k ON k.user_id = u.id
-    WHERE u.role = 'client' AND u.kyc_status <> 'approved'
-    ORDER BY u.created_at DESC
-  `);
-  return result.rows.map((row) => {
-    const user = rowUserPayload(row);
-    const kycProfile = {
-      pan_last4: row.pan_last4,
-      aadhaar_last4: row.aadhaar_last4,
-      review_status: row.review_status,
-      admin_notes: row.admin_notes,
-      reviewed_at: row.reviewed_at,
-      reviewed_by: row.reviewed_by,
-      address_json: row.address_json,
-      document_refs_json: row.document_refs_json,
-    };
-    return kycReviewPayload(user, kycProfile);
+  const users = await prisma.user.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
   });
+
+  return collection(users.map(userPayload));
 }
 
 export async function adminKycReview(config: AppConfig) {
-  return collection(await postgresKycReview(config), 'postgres');
-}
-
-function riskProfilePayload(user: any, riskProfile: any) {
-  return {
-    ...userPayload(user),
-    ageBand: riskProfile?.age_band || riskProfile?.ageBand || '',
-    investmentHorizon: riskProfile?.investment_horizon || riskProfile?.investmentHorizon || '',
-    incomeBand: riskProfile?.income_band || riskProfile?.incomeBand || '',
-    lossTolerance: riskProfile?.loss_tolerance || riskProfile?.lossTolerance || '',
-    investmentExperience: riskProfile?.investment_experience || riskProfile?.investmentExperience || '',
-    riskCompletedAt: riskProfile?.completed_at || riskProfile?.completedAt || '',
-    riskAnswers: riskProfile?.answers_json || riskProfile?.answers || {},
-  };
-}
-
-async function postgresRiskProfiles(config: AppConfig) {
-  const result = await query(config, `
-    SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.role::text, u.status::text,
-           u.risk_profile_status::text, u.kyc_status::text, u.created_at, u.approved_at,
-           r.age_band, r.investment_horizon, r.income_band, r.loss_tolerance, r.investment_experience,
-           r.completed_at, r.answers_json
-    FROM users u
-    LEFT JOIN risk_profiles r ON r.user_id = u.id
-    WHERE u.role = 'client'
-    ORDER BY u.created_at DESC
-  `);
-  return result.rows.map((row) => {
-    const user = rowUserPayload(row);
-    const riskProfile = {
-      age_band: row.age_band,
-      investment_horizon: row.investment_horizon,
-      income_band: row.income_band,
-      loss_tolerance: row.loss_tolerance,
-      investment_experience: row.investment_experience,
-      completed_at: row.completed_at,
-      answers_json: row.answers_json,
-    };
-    return riskProfilePayload(user, riskProfile);
+  const users = await prisma.user.findMany({
+    where: { role: 'client', kycStatus: { not: 'approved' } },
+    include: { kycProfile: true },
+    orderBy: { createdAt: 'desc' },
   });
+
+  const items = users.map((user) => {
+    const kyc = user.kycProfile;
+    return {
+      ...userPayload(user),
+      panLast4: kyc?.panLast4 || '',
+      aadhaarLast4: kyc?.aadhaarLast4 || '',
+      kycReviewStatus: kyc?.reviewStatus || 'not_started',
+      kycAdminNotes: kyc?.adminNotes || '',
+      kycReviewedAt: kyc?.reviewedAt?.toISOString() || '',
+      kycReviewedBy: kyc?.reviewedBy || '',
+      kycAddress: kyc?.addressJson || {},
+      kycDocuments: kyc?.documentRefsJson || [],
+    };
+  });
+
+  return collection(items);
 }
 
 export async function adminRiskProfiles(config: AppConfig) {
-  return collection(await postgresRiskProfiles(config), 'postgres');
+  const users = await prisma.user.findMany({
+    where: { role: 'client' },
+    include: { riskProfile: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const items = users.map((user) => {
+    const rp = user.riskProfile;
+    return {
+      ...userPayload(user),
+      ageBand: rp?.ageBand || '',
+      investmentHorizon: rp?.investmentHorizon || '',
+      incomeBand: rp?.incomeBand || '',
+      lossTolerance: rp?.lossTolerance || '',
+      investmentExperience: rp?.investmentExperience || '',
+      riskCompletedAt: rp?.completedAt?.toISOString() || '',
+      riskAnswers: rp?.answersJson || {},
+    };
+  });
+
+  return collection(items);
 }
 
 export async function adminStrategies(config: AppConfig) {
@@ -388,100 +293,8 @@ export async function adminStrategies(config: AppConfig) {
   }
 }
 
-function paymentTimestamp(payment: any) {
-  return payment.time || payment.createdAt || payment.confirmedAt || payment.reconciledAt || payment.updatedAt || '';
-}
-
-function findPaymentPlan(store: any, payment: any, transaction: any) {
-  const plans = store.investmentPlans || store.orders || [];
-  if (transaction?.investmentPlanId) {
-    const byTransaction = plans.find((plan: any) => plan.id === transaction.investmentPlanId);
-    if (byTransaction) return byTransaction;
-  }
-  if (payment.investmentPlanId) {
-    const byPaymentPlanId = plans.find((plan: any) => plan.id === payment.investmentPlanId);
-    if (byPaymentPlanId) return byPaymentPlanId;
-  }
-  if (payment.id) {
-    const byPaymentId = plans.find((plan: any) => plan.paymentId === payment.id);
-    if (byPaymentId) return byPaymentId;
-  }
-  return null;
-}
-
-function resolvePaymentFund(store: any, payment: any, transaction: any, plan: any) {
-  const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  const fund = fundId ? (store.funds || []).find((item: any) => item.id === fundId) : null;
-  return { fundId, fund };
-}
-
-function userName(user: any, fallback = '') {
-  if (!user) return fallback;
-  return displayName(user);
-}
-
-function enrichPaymentRow(store: any, payment: any) {
-  const transaction = (store.transactions || []).find((item: any) => item.id === payment.transactionId) || null;
-  const plan = findPaymentPlan(store, payment, transaction);
-  const { fundId, fund } = resolvePaymentFund(store, payment, transaction, plan);
-  const user = (store.users || []).find((item: any) => item.id === payment.userId) || null;
-  const name = userName(user, payment.user || payment.userId || 'Client');
-  const time = paymentTimestamp(payment);
-  const amount = Number(payment.amount || transaction?.amount || plan?.amount || 0);
-
-  return {
-    ...payment,
-    id: payment.id,
-    paymentId: payment.id,
-    userId: payment.userId || user?.id || '',
-    user: name,
-    userName: name,
-    userEmail: user?.email || payment.userEmail || '',
-    amount,
-    resolvedAmount: amount,
-    mode: payment.mode || transaction?.type || plan?.type || '',
-    provider: payment.provider || '',
-    status: payment.status || 'unknown',
-    time,
-    createdAt: payment.createdAt || time,
-    transactionId: payment.transactionId || transaction?.id || null,
-    transactionStatus: transaction?.status || null,
-    transactionType: transaction?.type || null,
-    planId: plan?.id || payment.investmentPlanId || transaction?.investmentPlanId || null,
-    planType: plan?.type || null,
-    fundId,
-    fundName: fund?.name || fund?.title || fundId || 'Unmapped fund',
-    fundPoolSize: Number(fund?.totalPoolSize || 0),
-    poolPostedAt: payment.poolPostedAt || null,
-    poolPostedAmount: Number(payment.poolPostedAmount || 0),
-    approvedAt: payment.approvedAt || null,
-    approvedBy: payment.approvedBy || null,
-    rejectedAt: payment.rejectedAt || null,
-    rejectionReason: payment.rejectionReason || null,
-    settlementReference: payment.settlementReference || null,
-    providerPaymentId: payment.providerPaymentId || null,
-    providerOrderId: payment.providerOrderId || null,
-  };
-}
-
-function matchesDateRange(row: any, from: any, to: any) {
-  const value = row.time || row.createdAt || '';
-  if (!value) return !(from || to);
-  const ts = new Date(value).getTime();
-  if (Number.isNaN(ts)) return true;
-  if (from) {
-    const start = new Date(from).getTime();
-    if (!Number.isNaN(start) && ts < start) return false;
-  }
-  if (to) {
-    const end = new Date(`${to}T23:59:59.999Z`).getTime();
-    if (!Number.isNaN(end) && ts > end) return false;
-  }
-  return true;
-}
 
 export async function adminPayments(config: AppConfig, filters: AdminPaymentFilters = {}) {
-  const store = await readJsonStore(config);
   const queryText = String(filters.q || '').trim().toLowerCase();
   const status = String(filters.status || '').trim();
   const fundId = String(filters.fundId || '').trim();
@@ -490,29 +303,65 @@ export async function adminPayments(config: AppConfig, filters: AdminPaymentFilt
   const page = Math.max(1, Number(filters.page) || 1);
   const pageSize = Math.min(100, Math.max(1, Number(filters.pageSize || filters.limit) || 100));
 
-  let items = (store.payments || []).map((payment) => enrichPaymentRow(store, payment));
+  const where: any = {};
+  if (status) where.status = status;
+  if (userId) where.userId = userId;
+  if (provider) where.provider = provider;
+
+  const payments = await prisma.payment.findMany({
+    where,
+    include: {
+      user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      transaction: {
+        select: { id: true, productId: true, investmentPlanId: true, type: true, status: true, amount: true, requestedAt: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Load funds for enrichment
+  const productIds = [...new Set(payments.map((p) => p.transaction?.productId).filter(Boolean))] as string[];
+  const funds = productIds.length > 0
+    ? await prisma.fund.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
+    : [];
+  const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+
+  let items = payments.map((payment) => {
+    const user = payment.user;
+    const transaction = payment.transaction;
+    const pFundId = transaction?.productId || fundId || null;
+    const name = user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || '' : '';
+    const time = payment.createdAt?.toISOString() || '';
+
+    return {
+      id: payment.id,
+      paymentId: payment.id,
+      userId: payment.userId,
+      user: name,
+      userName: name,
+      userEmail: user?.email || '',
+      amount: Number(payment.amount),
+      mode: payment.mode || '',
+      provider: payment.provider || '',
+      status: payment.status || 'unknown',
+      time,
+      createdAt: time,
+      transactionId: payment.transactionId || null,
+      transactionStatus: transaction?.status || null,
+      transactionType: transaction?.type || null,
+      fundId: pFundId,
+      fundName: pFundId ? (fundMap.get(pFundId) || pFundId) : 'Unmapped fund',
+      providerPaymentId: payment.providerPaymentId || null,
+    };
+  });
 
   if (fundId) items = items.filter((row) => row.fundId === fundId);
-  if (status) items = items.filter((row) => row.status === status);
-  if (userId) items = items.filter((row) => row.userId === userId);
-  if (provider) items = items.filter((row) => row.provider === provider);
-  if (filters.from || filters.to) {
-    items = items.filter((row) => matchesDateRange(row, filters.from, filters.to));
-  }
   if (queryText) {
     items = items.filter((row) => [
-      row.id,
-      row.userName,
-      row.userEmail,
-      row.fundName,
-      row.providerPaymentId,
-      row.providerOrderId,
-      row.settlementReference,
-      row.transactionId,
-    ].some((value) => String(value || '').toLowerCase().includes(queryText)));
+      row.id, row.userName, row.userEmail, row.fundName, row.providerPaymentId, row.transactionId,
+    ].some((v) => String(v || '').toLowerCase().includes(queryText)));
   }
 
-  items = items.sort((a, b) => new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime());
   const total = items.length;
   const start = (page - 1) * pageSize;
   const pagedItems = items.slice(start, start + pageSize);
@@ -523,57 +372,83 @@ export async function adminPayments(config: AppConfig, filters: AdminPaymentFilt
     total,
     page,
     pageSize,
-    source: 'json',
+    source: 'prisma',
   };
 }
 
+
 export async function adminMandates(config: AppConfig) {
-  return jsonCollection(config, 'mandates');
+  const items = await prisma.mandate.findMany({ orderBy: { createdAt: 'desc' } });
+  return collection(items);
 }
 
 export async function adminSipControlRequests(config: AppConfig) {
-  const store = await readJsonStore(config);
-  const users = store.users || [];
-  const plans = store.investmentPlans || store.orders || [];
-  const funds = store.funds || [];
+  const items = await prisma.sipControlRequest.findMany({
+    include: {
+      user: { select: { firstName: true, lastName: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 
-  const items = (store.sipControlRequests || []).map((req) => {
-    const user = users.find((u) => u.id === req.userId);
-    const plan = plans.find((p) => p.id === req.planId);
-    const fund = plan ? funds.find((f) => f.id === plan.productId) : null;
+  // Load plans and funds for enrichment
+  const planIds = [...new Set(items.map((r) => r.planId).filter(Boolean))] as string[];
+  const plans = planIds.length > 0
+    ? await prisma.investmentPlan.findMany({ where: { id: { in: planIds } }, select: { id: true, productId: true, amount: true } })
+    : [];
+  const planMap = new Map(plans.map((p) => [p.id, p]));
+  const productIds = [...new Set(plans.map((p) => p.productId).filter(Boolean))];
+  const funds = productIds.length > 0
+    ? await prisma.fund.findMany({ where: { id: { in: productIds } }, select: { id: true, name: true } })
+    : [];
+  const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+
+  const mapped = items.map((req) => {
+    const plan = req.planId ? planMap.get(req.planId) : null;
+    const fundName = plan ? (fundMap.get(plan.productId) || plan.productId) : '—';
     return {
-      ...req,
-      userName: user ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || req.userId : req.userId,
-      userEmail: user?.email || '',
-      fundName: fund?.name || plan?.productId || '—',
+      id: req.id,
+      userId: req.userId,
+      planId: req.planId,
+      action: req.action,
+      reason: req.reason,
+      status: req.status,
+      createdAt: req.createdAt.toISOString(),
+      updatedAt: req.updatedAt.toISOString(),
+      userName: req.user ? [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email || req.userId : req.userId,
+      userEmail: req.user?.email || '',
+      fundName,
       amount: plan?.amount ?? null,
     };
   });
 
-  return collection(items);
+  return collection(mapped);
 }
 
 export async function adminSupportTickets(config: AppConfig) {
-  return jsonCollection(config, 'supportTickets');
+  const items = await prisma.supportTicket.findMany({ orderBy: { createdAt: 'desc' } });
+  return collection(items);
 }
 
 export async function adminFunds(config: AppConfig) {
-  return jsonCollection(config, 'funds');
+  const items = await prisma.fund.findMany({ orderBy: { createdAt: 'desc' } });
+  return collection(items);
 }
 
 export async function adminAuditLogs(config: AppConfig) {
-  const store = await readJsonStore(config);
-  return collection(store.adminAuditLogs);
+  const items = await prisma.adminAuditLog.findMany({ orderBy: { createdAt: 'desc' } });
+  return collection(items);
 }
 
 export async function adminPendingStats(config: AppConfig) {
-  const result = await query(config, `
-    SELECT COUNT(*) as count
-    FROM users
-    WHERE role = 'client' AND status IN ('draft', 'pending_review', 'kyc_pending')
-  `);
-  return { pendingCount: Number(result.rows[0]?.count || 0), source: 'postgres' };
+  const count = await prisma.user.count({
+    where: {
+      role: 'client',
+      status: { in: ['draft', 'pending_review', 'kyc_pending'] },
+    },
+  });
+  return { pendingCount: count, source: 'prisma' };
 }
+
 
 export async function updateUserStatus(config: AppConfig, actor: Actor, userId: string, body: UpdateUserStatusBody = {}, metadata: RequestContext = {}) {
   const nextStatus = String(body.status || '').trim();
@@ -587,58 +462,54 @@ export async function updateUserStatus(config: AppConfig, actor: Actor, userId: 
     throw new HttpError(400, 'REASON_REQUIRED', 'A rejection reason is required.');
   }
 
-  const updated = await transaction(config, async (client: PoolClient) => {
-    const found = await client.query(`
-      SELECT id, first_name, last_name, email, phone, role::text, status::text,
-             risk_profile_status::text, kyc_status::text, created_at, approved_at
-      FROM users
-      WHERE id = $1
-      FOR UPDATE
-    `, [userId]);
-    const beforeRow = found.rows[0];
-    if (!beforeRow) return null;
-    if (beforeRow.role !== 'client') {
+  const updated = await prisma.$transaction(async (tx) => {
+    const beforeUser = await tx.user.findFirst({ where: { id: userId } });
+    if (!beforeUser) return null;
+    if (beforeUser.role !== 'client') {
       throw new HttpError(400, 'ADMIN_USER_STATUS_FORBIDDEN', 'Only client users can be updated from this queue.');
     }
 
-    const result = await client.query(`
-      UPDATE users
-      SET status = $2::user_status,
-          risk_profile_status = CASE
-            WHEN $2::user_status = 'approved' AND risk_profile_status = 'pending' THEN 'approved'::review_status
-            ELSE risk_profile_status
-          END,
-          kyc_status = CASE
-            WHEN $2::user_status = 'approved' AND kyc_status = 'pending' THEN 'approved'::review_status
-            ELSE kyc_status
-          END,
-          approved_at = CASE WHEN $2::user_status = 'approved' THEN now() ELSE NULL END,
-          rejected_at = CASE WHEN $2::user_status = 'rejected' THEN now() ELSE rejected_at END,
-          suspended_at = CASE WHEN $2::user_status = 'suspended' THEN now() ELSE suspended_at END,
-          closed_at = CASE WHEN $2::user_status = 'closed' THEN now() ELSE closed_at END,
-          updated_at = now()
-      WHERE id = $1
-      RETURNING id, first_name, last_name, email, phone, role::text, status::text,
-                risk_profile_status::text, kyc_status::text, created_at, approved_at
-    `, [userId, nextStatus]);
-    const afterRow = result.rows[0];
+    const updateData: any = {
+      status: nextStatus as any,
+      updatedAt: new Date(),
+    };
 
-    await client.query(`
-      INSERT INTO admin_audit_logs (
-        admin_id, action, entity_type, entity_id, before_json, after_json, reason, ip_address, user_agent
-      )
-      VALUES ($1, 'user.status.update', 'users', $2, $3::jsonb, $4::jsonb, $5, $6::inet, $7)
-    `, [
-      actor?.userId || null,
-      userId,
-      JSON.stringify(rowUserPayload(beforeRow)),
-      JSON.stringify(rowUserPayload(afterRow)),
-      reason,
-      metadata.ipAddress,
-      metadata.userAgent,
-    ]);
+    if (nextStatus === 'approved') {
+      updateData.approvedAt = new Date();
+      if (beforeUser.riskProfileStatus === 'pending') {
+        updateData.riskProfileStatus = 'approved';
+      }
+      if (beforeUser.kycStatus === 'pending') {
+        updateData.kycStatus = 'approved';
+      }
+    } else if (nextStatus === 'rejected') {
+      updateData.rejectedAt = new Date();
+    } else if (nextStatus === 'suspended') {
+      updateData.suspendedAt = new Date();
+    } else if (nextStatus === 'closed') {
+      updateData.closedAt = new Date();
+    }
 
-    return rowUserPayload(afterRow);
+    const afterUser = await tx.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: 'user.status.update',
+        entityType: 'users',
+        entityId: userId,
+        beforeJson: userPayload(beforeUser) as any,
+        afterJson: userPayload(afterUser) as any,
+        reason,
+        ipAddress: metadata.ipAddress || null,
+        userAgent: typeof metadata.userAgent === 'string' ? metadata.userAgent : null,
+      },
+    });
+
+    return userPayload(afterUser);
   });
 
   if (!updated) throw new HttpError(404, 'USER_NOT_FOUND', 'User was not found.');

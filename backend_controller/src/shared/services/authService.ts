@@ -3,8 +3,7 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { createAccessToken } from '#security/tokens.js';
-import { query, transaction } from '#db/client.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { hashPassword, verifyPassword } from '#security/passwords.js';
 
 const DEV_USER = {
@@ -142,57 +141,35 @@ function splitName(value: any, email: any) {
   };
 }
 
-function toApiUser(row: any) {
-  return {
-    id: row.id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    email: row.email,
-    phone: row.phone,
-    username: row.username || null,
-    role: row.role,
-    status: row.status,
-    approvalRef: row.approval_ref,
-    riskProfileStatus: row.risk_profile_status,
-    kycStatus: row.kyc_status,
-  };
-}
-
-function jsonUserToRow(user: any) {
-  if (!user) return null;
+function toApiUser(user: any) {
   return {
     id: user.id,
-    first_name: user.firstName,
-    last_name: user.lastName,
+    firstName: user.firstName,
+    lastName: user.lastName,
     email: user.email,
     phone: user.phone,
-    username: user.username,
-    password_hash: user.passwordHash,
+    username: user.username || null,
     role: user.role,
     status: user.status,
-    approval_ref: user.approvalRef,
-    risk_profile_status: user.riskProfileStatus,
-    kyc_status: user.kycStatus,
+    approvalRef: user.approvalRef || null,
+    riskProfileStatus: user.riskProfileStatus,
+    kycStatus: user.kycStatus,
   };
 }
 
-function rowToJsonUser(row: any) {
+function prismaUserToApiUser(user: any) {
   return {
-    id: row.id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    email: row.email,
-    phone: row.phone,
-    username: row.username,
-    passwordHash: row.password_hash,
-    role: row.role,
-    status: row.status,
-    approvalRef: row.approval_ref,
-    riskProfileStatus: row.risk_profile_status,
-    kycStatus: row.kyc_status,
-    approvedAt: row.approved_at || null,
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at || new Date().toISOString(),
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phone: user.phone,
+    username: user.username || null,
+    role: user.role,
+    status: user.status,
+    approvalRef: null,
+    riskProfileStatus: user.riskProfileStatus,
+    kycStatus: user.kycStatus,
   };
 }
 
@@ -208,47 +185,53 @@ function clientIp(headers: Record<string, string | string[] | undefined> = {}) {
 }
 
 async function findUserByIdentifier(config: AppConfig, identifier: any) {
-  const store = await readJsonStore(config);
-  const user = store.users.find((item) => (
-    (identifier.email && item.email === identifier.email) ||
-    (identifier.phone && item.phone === identifier.phone) ||
-    (identifier.username && item.username === identifier.username)
-  ));
-  return jsonUserToRow(user);
+  const orConditions: any[] = [];
+  if (identifier.email) orConditions.push({ email: identifier.email });
+  if (identifier.phone) orConditions.push({ phone: identifier.phone });
+  if (identifier.username) orConditions.push({ username: identifier.username });
+
+  if (orConditions.length === 0) return null;
+
+  const user = await prisma.user.findFirst({
+    where: { OR: orConditions },
+  });
+
+  return user;
 }
 
 async function createDeviceSession(config: AppConfig, user: any, { headers = {}, body = {} }: DeviceSessionOptions = {}) {
   const refreshToken = randomBytes(32).toString('base64url');
   const refreshTokenHash = hashToken(refreshToken);
-  const deviceId = String(body.deviceId || headers['x-device-id'] || randomUUID()).slice(0, 160);
+  const deviceId = String((body as any).deviceId || headers['x-device-id'] || randomUUID()).slice(0, 160);
   const userAgent = String(headers['user-agent'] || '').slice(0, 512) || null;
   const ipAddress = clientIp(headers);
 
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
-  const session = await updateJsonStore(config, (store) => {
-    for (const item of store.deviceSessions) {
-      if (item.userId === user.id && item.deviceId === deviceId && !item.revokedAt) {
-        item.revokedAt = now.toISOString();
-        item.updatedAt = now.toISOString();
-      }
-    }
+  const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS);
 
-    const next = {
-      id: randomUUID(),
+  // Revoke existing sessions for same user+device
+  await prisma.deviceSession.updateMany({
+    where: {
+      userId: user.id,
+      deviceId,
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: now,
+      updatedAt: now,
+    },
+  });
+
+  const session = await prisma.deviceSession.create({
+    data: {
       userId: user.id,
       deviceId,
       refreshTokenHash,
       userAgent,
       ipAddress,
-      lastSeenAt: now.toISOString(),
+      lastSeenAt: now,
       expiresAt,
-      revokedAt: null,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-    store.deviceSessions.push(next);
-    return next;
+    },
   });
 
   return {
@@ -267,50 +250,54 @@ async function rotateRefreshToken(config: AppConfig, refreshToken: any) {
   const nextHash = hashToken(nextRefreshToken);
 
   const now = new Date();
-  const row = await updateJsonStore(config, (store) => {
-    const session = store.deviceSessions.find((item) => (
-      item.refreshTokenHash === oldHash &&
-      !item.revokedAt &&
-      new Date(item.expiresAt).getTime() > now.getTime()
-    ));
-    if (!session) return null;
 
-    const user = store.users.find((item) => item.id === session.userId);
-    if (!user) return null;
-
-    session.refreshTokenHash = nextHash;
-    session.expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS).toISOString();
-    session.lastSeenAt = now.toISOString();
-    session.updatedAt = now.toISOString();
-
-    return {
-      ...jsonUserToRow(user),
-      device_session_id: session.id,
-    };
+  const session = await prisma.deviceSession.findFirst({
+    where: {
+      refreshTokenHash: oldHash,
+      revokedAt: null,
+      expiresAt: { gt: now },
+    },
   });
 
-  if (!row) {
+  if (!session) {
     throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
   }
 
-  if (row.status === 'suspended' || row.status === 'closed') {
+  const user = await prisma.user.findFirst({
+    where: { id: session.userId },
+  });
+
+  if (!user) {
+    throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
+  }
+
+  if (user.status === 'suspended' || user.status === 'closed') {
     throw new HttpError(403, 'USER_NOT_ALLOWED', 'This account cannot refresh a session.', {
-      status: row.status,
+      status: user.status,
     });
   }
 
-  const apiUser = toApiUser(row);
+  await prisma.deviceSession.update({
+    where: { id: session.id },
+    data: {
+      refreshTokenHash: nextHash,
+      expiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_MS),
+      lastSeenAt: now,
+    },
+  });
+
+  const apiUser = prismaUserToApiUser(user);
   const accessToken = createAccessToken({
     sub: apiUser.id,
     role: apiUser.role,
-    deviceSessionId: row.device_session_id,
+    deviceSessionId: session.id,
   }, config);
 
   return {
     user: apiUser,
     accessToken,
     refreshToken: nextRefreshToken,
-    deviceSessionId: row.device_session_id,
+    deviceSessionId: session.id,
   };
 }
 
@@ -399,7 +386,7 @@ export async function login(body: any, config: AppConfig, requestContext: Reques
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email, phone, or password.');
   }
 
-  const passwordOk = await verifyPassword(body.password, user.password_hash);
+  const passwordOk = await verifyPassword(body.password, user.passwordHash);
   if (!passwordOk) {
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email, phone, or password.');
   }
@@ -410,7 +397,7 @@ export async function login(body: any, config: AppConfig, requestContext: Reques
     });
   }
 
-  const apiUser = toApiUser(user);
+  const apiUser = prismaUserToApiUser(user);
   const deviceSession = await createDeviceSession(config, apiUser, {
     headers: requestContext.headers,
     body,
@@ -455,33 +442,28 @@ export async function signup(body: any, config: AppConfig, requestContext: Reque
 
   let user;
   try {
-    const inserted = await query(config, `
-      INSERT INTO users (
-        first_name,
-        last_name,
+    user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
         email,
         phone,
         username,
-        password_hash,
-        role,
-        status,
-        risk_profile_status,
-        kyc_status,
-        updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, 'client', 'pending_review', 'pending', 'pending', now())
-      RETURNING id, first_name, last_name, email, phone, username, role::text, status::text,
-                risk_profile_status::text, kyc_status::text
-    `, [firstName, lastName, email, phone, username, passwordHash]);
-    user = inserted.rows[0];
-  } catch (error) {
-    if ((error as any).code === '23505') {
+        passwordHash,
+        role: 'client',
+        status: 'pending_review',
+        riskProfileStatus: 'pending',
+        kycStatus: 'pending',
+      },
+    });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
       throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
     }
     throw error;
   }
 
-  const apiUser = toApiUser(user);
+  const apiUser = prismaUserToApiUser(user);
   const deviceSession = await createDeviceSession(config, apiUser, {
     headers: requestContext.headers,
     body,
@@ -522,13 +504,16 @@ export function session(actor: Actor) {
 
 export async function logout(actor: Actor, config: AppConfig) {
   if (actor?.deviceSessionId) {
-    await updateJsonStore(config, (store) => {
-      const session = store.deviceSessions.find((item) => item.id === actor.deviceSessionId && !item.revokedAt);
-      if (session) {
-        const now = new Date().toISOString();
-        session.revokedAt = now;
-        session.updatedAt = now;
-      }
+    const now = new Date();
+    await prisma.deviceSession.updateMany({
+      where: {
+        id: actor.deviceSessionId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: now,
+        updatedAt: now,
+      },
     });
   }
 
