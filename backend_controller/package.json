@@ -19,18 +19,27 @@
     "#website/*": "./src/website/*"
   },
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "db:check": "node scripts/check-db.js",
-    "routes": "node scripts/print-routes.js",
-    "authz:admin-rbac": "node scripts/check-admin-rbac-routes.js",
-    "authz:403": "node scripts/check-auth-403-envelope.js",
-    "migrate": "node scripts/migrate.js up",
-    "migrate:status": "node scripts/migrate.js status",
-    "seed:auth": "node scripts/seed-auth.js"
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "db:check": "tsx scripts/check-db.ts",
+    "routes": "tsx scripts/print-routes.ts",
+    "authz:admin-rbac": "tsx scripts/check-admin-rbac-routes.ts",
+    "authz:403": "tsx scripts/check-auth-403-envelope.ts",
+    "migrate": "tsx scripts/migrate.ts up",
+    "migrate:status": "tsx scripts/migrate.ts status",
+    "seed:auth": "tsx scripts/seed-auth.ts"
   },
   "dependencies": {
     "pg": "^8.20.0",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
   }
 }

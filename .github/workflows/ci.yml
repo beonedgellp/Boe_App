@@ -6,7 +6,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, prakash]
   pull_request:
     branches: [main]
 
@@ -22,12 +22,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
+      # `npm install` (not `npm ci`) until the lockfile is regenerated post-TS migration.
+      - run: npm install
+      # TypeScript type-check gate.
+      - run: npm run typecheck
       # Static authorization-invariant guards (no DB needed).
       - run: npm run authz:admin-rbac
       - run: npm run authz:403
-      # Colocated unit tests only (src/**/*.test.js).
-      - run: node --test "src/**/*.test.js"
+      # Colocated unit tests only (src/**/*.test.ts), run through tsx.
+      - run: node --import tsx --test "src/**/*.test.ts"
 
   landing:
     name: landing (test + build)
