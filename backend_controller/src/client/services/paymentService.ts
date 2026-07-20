@@ -1,5 +1,6 @@
 import type { RetryPaymentOptions, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { PaymentRow, TransactionRow, InvestmentPlanRow, FundRow } from '#types/models.js';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { findRecord, updateJsonStore, updatePayment } from '#db/pgAdapter.js';
@@ -58,13 +59,13 @@ function paymentTypeFrom(mode: any, type: any) {
 }
 
 function paymentResponse(payment: any, store: any, config: AppConfig) {
-  const transaction = (store.transactions || []).find((item: Record<string, any>) => item.id === payment.transactionId) || null;
+  const transaction = (store.transactions || []).find((item: TransactionRow) => item.id === payment.transactionId) || null;
   const plans = store.investmentPlans || store.orders || [];
   const plan = transaction
-    ? plans.find((item: Record<string, any>) => item.id === transaction.investmentPlanId)
-    : plans.find((item: Record<string, any>) => item.paymentId === payment.id || item.id === payment.orderId) || null;
+    ? plans.find((item: InvestmentPlanRow) => item.id === transaction.investmentPlanId)
+    : plans.find((item: InvestmentPlanRow) => item.paymentId === payment.id || item.id === payment.orderId) || null;
   const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  const fund = fundId ? (store.funds || []).find((item: Record<string, any>) => item.id === fundId) : null;
+  const fund = fundId ? (store.funds || []).find((item: FundRow) => item.id === fundId) : null;
   const type = visibleTransactionType(transaction?.type || plan?.type);
   const mode = payment.mode || transaction?.mode || '';
   return {
@@ -112,7 +113,7 @@ export async function getPayment(config: AppConfig, actor: Actor, paymentId: str
       current.confirmedAt = current.confirmedAt || now;
       current.updatedAt = now;
 
-      const transaction = (store.transactions || []).find((t: Record<string, any>) => t.id === current.transactionId);
+      const transaction = (store.transactions || []).find((t: TransactionRow) => t.id === current.transactionId);
       if (transaction) {
         transaction.status = 'awaiting_approval';
         transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
@@ -120,8 +121,8 @@ export async function getPayment(config: AppConfig, actor: Actor, paymentId: str
       }
 
       const plan = transaction
-        ? (store.investmentPlans || []).find((p: Record<string, any>) => p.id === transaction.investmentPlanId)
-        : (store.investmentPlans || []).find((p: Record<string, any>) => p.paymentId === current.id);
+        ? (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.id === transaction.investmentPlanId)
+        : (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.paymentId === current.id);
       if (plan) {
         plan.status = 'pending_admin_approval';
         plan.updatedAt = now;
@@ -223,7 +224,7 @@ async function _retryPayment(config: AppConfig, actor: Actor, paymentId: string,
       });
     }
     const duplicate = store.payments.find(
-      (p: Record<string, any>) => p.idempotencyKey === payment.idempotencyKey && p.id !== payment.id
+      (p: PaymentRow) => p.idempotencyKey === payment.idempotencyKey && p.id !== payment.id
     );
     if (duplicate) {
       throw new HttpError(409, 'DUPLICATE_IDEMPOTENCY_KEY', 'Duplicate idempotency key detected.');
@@ -242,7 +243,7 @@ async function _retryPayment(config: AppConfig, actor: Actor, paymentId: string,
     payment.failureReason = null;
     payment.updatedAt = now;
 
-    const transaction = (store.transactions || []).find((t: Record<string, any>) => t.id === payment.transactionId);
+    const transaction = (store.transactions || []).find((t: TransactionRow) => t.id === payment.transactionId);
     if (transaction) {
       transaction.status = 'payment_pending';
       transaction.failureReason = null;
@@ -250,8 +251,8 @@ async function _retryPayment(config: AppConfig, actor: Actor, paymentId: string,
     }
 
     const plan = transaction
-      ? (store.investmentPlans || []).find((p: Record<string, any>) => p.id === transaction.investmentPlanId)
-      : (store.investmentPlans || []).find((p: Record<string, any>) => p.paymentId === payment.id);
+      ? (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.id === transaction.investmentPlanId)
+      : (store.investmentPlans || []).find((p: InvestmentPlanRow) => p.paymentId === payment.id);
     if (plan) {
       plan.status = plan.type === 'sip' ? 'pending_first_payment' : 'pending_payment';
       plan.updatedAt = now;

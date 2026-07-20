@@ -1,4 +1,5 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { NotificationRow } from '#types/models.js';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore } from '#db/pgAdapter.js';
 

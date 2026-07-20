@@ -1,5 +1,6 @@
 import type { AppConfig, Actor } from '#types/index.js';
 import type { SipAction } from '#types/services.js';
+import type { SipControlRequestRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';

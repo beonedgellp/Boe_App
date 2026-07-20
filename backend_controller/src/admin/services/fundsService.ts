@@ -1,5 +1,6 @@
 import type { FundBody, FundAllocationBody, RedemptionProcessBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { HoldingItem } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -556,7 +557,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (holdingId && !resolvedFundId) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: Record<string, any>) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: HoldingItem) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -569,7 +570,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (!holding) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: Record<string, any>) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: HoldingItem) => h.fundId === resolvedFundId) || null;
       }
     }
 
@@ -664,7 +665,7 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
       // Holding was already decremented atomically at creation time; just verify it still exists
       if (req.fundId) {
         const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: Record<string, any>) => h.fundId === req.fundId);
+        const holding = (portfolio.holdings || []).find((h: HoldingItem) => h.fundId === req.fundId);
         if (!holding) {
           throw new HttpError(400, 'HOLDING_NOT_FOUND', 'User holding not found for this fund.');
         }
@@ -704,7 +705,7 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
       // Restore user's holding since redemption was rejected
       if (req.fundId) {
         const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: Record<string, any>) => h.fundId === req.fundId);
+        const holding = (portfolio.holdings || []).find((h: HoldingItem) => h.fundId === req.fundId);
         if (holding) {
           const restoreValue = toNumber(req.reservedHoldingValue, req.amount);
           const restoreUnits = toNumber(req.reservedHoldingUnits, 0);

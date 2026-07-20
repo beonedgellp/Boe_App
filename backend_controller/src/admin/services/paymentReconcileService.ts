@@ -1,5 +1,6 @@
 import type { PaymentReconcileBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { PaymentRow, TransactionRow, InvestmentPlanRow, FundRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';

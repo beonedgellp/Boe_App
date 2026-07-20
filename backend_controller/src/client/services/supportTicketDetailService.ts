@@ -1,4 +1,5 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { SupportTicketMessageRow } from '#types/models.js';
 import { HttpError } from '#http/errors.js';
 import { findRecord } from '#db/pgAdapter.js';
 
@@ -13,7 +14,7 @@ export async function getTicketWithMessages(config: AppConfig, actor: Actor, tic
   }
 
   const messages = ((store as any)?.supportTicketMessages || [])
-    .filter((m: Record<string, any>) => m.ticketId === ticketId)
+    .filter((m: SupportTicketMessageRow) => m.ticketId === ticketId)
     .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return { ticket, messages };

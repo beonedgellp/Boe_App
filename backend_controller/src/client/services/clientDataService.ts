@@ -1,5 +1,6 @@
 import type { AdminPaymentFilters } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { FundRow } from '#types/models.js';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { readJsonStore } from '#db/pgAdapter.js';
 
@@ -12,7 +13,7 @@ function todayStr() {
 }
 
 function fundName(store: any, fundId: string) {
-  const fund = (store.funds || []).find((item: Record<string, any>) => item.id === fundId);
+  const fund = (store.funds || []).find((item: FundRow) => item.id === fundId);
   return fund?.name || fund?.title || fundId || 'BeOnEdge Strategy';
 }
 
@@ -22,7 +23,7 @@ function fundTrackingId(fund: any) {
 }
 
 function fundSnapshot(store: any, fundId: string) {
-  const fund = (store.funds || []).find((item: Record<string, any>) => item.id === fundId);
+  const fund = (store.funds || []).find((item: FundRow) => item.id === fundId);
   if (!fund) {
     return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
   }

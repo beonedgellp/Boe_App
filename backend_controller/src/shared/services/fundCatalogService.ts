@@ -1,4 +1,5 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { HoldingItem } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -62,7 +63,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (holdingId && !resolvedFundId) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: Record<string, any>) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: HoldingItem) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -74,7 +75,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (!holding) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: Record<string, any>) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: HoldingItem) => h.fundId === resolvedFundId) || null;
       }
     }
 

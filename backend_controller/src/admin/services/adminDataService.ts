@@ -1,6 +1,7 @@
 import type { AdminUserFilters, AdminTransactionFilters, AdminPaymentFilters, UpdateUserStatusBody, RequestContext } from '#types/services.js';
 import type { PoolClient } from 'pg';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { FundRow } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';

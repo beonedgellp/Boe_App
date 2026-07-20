@@ -1,4 +1,5 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { TransactionRow } from '#types/models.js';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore } from '#db/pgAdapter.js';
 
