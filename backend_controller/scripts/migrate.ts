@@ -9,9 +9,9 @@ function sqlLiteral(value: any) {
 }
 
 async function migrationFiles(dir: any) {
-  const entries = await readdir(dir, { withFileTypes: true });
+  const entries = await readdir(dir, { withFileTypes: true }) as any[];
   return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
+    .filter((entry: any) => entry.isFile() && entry.name.endsWith('.sql'))
     .map((entry) => entry.name)
     .sort();
 }

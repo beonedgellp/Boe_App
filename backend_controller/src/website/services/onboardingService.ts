@@ -48,7 +48,7 @@ function computeRiskCategory(answers: any) {
   return 'conservative';
 }
 
-export async function submitApplication(config: AppConfig, body: any) {
+export async function submitApplication(config: AppConfig, body: Record<string, unknown>) {
   const { name, email, phone } = body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -99,7 +99,7 @@ export async function submitApplication(config: AppConfig, body: any) {
   return result;
 }
 
-export async function submitRiskProfile(config: AppConfig, body: any) {
+export async function submitRiskProfile(config: AppConfig, body: Record<string, unknown>) {
   const { email, answers, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {
@@ -148,7 +148,7 @@ export async function submitRiskProfile(config: AppConfig, body: any) {
   return profile;
 }
 
-export async function submitKycDocuments(config: AppConfig, body: any) {
+export async function submitKycDocuments(config: AppConfig, body: Record<string, unknown>) {
   const { email, documentType, documentRef, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {

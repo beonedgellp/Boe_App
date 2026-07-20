@@ -61,7 +61,7 @@ export async function listAdminCourses(config: AppConfig) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function createCourse(config: AppConfig, body: any) {
+export async function createCourse(config: AppConfig, body: Record<string, unknown>) {
   const payload = body && typeof body === 'object' ? body : {};
   const slug = toTrimmedString(payload.slug);
   const name = toTrimmedString(payload.name);
@@ -103,7 +103,7 @@ export async function createCourse(config: AppConfig, body: any) {
   return rowToCourse(result.rows[0]);
 }
 
-export async function updateCourse(config: AppConfig, id: string, body: any) {
+export async function updateCourse(config: AppConfig, id: string, body: Record<string, unknown>) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
 

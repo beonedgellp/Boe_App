@@ -136,7 +136,7 @@ export class Router {
     // Raw body capture (for webhook signature verification)
     app.use(express.json({
       limit: '1mb',
-      verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); },
+      verify: (req: any, _res: any, buf: Buffer) => { req.rawBody = buf.toString('utf8'); },
     }));
 
     // Inject config + requestId

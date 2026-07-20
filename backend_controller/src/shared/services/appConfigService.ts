@@ -1,3 +1,4 @@
+import type { PublishConfigOptions, RequestContext } from '#types/services.js';
 import type { PoolClient } from 'pg';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
@@ -76,13 +77,13 @@ export async function getPublishedConfigVersion(config: AppConfig, configKey: an
   return rowToPayload(result.rows[0]);
 }
 
-export async function publishConfigVersion(config: AppConfig, configKey: any, actor: Actor, configJson: any, {
+export async function publishConfigVersion(config: AppConfig, configKey: string, actor: Actor, configJson: Record<string, unknown>, {
   reason,
   defaultReason,
   auditAction,
   entityType,
   requestContext = {},
-}: any = {}) {
+}: PublishConfigOptions = {}) {
   requireDatabase(config);
 
   return transaction(config, async (client: PoolClient) => {
@@ -142,7 +143,7 @@ export async function getPublishedAppConfig(config: AppConfig): Promise<any> {
   return getPublishedConfigVersion(config, CONFIG_KEY);
 }
 
-export async function publishAppConfig(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
+export async function publishAppConfig(config: AppConfig, actor: Actor, body: Record<string, any>, requestContext: RequestContext = {}) {
   const incoming = validateAppConfig(body?.config ?? body);
 
   return publishConfigVersion(config, CONFIG_KEY, actor, incoming, {

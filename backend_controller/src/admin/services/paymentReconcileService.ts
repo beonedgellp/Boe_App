@@ -1,3 +1,4 @@
+import type { PaymentReconcileBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -21,7 +22,7 @@ const REJECTABLE_PAYMENT_STATUSES = new Set([
   'reconciled',
 ]);
 
-function clientIp(headers: any = {}) {
+function clientIp(headers: Record<string, string | string[] | undefined> = {}) {
   return String(headers['x-forwarded-for'] || '')
     .split(',')[0]
     .trim() || null;
@@ -104,7 +105,7 @@ function portfolioKey(userId: string) {
   return `portfolio_${userId}`;
 }
 
-function postApprovedPaymentToPortfolio(store: any, { payment, transaction, plan, fund, fundId, amount, now }: any) {
+function postApprovedPaymentToPortfolio(store: any, { payment, transaction, plan, fund, fundId, amount, now }: Record<string, any>) {
   const userId = payment.userId || transaction?.userId || plan?.userId;
   if (!userId) return null;
 
@@ -161,7 +162,7 @@ function postApprovedPaymentToPortfolio(store: any, { payment, transaction, plan
   return portfolio;
 }
 
-async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
+async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: string, body: PaymentReconcileBody = {}, requestContext: RequestContext = {}) {
   const reason = requireReason(body);
   const providerReference = String(body.providerReference || body.providerRef || '').trim() || null;
   const settlementReference = String(body.settlementReference || '').trim() || null;
@@ -266,7 +267,7 @@ async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: str
   return result;
 }
 
-export async function approvePayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
+export async function approvePayment(config: AppConfig, actor: Actor, paymentId: string, body: PaymentReconcileBody = {}, requestContext: RequestContext = {}) {
   const reason = requireDecisionReason(
     body,
     'APPROVAL_REASON_REQUIRED',
@@ -393,7 +394,7 @@ export async function approvePayment(config: AppConfig, actor: Actor, paymentId:
   return result;
 }
 
-export async function rejectPayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
+export async function rejectPayment(config: AppConfig, actor: Actor, paymentId: string, body: PaymentReconcileBody = {}, requestContext: RequestContext = {}) {
   const reason = requireDecisionReason(
     body,
     'REJECTION_REASON_REQUIRED',
@@ -477,14 +478,14 @@ export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconcil
   source: 'derived',
 });
 
-export function paymentReconcileRequestContext(headers: any = {}) {
+export function paymentReconcileRequestContext(headers: Record<string, string | string[] | undefined> = {}) {
   return {
     ipAddress: clientIp(headers),
     userAgent: headers['user-agent'] || null,
   };
 }
 
-export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: any = {}) {
+export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: { paymentId?: string; limit?: number } = {}) {
   const store = await readJsonStore(config);
   let items = store.reconciliationLedger || [];
   if (paymentId) {

@@ -1,3 +1,4 @@
+import type { MandateAdminBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -24,7 +25,7 @@ function toTrimmedString(value: any, fallback = '') {
   return String(value).trim();
 }
 
-async function _updateMandateStatus(config: AppConfig, actor: Actor, mandateId: string, body: any, requestContext: any = {}) {
+async function _updateMandateStatus(config: AppConfig, actor: Actor, mandateId: string, body: MandateAdminBody, requestContext: RequestContext = {}) {
   const action = toTrimmedString(body?.action).toLowerCase();
   const reason = toTrimmedString(body?.reason);
 

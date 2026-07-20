@@ -68,7 +68,7 @@ test('active funds are exposed to clients', () => {
 
 test('client investments never include raw rupee amount', () => {
   const client = toClientFund(baseFund());
-  for (const inv of client.investments) {
+  for (const inv of client!.investments) {
     assert.equal(inv.amount, undefined, 'investment.amount must not reach the client');
     assert.ok(typeof inv.percentage === 'number');
   }
@@ -76,16 +76,16 @@ test('client investments never include raw rupee amount', () => {
 
 test('client analytics never include totalInvested or initialInvestment', () => {
   const client = toClientFund(baseFund());
-  assert.equal(client.analytics.totalInvested, undefined);
-  assert.equal(client.analytics.initialInvestment, undefined);
+  assert.equal(client!.analytics.totalInvested, undefined);
+  assert.equal(client!.analytics.initialInvestment, undefined);
   // safe metrics still present
-  assert.equal(client.analytics.sectorCount, 2);
-  assert.ok(client.analytics.fundAge);
+  assert.equal(client!.analytics.sectorCount, 2);
+  assert.ok(client!.analytics.fundAge);
 });
 
 test('client fund never carries top-level initialInvestment', () => {
   const client = toClientFund(baseFund());
-  assert.equal(client.initialInvestment, undefined);
+  assert.equal(client!.initialInvestment, undefined);
 });
 
 test('toClientAnalytics excludes rupee amounts', () => {
@@ -98,9 +98,9 @@ test('toClientAnalytics excludes rupee amounts', () => {
 
 test('showCompanyNames=false masks holding names', () => {
   const fund = baseFund({ chartConfig: { showInvestmentBreakdown: true, showCompanyNames: false } });
-  const client = toClientFund(fund);
-  for (const inv of client.investments) {
-    assert.match(inv.companyName, /^Company /);
+  const client = toClientFund(fund)!;
+  for (const inv of client!.investments) {
+    (assert as any).match(inv.companyName, /^Company /);
   }
 });
 
@@ -118,9 +118,9 @@ test('benchmark fields pass through when enabled', () => {
     performanceSeries: series, performancePeriods: periods, performanceSummary: summary,
     chartConfig: { showBenchmarkComparison: true },
   }));
-  assert.equal(client.performanceSeries.length, 2);
-  assert.equal(client.performancePeriods.length, 1);
-  assert.ok(client.performanceSummary);
+  assert.equal(client!.performanceSeries.length, 2);
+  assert.equal(client!.performancePeriods.length, 1);
+  assert.ok(client!.performanceSummary);
 });
 
 test('showBenchmarkComparison=false drops series, periods and summary', () => {
@@ -128,9 +128,9 @@ test('showBenchmarkComparison=false drops series, periods and summary', () => {
     performanceSeries: series, performancePeriods: periods, performanceSummary: summary,
     chartConfig: { showBenchmarkComparison: false },
   }));
-  assert.equal(client.performanceSeries, undefined);
-  assert.equal(client.performancePeriods, undefined);
-  assert.equal(client.performanceSummary, undefined);
+  assert.equal(client!.performanceSeries, undefined);
+  assert.equal(client!.performancePeriods, undefined);
+  assert.equal(client!.performanceSummary, undefined);
 });
 
 test('a single-point series is not exposed (chart would be meaningless)', () => {
@@ -138,7 +138,7 @@ test('a single-point series is not exposed (chart would be meaningless)', () => 
     performanceSeries: [{ date: '2023-05-20', fund: 100, nifty: 100 }],
     chartConfig: { showBenchmarkComparison: true },
   }));
-  assert.equal(client.performanceSeries, undefined);
+  assert.equal(client!.performanceSeries, undefined);
 });
 
 /* -------------------- asset allocation gate -------------------- */
@@ -151,12 +151,12 @@ const assetAllocation = [
 
 test('asset allocation passes through when enabled', () => {
   const client = toClientFund(baseFund({ assetAllocation, chartConfig: { showAssetAllocation: true } }));
-  assert.equal(client.assetAllocation.length, 3);
+  assert.equal(client!.assetAllocation.length, 3);
 });
 
 test('showAssetAllocation=false drops asset allocation', () => {
   const client = toClientFund(baseFund({ assetAllocation, chartConfig: { showAssetAllocation: false } }));
-  assert.equal(client.assetAllocation, undefined);
+  assert.equal(client!.assetAllocation, undefined);
 });
 
 /* -------------------- advanced ratios gate -------------------- */
@@ -165,12 +165,12 @@ const advancedRatios = { pe: 28.36, pb: 3.59, beta: 0.87, alpha: 3.0, sharpe: 0.
 
 test('advanced ratios pass through when enabled', () => {
   const client = toClientFund(baseFund({ advancedRatios, chartConfig: { showAdvancedRatios: true } }));
-  assert.equal(client.advancedRatios.pe, 28.36);
+  assert.equal(client!.advancedRatios.pe, 28.36);
 });
 
 test('showAdvancedRatios=false drops advanced ratios', () => {
   const client = toClientFund(baseFund({ advancedRatios, chartConfig: { showAdvancedRatios: false } }));
-  assert.equal(client.advancedRatios, undefined);
+  assert.equal(client!.advancedRatios, undefined);
 });
 
 /* -------------------- backward compatibility -------------------- */
@@ -180,12 +180,12 @@ test('legacy fund without new fields still renders core data', () => {
   delete legacy.performanceSeries;
   delete legacy.assetAllocation;
   delete legacy.advancedRatios;
-  const client = toClientFund(legacy);
-  assert.equal(client.performanceSeries, undefined);
-  assert.equal(client.assetAllocation, undefined);
-  assert.equal(client.advancedRatios, undefined);
-  assert.equal(client.sectors.length, 2);
-  assert.equal(client.allocation.length, 2);
+  const client = toClientFund(legacy)!;
+  assert.equal(client!.performanceSeries, undefined);
+  assert.equal(client!.assetAllocation, undefined);
+  assert.equal(client!.advancedRatios, undefined);
+  assert.equal(client!.sectors.length, 2);
+  assert.equal(client!.allocation.length, 2);
 });
 
 test('toClientFunds filters out non-visible funds', () => {
@@ -239,9 +239,9 @@ test('sanitizePerformancePeriods keeps known keys and coerces numbers', () => {
 test('pre-enriched rupee analytics never survive into the client payload', () => {
   // Simulates enrichFundWithAnalytics having already attached the full object.
   const enriched = baseFund({ analytics: { totalInvested: 13750000, initialInvestment: 800000, sectorCount: 2 } });
-  const client = toClientFund(enriched);
-  assert.equal(client.analytics.totalInvested, undefined);
-  assert.equal(client.analytics.initialInvestment, undefined);
+  const client = toClientFund(enriched)!;
+  assert.equal(client!.analytics.totalInvested, undefined);
+  assert.equal(client!.analytics.initialInvestment, undefined);
   assert.equal(JSON.stringify(client).includes('13750000'), false);
 });
 

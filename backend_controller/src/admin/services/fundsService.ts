@@ -1,3 +1,4 @@
+import type { FundBody, FundAllocationBody, RedemptionProcessBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -98,7 +99,7 @@ export async function listFunds(config: AppConfig) {
   return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
 }
 
-export async function createFund(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
+export async function createFund(config: AppConfig, actor: Actor, body: FundBody, requestContext: RequestContext = {}) {
   const payload = body && typeof body === 'object' ? body : {};
   const name = toTrimmedString(payload.name);
 
@@ -120,7 +121,7 @@ export async function createFund(config: AppConfig, actor: Actor, body: any, req
     name,
     tagline: toTrimmedString(payload.tagline),
     status,
-    lifecycleStage: ['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage)
+    lifecycleStage: ['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
       ? payload.lifecycleStage
       : 'draft',
     totalPoolSize: toNumber(payload.totalPoolSize, 0),
@@ -172,7 +173,7 @@ export async function getFund(config: AppConfig, fundId: string) {
   return fund;
 }
 
-export async function updateFund(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
+export async function updateFund(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const payload = body && typeof body === 'object' ? body : {};
 
   const updated = await updateJsonStore(config, (store) => {
@@ -196,7 +197,7 @@ export async function updateFund(config: AppConfig, actor: Actor, fundId: string
       tagline: payload.tagline !== undefined ? toTrimmedString(payload.tagline) : existing.tagline,
       status,
       lifecycleStage: payload.lifecycleStage !== undefined
-        ? (['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage)
+        ? (['draft', 'published', 'active', 'paused', 'closed', 'archived'].includes(payload.lifecycleStage as string)
             ? payload.lifecycleStage
             : existing.lifecycleStage)
         : existing.lifecycleStage,
@@ -237,7 +238,7 @@ export async function updateFund(config: AppConfig, actor: Actor, fundId: string
   return updated;
 }
 
-export async function deleteFund(config: AppConfig, actor: Actor, fundId: string, requestContext: any = {}) {
+export async function deleteFund(config: AppConfig, actor: Actor, fundId: string, requestContext: RequestContext = {}) {
   const deleted = await updateJsonStore(config, (store) => {
     const idx = (store.funds || []).findIndex((f) => f.id === fundId);
     if (idx === -1) return null;
@@ -296,7 +297,7 @@ function addRedemptionRequestRecord(store: any, req: any) {
  * Allocate cash to an investment (move from cash to a company/sector).
  * Reduces implicit cash, increases investment amount.
  */
-export async function allocateFunds(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
+export async function allocateFunds(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -355,7 +356,7 @@ export async function allocateFunds(config: AppConfig, actor: Actor, fundId: str
  * Unallocate funds from an investment (move back to cash).
  * Reduces investment amount, increases implicit cash.
  */
-export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
+export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -413,7 +414,7 @@ export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: s
  * Admin external outflow — withdraw funds from the pool entirely.
  * Reduces cash first, then proportionally from investments if needed.
  */
-export async function adminOutflow(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
+export async function adminOutflow(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -491,7 +492,7 @@ export async function adminOutflow(config: AppConfig, actor: Actor, fundId: stri
 /**
  * Admin inflow — add capital to the pool.
  */
-export async function adminInflow(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
+export async function adminInflow(config: AppConfig, actor: Actor, fundId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -540,7 +541,7 @@ export async function adminInflow(config: AppConfig, actor: Actor, fundId: strin
 /* Redemption Requests (User withdrawals)                                     */
 /* -------------------------------------------------------------------------- */
 
-export async function createRedemptionRequest(config: AppConfig, userId: string, body: any) {
+export async function createRedemptionRequest(config: AppConfig, userId: string, body: FundAllocationBody) {
   const { fundId, amount, type, holdingId } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -555,7 +556,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (holdingId && !resolvedFundId) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: Record<string, any>) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -568,7 +569,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (!holding) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: any) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: Record<string, any>) => h.fundId === resolvedFundId) || null;
       }
     }
 
@@ -641,9 +642,9 @@ export async function listRedemptionRequests(config: AppConfig, { status, userId
   return { items, count: items.length };
 }
 
-async function _processRedemptionRequest(config: AppConfig, actor: Actor, requestId: string, body: any, requestContext: any = {}) {
+async function _processRedemptionRequest(config: AppConfig, actor: Actor, requestId: string, body: FundBody, requestContext: RequestContext = {}) {
   const { action, reason } = body || {};
-  if (!['approved', 'rejected'].includes(action)) {
+  if (!['approved', 'rejected'].includes(action as string)) {
     throw new HttpError(400, 'INVALID_ACTION', 'Action must be approved or rejected.');
   }
 
@@ -663,7 +664,7 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
       // Holding was already decremented atomically at creation time; just verify it still exists
       if (req.fundId) {
         const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: any) => h.fundId === req.fundId);
+        const holding = (portfolio.holdings || []).find((h: Record<string, any>) => h.fundId === req.fundId);
         if (!holding) {
           throw new HttpError(400, 'HOLDING_NOT_FOUND', 'User holding not found for this fund.');
         }
@@ -703,7 +704,7 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
       // Restore user's holding since redemption was rejected
       if (req.fundId) {
         const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h: any) => h.fundId === req.fundId);
+        const holding = (portfolio.holdings || []).find((h: Record<string, any>) => h.fundId === req.fundId);
         if (holding) {
           const restoreValue = toNumber(req.reservedHoldingValue, req.amount);
           const restoreUnits = toNumber(req.reservedHoldingUnits, 0);
@@ -741,10 +742,10 @@ async function _processRedemptionRequest(config: AppConfig, actor: Actor, reques
 
 export const processRedemptionRequest = withReceipt(_processRedemptionRequest, 'redemption_processed', {
   entityType: 'redemption',
-  entityId: (result: any) => result.id,
-  afterState: (result: any) => result.status,
-  subjectUserId: (result: any) => result.userId,
-  amount: (result: any) => result.amount,
+  entityId: (result: Record<string, unknown>) => result.id,
+  afterState: (result: Record<string, unknown>) => result.status,
+  subjectUserId: (result: Record<string, unknown>) => result.userId,
+  amount: (result: Record<string, unknown>) => result.amount,
   source: 'derived',
 });
 

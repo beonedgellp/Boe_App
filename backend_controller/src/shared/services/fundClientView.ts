@@ -59,7 +59,7 @@ export function computeFundAge(launchDate: any) {
 
 // Full analytics — includes admin-only rupee figures. Never send directly to
 // clients; use `toClientAnalytics` for the client payload.
-export function computeFundAnalytics(fund: any) {
+export function computeFundAnalytics(fund: Record<string, any>) {
   if (!fund) return null;
 
   const sectors = Array.isArray(fund.sectors) ? fund.sectors : [];
@@ -82,7 +82,7 @@ export function computeFundAnalytics(fund: any) {
 }
 
 // Client-safe analytics: everything except the raw rupee figures.
-export function toClientAnalytics(fund: any): any {
+export function toClientAnalytics(fund: Record<string, any>): any {
   const full = computeFundAnalytics(fund);
   if (!full) return null;
   const { totalInvested, initialInvestment, ...safe } = full;
@@ -155,7 +155,7 @@ export function sanitizeAssetAllocation(allocation: any) {
 
 const ADVANCED_RATIO_KEYS = ['pe', 'pb', 'beta', 'alpha', 'sharpe', 'sortino'];
 
-export function sanitizeAdvancedRatios(ratios: any): any {
+export function sanitizeAdvancedRatios(ratios: Record<string, any>): any {
   if (!ratios || typeof ratios !== 'object') return {};
   const out: Record<string, any> = {};
   for (const key of ADVANCED_RATIO_KEYS) {
@@ -185,7 +185,7 @@ export function sanitizeRating(rating: any) {
 /* Client view                                                                */
 /* -------------------------------------------------------------------------- */
 
-function buildClientInvestments(fund: any, cfg: any) {
+function buildClientInvestments(fund: Record<string, any>, cfg: any) {
   if (cfg.showInvestmentBreakdown === false || !Array.isArray(fund.investments)) return [];
   const totalInvested = fund.investments.reduce((sum: any, i: any) => sum + (Number(i.amount) || 0), 0);
   return fund.investments.map((i: any) => ({
@@ -196,7 +196,7 @@ function buildClientInvestments(fund: any, cfg: any) {
   }));
 }
 
-export function toClientFund(fund: any): any {
+export function toClientFund(fund: Record<string, any>): Record<string, any> | null {
   if (!fund) return null;
   if (!CLIENT_VISIBLE_STAGES.has(fund.lifecycleStage)) return null;
 
@@ -207,7 +207,7 @@ export function toClientFund(fund: any): any {
   const allocation = sectors.map((s: any) => ({ label: s.name, pct: s.percentage }));
   const topHoldings = investments
     .map((i: any) => ({ name: i.companyName, pct: i.percentage }))
-    .sort((a: any, b: any) => b.pct - a.pct);
+    .sort((a: Record<string, any>, b: Record<string, any>) => b.pct - a.pct);
 
   // Strip admin-only / raw fields, then re-add display-safe ones under gates.
   const {
@@ -227,7 +227,7 @@ export function toClientFund(fund: any): any {
   } = fund;
 
   const trackingFallback = `FP-${String(rest.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`;
-  const client = {
+  const client: Record<string, any> = {
     ...rest,
     trackingId: rest.trackingId || rest.fundCode || trackingFallback,
     fundCode: rest.fundCode || rest.trackingId || trackingFallback,

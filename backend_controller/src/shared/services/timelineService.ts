@@ -1,3 +1,4 @@
+import type { TimelineEventInput } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { readJsonStore } from '#db/pgAdapter.js';
@@ -8,7 +9,7 @@ function displayName(user: any) {
   return [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || undefined;
 }
 
-function buildUserMap(store: any) {
+function buildUserMap(store: Record<string, any>) {
   const map = new Map();
   for (const user of store.users || []) {
     map.set(user.id, user);
@@ -25,19 +26,7 @@ function actorFor(userId: string, userMap: any, fallbackRole = 'client') {
   };
 }
 
-function makeEvent({
-  entity,
-  kind,
-  category,
-  actor,
-  entityType,
-  description,
-  source,
-  timestamp,
-  beforeState,
-  afterState,
-  metadata,
-}: any) {
+function makeEvent({ entity, kind, category, actor, entityType, description, source, timestamp, beforeState, afterState, metadata }: TimelineEventInput) {
   return {
     id: randomUUID(),
     timestamp: timestamp || entity.updatedAt || entity.createdAt || new Date().toISOString(),
@@ -328,7 +317,7 @@ const STATUS_TO_MONEY_STATE = {
   },
 };
 
-function deriveMoneyState(store: any, userId: string) {
+function deriveMoneyState(store: Record<string, any>, userId: string) {
   const candidates = [];
 
   for (const p of store.payments || []) {
@@ -369,5 +358,5 @@ export async function getNextStepText(config: AppConfig, userId: string, explici
 
   const store = await readJsonStore(config);
   const derived = deriveMoneyState(store, userId);
-  return getCopy(version, derived);
+  return getCopy(version, derived || '');
 }

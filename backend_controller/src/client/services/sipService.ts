@@ -1,3 +1,4 @@
+import type { SipBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -21,7 +22,7 @@ function shortReceipt(prefix: any, id: string) {
   return `${prefix}_${String(id).replace(/-/g, '').slice(0, 32)}`;
 }
 
-async function _createSip(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
+async function _createSip(config: AppConfig, actor: Actor, body: SipBody, requestContext: RequestContext = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a SIP.');
   }

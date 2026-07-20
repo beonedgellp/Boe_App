@@ -13,7 +13,7 @@ export async function getTicketWithMessages(config: AppConfig, actor: Actor, tic
   }
 
   const messages = ((store as any)?.supportTicketMessages || [])
-    .filter((m: any) => m.ticketId === ticketId)
+    .filter((m: Record<string, any>) => m.ticketId === ticketId)
     .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return { ticket, messages };

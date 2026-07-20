@@ -1,3 +1,4 @@
+import type { WebhookPayload } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -8,7 +9,7 @@ import { getPaymentProvider } from './payments/providerFactory.js';
 const NOT_FOUND = Symbol('NOT_FOUND');
 const WEBHOOK_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
-function verifyHmacSignature(body: any, signature: any, secret: any) {
+function verifyHmacSignature(body: any, signature: string, secret: string) {
   const expected = createHmac('sha256', secret).update(body).digest('hex');
   const sig = String(signature || '').trim();
   if (sig.length !== expected.length) return false;
@@ -26,7 +27,7 @@ function normalizeTimestamp(ts: any) {
   return n < 1_000_000_000_000 ? n * 1000 : n;
 }
 
-function checkReplay(eventId: any, timestamp: any, store: any) {
+function checkReplay(eventId: any, timestamp: string | number, store: any) {
   if (!eventId) {
     throw new HttpError(400, 'MISSING_EVENT_ID', 'Provider event id is required.');
   }
@@ -45,7 +46,7 @@ function checkReplay(eventId: any, timestamp: any, store: any) {
   return { duplicate: false };
 }
 
-async function _processPaymentWebhook(config: AppConfig, provider: any, rawBody: any, headers: any) {
+async function _processPaymentWebhook(config: AppConfig, provider: any, rawBody: string, headers: any) {
   // `rawBody` may be the exact UTF-8 bytes (preferred for HMAC) or an
   // already-parsed object. Use the string for signature verification and
   // a parsed object for payload field extraction.
@@ -72,8 +73,8 @@ async function _processPaymentWebhook(config: AppConfig, provider: any, rawBody:
   const eventId = String(payload.eventId || payload.id || '').trim();
   const providerRef = String(payload.providerRef || payload.payload?.payment?.entity?.id || '').trim();
   const status = String(payload.status || payload.event || '').trim();
-  const failureReason = payload.failureReason || null;
-  const timestamp = normalizeTimestamp(payload.timestamp || payload.created_at || Date.now());
+  const failureReason = payload.failureReason ?? null;
+  const timestamp = normalizeTimestamp((payload.timestamp || payload.created_at || Date.now()) as string | number);
 
   if (!providerRef) {
     throw new HttpError(400, 'MISSING_PROVIDER_REF', 'providerRef is required.');
@@ -93,7 +94,7 @@ async function _processPaymentWebhook(config: AppConfig, provider: any, rawBody:
 
   const result = await updateJsonStore(config, (store) => {
     // Replay protection + idempotency by event id
-    const replayCheck = checkReplay(eventId || `${providerRef}_${normalizedStatus}`, timestamp, store);
+    const replayCheck = checkReplay(eventId || `${providerRef}_${normalizedStatus}`, timestamp as number, store);
     if (replayCheck.duplicate) {
       return {
         idempotent: true,
@@ -222,7 +223,7 @@ export const processPaymentWebhook = withReceipt(_processPaymentWebhook, (result
   source: 'live',
 });
 
-export async function processMandateWebhook(config: AppConfig, provider: any, rawBody: any, headers: any) {
+export async function processMandateWebhook(config: AppConfig, provider: any, rawBody: string, headers: any) {
   const body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
   let payload;
   if (rawBody && typeof rawBody === 'object') {
@@ -246,8 +247,8 @@ export async function processMandateWebhook(config: AppConfig, provider: any, ra
   const eventId = String(payload.eventId || payload.id || '').trim();
   const providerRef = String(payload.providerRef || payload.payload?.token?.entity?.id || '').trim();
   const status = String(payload.status || payload.event || '').trim();
-  const failureReason = payload.failureReason || null;
-  const timestamp = normalizeTimestamp(payload.timestamp || payload.created_at || Date.now());
+  const failureReason = payload.failureReason ?? null;
+  const timestamp = normalizeTimestamp((payload.timestamp || payload.created_at || Date.now()) as string | number);
 
   if (!providerRef) {
     throw new HttpError(400, 'MISSING_PROVIDER_REF', 'providerRef is required.');
@@ -267,7 +268,7 @@ export async function processMandateWebhook(config: AppConfig, provider: any, ra
 
   const result = await updateJsonStore(config, (store) => {
     // Replay protection + idempotency by event id
-    const replayCheck = checkReplay(eventId || `${providerRef}_${normalizedStatus}`, timestamp, store);
+    const replayCheck = checkReplay(eventId || `${providerRef}_${normalizedStatus}`, timestamp as number, store);
     if (replayCheck.duplicate) {
       return {
         idempotent: true,

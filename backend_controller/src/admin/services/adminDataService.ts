@@ -1,3 +1,4 @@
+import type { AdminUserFilters, AdminTransactionFilters, AdminPaymentFilters, UpdateUserStatusBody, RequestContext } from '#types/services.js';
 import type { PoolClient } from 'pg';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
@@ -148,7 +149,7 @@ export async function adminOverview(config: AppConfig) {
   };
 }
 
-export async function adminUsers(config: AppConfig, { status = 'approved', q, page = 1, limit = 25 }: any = {}) {
+export async function adminUsers(config: AppConfig, { status = 'approved', q, page = 1, limit = 25 }: AdminUserFilters = {}) {
   let users;
   let whereSql = "WHERE role = 'client'";
   const params: any[] = [];
@@ -177,7 +178,7 @@ export async function adminUsers(config: AppConfig, { status = 'approved', q, pa
   };
 }
 
-export async function adminTransactions(config: AppConfig, { fundId, status, type, userId, q, page = 1, limit = 25 }: any = {}) {
+export async function adminTransactions(config: AppConfig, { fundId, status, type, userId, q, page = 1, limit = 25 }: AdminTransactionFilters = {}) {
   let transactions = [];
 
   let whereSql = 'WHERE 1=1';
@@ -478,7 +479,7 @@ function matchesDateRange(row: any, from: any, to: any) {
   return true;
 }
 
-export async function adminPayments(config: AppConfig, filters: any = {}) {
+export async function adminPayments(config: AppConfig, filters: AdminPaymentFilters = {}) {
   const store = await readJsonStore(config);
   const queryText = String(filters.q || '').trim().toLowerCase();
   const status = String(filters.status || '').trim();
@@ -573,7 +574,7 @@ export async function adminPendingStats(config: AppConfig) {
   return { pendingCount: Number(result.rows[0]?.count || 0), source: 'postgres' };
 }
 
-export async function updateUserStatus(config: AppConfig, actor: Actor, userId: string, body: any = {}, metadata: any = {}) {
+export async function updateUserStatus(config: AppConfig, actor: Actor, userId: string, body: UpdateUserStatusBody = {}, metadata: RequestContext = {}) {
   const nextStatus = String(body.status || '').trim();
   if (!['pending_review', 'approved', 'rejected', 'suspended', 'closed'].includes(nextStatus)) {
     throw new HttpError(400, 'INVALID_USER_STATUS', 'Unsupported user status.');

@@ -1,3 +1,4 @@
+import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -9,7 +10,7 @@ export async function listAdminFaqs(config: AppConfig) {
   return { items, count: items.length };
 }
 
-export async function createFaq(config: AppConfig, actor: Actor, body: any) {
+export async function createFaq(config: AppConfig, actor: Actor, body: Record<string, unknown>) {
   const question = String(body?.question || '').trim();
   const answer = String(body?.answer || '').trim();
   const category = String(body?.category || 'general').trim();
@@ -39,7 +40,7 @@ export async function createFaq(config: AppConfig, actor: Actor, body: any) {
   return faq;
 }
 
-export async function updateFaq(config: AppConfig, actor: Actor, faqId: any, body: any) {
+export async function updateFaq(config: AppConfig, actor: Actor, faqId: any, body: Record<string, unknown>) {
   const now = new Date().toISOString();
 
   return updateJsonStore(config, (store) => {

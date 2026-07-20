@@ -79,7 +79,7 @@ const STATIC_FAQS = [
   },
 ];
 
-export async function createTicket(config: AppConfig, actor: Actor, body: any) {
+export async function createTicket(config: AppConfig, actor: Actor, body: Record<string, any>) {
   const { title, description, category = 'general', priority = 'medium', subject, body: bodyText } = body || {};
   const resolvedTitle = title || subject;
   const resolvedDescription = description || bodyText;

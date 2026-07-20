@@ -62,7 +62,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (holdingId && !resolvedFundId) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: Record<string, any>) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -74,7 +74,7 @@ export async function createRedemptionRequest(config: AppConfig, userId: string,
     if (!holding) {
       const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h: any) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: Record<string, any>) => h.fundId === resolvedFundId) || null;
       }
     }
 

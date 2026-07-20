@@ -63,7 +63,7 @@ export async function listAdminPlans(config: AppConfig) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function createPlan(config: AppConfig, body: any) {
+export async function createPlan(config: AppConfig, body: Record<string, unknown>) {
   const payload = body && typeof body === 'object' ? body : {};
   const slug = toTrimmedString(payload.slug);
   const name = toTrimmedString(payload.name);
@@ -113,7 +113,7 @@ export async function createPlan(config: AppConfig, body: any) {
   return rowToPlan(result.rows[0]);
 }
 
-export async function updatePlan(config: AppConfig, id: string, body: any) {
+export async function updatePlan(config: AppConfig, id: string, body: Record<string, unknown>) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Plan ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
 

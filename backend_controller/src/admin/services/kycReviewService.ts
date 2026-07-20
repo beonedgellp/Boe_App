@@ -1,3 +1,4 @@
+import type { KycReviewBody, RequestContext } from '#types/services.js';
 import type { PoolClient } from 'pg';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
@@ -98,12 +99,12 @@ async function _reviewKyc(config: AppConfig, actor: Actor, userId: string, body:
   });
 }
 
-export const reviewKyc = withReceipt(_reviewKyc, (result: any) => {
+export const reviewKyc = withReceipt(_reviewKyc, (result: Record<string, unknown>) => {
   return result.action === 'approve' ? 'kyc_approved' : 'kyc_rejected';
 }, {
   entityType: 'kyc_profile',
-  entityId: (result: any) => result.userId,
-  afterState: (result: any) => result.reviewStatus,
-  subjectUserId: (result: any) => result.userId,
+  entityId: (result: Record<string, unknown>) => result.userId,
+  afterState: (result: Record<string, unknown>) => result.reviewStatus,
+  subjectUserId: (result: Record<string, unknown>) => result.userId,
   source: 'mock',
 });

@@ -16,7 +16,7 @@ const COPY_REGISTRY = {
 const DEFAULT_TEXT = 'Your request is being processed. Check back soon for updates.';
 const VERSIONS = Object.keys(COPY_REGISTRY);
 
-export function getCopy(version: any, moneyState: any) {
+export function getCopy(version: string, moneyState: string) {
   const registry = (COPY_REGISTRY as Record<string, any>)[version] || (COPY_REGISTRY as Record<string, any>)[getLatestVersion()];
   if (!moneyState) return DEFAULT_TEXT;
   return registry[moneyState] || DEFAULT_TEXT;

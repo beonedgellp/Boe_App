@@ -26,7 +26,7 @@ function computeBlockingReasons(user: any, kycProfile: any) {
   return reasons;
 }
 
-function toCamelCase(obj: any) {
+function toCamelCase(obj: Record<string, any> | null | undefined) {
   if (!obj || typeof obj !== 'object') return obj;
   const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
@@ -99,10 +99,10 @@ export async function getUserDetail(config: AppConfig, actor: Actor, userId: str
   const mandates = mandatesRes.rows.map(toCamelCase);
   const transactions = txRes.rows.map(toCamelCase);
 
-  const paymentIds = new Set(payments.map((p) => p.id));
-  const mandateIds = new Set(mandates.map((m) => m.id));
-  const planIds = new Set(investmentPlans.map((p) => p.id));
-  const txIds = new Set(transactions.map((t) => t.id));
+  const paymentIds = new Set(payments.map((p) => p?.id));
+  const mandateIds = new Set(mandates.map((m) => m?.id));
+  const planIds = new Set(investmentPlans.map((p) => p?.id));
+  const txIds = new Set(transactions.map((t) => t?.id));
   const kycProfileId = kycProfile?.id || null;
 
   const allEntityIds = [

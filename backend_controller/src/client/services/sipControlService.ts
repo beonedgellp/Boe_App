@@ -1,4 +1,5 @@
-import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { AppConfig, Actor } from '#types/index.js';
+import type { SipAction } from '#types/services.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -15,7 +16,7 @@ const STATUS_MAP = {
   change_amount: 'change_requested',
 };
 
-async function _requestSipControl(config: AppConfig, actor: Actor, planId: string, action: any, reason: any, confirmed: any) {
+async function _requestSipControl(config: AppConfig, actor: Actor, planId: string, action: string, reason: string, confirmed: boolean) {
   if (!VALID_ACTIONS.includes(action)) {
     throw new HttpError(400, 'INVALID_ACTION', `Action must be one of: ${VALID_ACTIONS.join(', ')}.`);
   }
@@ -85,7 +86,7 @@ export async function listSipControlRequests(config: AppConfig, actor: Actor) {
 
 export const requestSipControl = withReceipt(_requestSipControl, 'sip_control_requested', {
   entityType: 'sip_control_request',
-  entityId: (result: any) => result.id,
-  afterState: (result: any) => result.status,
+  entityId: (result: Record<string, unknown>) => result.id,
+  afterState: (result: Record<string, unknown>) => result.status,
   source: 'derived',
 });

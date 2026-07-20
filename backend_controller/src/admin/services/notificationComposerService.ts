@@ -1,9 +1,10 @@
+import type { NotificationBody } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 
-export async function sendNotification(config: AppConfig, actor: Actor, body: any) {
+export async function sendNotification(config: AppConfig, actor: Actor, body: NotificationBody) {
   const title = String(body?.title || '').trim();
   const messageBody = String(body?.body || '').trim();
   const target = String(body?.target || '').trim().toLowerCase();
@@ -97,7 +98,7 @@ export async function notifyUserRejected(config: AppConfig, userId: string, user
   return { notificationId };
 }
 
-export async function listAdminNotifications(config: AppConfig, { page = 1, limit = 25 }: any = {}) {
+export async function listAdminNotifications(config: AppConfig, { page = 1, limit = 25 }: { page?: number; limit?: number } = {}) {
   const store = await readJsonStore(config);
   let items = Array.isArray(store.notifications) ? store.notifications : [];
   items = items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());

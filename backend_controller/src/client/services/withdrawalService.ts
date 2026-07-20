@@ -1,3 +1,4 @@
+import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -38,13 +39,13 @@ function monthsBetween(startIso: any, endIso: any) {
 function findHolding(store: any, userId: string, holdingId: string) {
   const portfolio = store[`portfolio_${userId}`];
   if (!portfolio || !Array.isArray(portfolio.holdings)) return null;
-  return portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
+  return portfolio.holdings.find((h: Record<string, any>) => (h.id || h.fundId) === holdingId) || null;
 }
 
 function findHoldingAllottedAt(store: any, userId: string, fundId: string) {
   const portfolio = store[`portfolio_${userId}`];
   if (portfolio?.holdings) {
-    const h = portfolio.holdings.find((h: any) => h.fundId === fundId || h.id === fundId);
+    const h = portfolio.holdings.find((h: Record<string, any>) => h.fundId === fundId || h.id === fundId);
     if (h?.allottedAt) return h.allottedAt;
     if (h?.createdAt) return h.createdAt;
   }

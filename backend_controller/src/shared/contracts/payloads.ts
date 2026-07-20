@@ -1,58 +1,58 @@
 import { isValidMoneyState } from './moneyState.js';
 
-function plainObject(value: any) {
+function plainObject(value: unknown) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function assertPlainObject(value: any, name: any) {
+function assertPlainObject(value: unknown, name: any) {
   if (!plainObject(value)) {
     throw new TypeError(`${name} must be a plain object.`);
   }
 }
 
-function assertString(value: any, name: any) {
+function assertString(value: unknown, name: any) {
   if (typeof value !== 'string' || value.length === 0) {
     throw new TypeError(`${name} must be a non-empty string.`);
   }
 }
 
-function assertNumber(value: any, name: any) {
+function assertNumber(value: unknown, name: any) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new TypeError(`${name} must be a finite number.`);
   }
 }
 
-function assertOptionalNumber(value: any, name: any) {
+function assertOptionalNumber(value: unknown, name: any) {
   if (value !== undefined && value !== null && (typeof value !== 'number' || !Number.isFinite(value))) {
     throw new TypeError(`${name} must be a finite number or null/undefined.`);
   }
 }
 
-function assertDateString(value: any, name: any) {
+function assertDateString(value: unknown, name: any) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value)) {
     throw new TypeError(`${name} must be an ISO date string.`);
   }
 }
 
-function assertOptionalString(value: any, name: any) {
+function assertOptionalString(value: unknown, name: any) {
   if (value !== undefined && value !== null && typeof value !== 'string') {
     throw new TypeError(`${name} must be a string or null/undefined.`);
   }
 }
 
-function assertArray(value: any, name: any) {
+function assertArray(value: unknown, name: any) {
   if (!Array.isArray(value)) {
     throw new TypeError(`${name} must be an array.`);
   }
 }
 
-function assertOptionalArray(value: any, name: any) {
+function assertOptionalArray(value: unknown, name: any) {
   if (value !== undefined && value !== null && !Array.isArray(value)) {
     throw new TypeError(`${name} must be an array or null/undefined.`);
   }
 }
 
-function assertMoneyState(value: any, name: any) {
+function assertMoneyState(value: unknown, name: any) {
   if (!isValidMoneyState(value)) {
     throw new TypeError(`${name} must be a valid MoneyState value.`);
   }
@@ -71,7 +71,7 @@ function assertMoneyState(value: any, name: any) {
  * @property {HoldingSnapshot[]} holdings
  */
 
-export function validatePortfolioSummary(payload: any) {
+export function validatePortfolioSummary(payload: Record<string, any>) {
   assertPlainObject(payload, 'PortfolioSummary');
   assertOptionalNumber(payload.currentValue, 'currentValue');
   assertNumber(payload.invested, 'invested');
@@ -103,7 +103,7 @@ export function validatePortfolioSummary(payload: any) {
  * @property {string} status - MoneyState
  */
 
-export function validateHoldingSnapshot(payload: any) {
+export function validateHoldingSnapshot(payload: Record<string, any>) {
   assertPlainObject(payload, 'HoldingSnapshot');
   assertString(payload.fundId, 'fundId');
   assertString(payload.fundName, 'fundName');
@@ -130,7 +130,7 @@ export function validateHoldingSnapshot(payload: any) {
  * @property {Object} providerConfig
  */
 
-export function validateProductDetail(payload: any) {
+export function validateProductDetail(payload: Record<string, any>) {
   assertPlainObject(payload, 'ProductDetail');
   assertString(payload.id, 'id');
   assertString(payload.name, 'name');
@@ -158,7 +158,7 @@ export function validateProductDetail(payload: any) {
  * @property {string} reviewUrl
  */
 
-export function validateSipCreateResponse(payload: any) {
+export function validateSipCreateResponse(payload: Record<string, any>) {
   assertPlainObject(payload, 'SipCreateResponse');
   assertString(payload.planId, 'planId');
   assertString(payload.paymentId, 'paymentId');
@@ -181,7 +181,7 @@ export function validateSipCreateResponse(payload: any) {
  * @property {string|null} failureReason
  */
 
-export function validatePaymentStatus(payload: any) {
+export function validatePaymentStatus(payload: Record<string, any>) {
   assertPlainObject(payload, 'PaymentStatus');
   assertString(payload.id, 'id');
   assertNumber(payload.amount, 'amount');
@@ -206,7 +206,7 @@ export function validatePaymentStatus(payload: any) {
  * @property {string|null} authorizedAt
  */
 
-export function validateMandateStatus(payload: any) {
+export function validateMandateStatus(payload: Record<string, any>) {
   assertPlainObject(payload, 'MandateStatus');
   assertString(payload.id, 'id');
   assertMoneyState(payload.status, 'status');

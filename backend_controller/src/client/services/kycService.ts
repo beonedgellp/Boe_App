@@ -1,3 +1,4 @@
+import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -124,7 +125,7 @@ export async function getKycStatus(config: AppConfig, actor: Actor) {
   return toApiKycProfile(profile, user);
 }
 
-async function _updateKycDepth(config: AppConfig, actor: Actor, body: any) {
+async function _updateKycDepth(config: AppConfig, actor: Actor, body: Record<string, any>) {
   const fatcaStatus = body.fatcaStatus;
   const fatcaDeclaration = body.fatcaDeclaration;
   const nominees = body.nominees;

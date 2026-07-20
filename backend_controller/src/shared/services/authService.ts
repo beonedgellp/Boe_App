@@ -1,3 +1,4 @@
+import type { LoginCredentials, SignupDetails, DeviceSessionOptions, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -73,7 +74,7 @@ function safeEqualText(left: any, right: any) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function assertSignupAllowed(config: AppConfig, headers: any = {}) {
+export function assertSignupAllowed(config: AppConfig, headers: Record<string, string | string[] | undefined> = {}) {
   const secret = String(config.signupProxySecret || '');
   if (secret) {
     const provided = String(headers['x-signup-key'] || '');
@@ -199,7 +200,7 @@ function hashToken(token: any) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function clientIp(headers: any = {}) {
+function clientIp(headers: Record<string, string | string[] | undefined> = {}) {
   const forwarded = headers['x-forwarded-for'];
   return String(Array.isArray(forwarded) ? forwarded[0] : forwarded || '')
     .split(',')[0]
@@ -216,7 +217,7 @@ async function findUserByIdentifier(config: AppConfig, identifier: any) {
   return jsonUserToRow(user);
 }
 
-async function createDeviceSession(config: AppConfig, user: any, { headers = {}, body = {} }: any = {}) {
+async function createDeviceSession(config: AppConfig, user: any, { headers = {}, body = {} }: DeviceSessionOptions = {}) {
   const refreshToken = randomBytes(32).toString('base64url');
   const refreshTokenHash = hashToken(refreshToken);
   const deviceId = String(body.deviceId || headers['x-device-id'] || randomUUID()).slice(0, 160);
@@ -378,7 +379,7 @@ function envAdminRefresh(config: AppConfig, refreshToken: any) {
   };
 }
 
-export async function login(body: any, config: AppConfig, requestContext: any = {}) {
+export async function login(body: any, config: AppConfig, requestContext: RequestContext = {}) {
   const identifier = normalizeIdentifier(body);
   if (!identifier.raw || !body.password) {
     throw new HttpError(400, 'LOGIN_FIELDS_REQUIRED', 'Identifier and password are required.');
@@ -428,7 +429,7 @@ export async function login(body: any, config: AppConfig, requestContext: any = 
   };
 }
 
-export async function signup(body: any, config: AppConfig, requestContext: any = {}) {
+export async function signup(body: any, config: AppConfig, requestContext: RequestContext = {}) {
   assertSignupAllowed(config, requestContext.headers || {});
 
   const email = normalizeEmail(body.email || body.identifier);

@@ -16,7 +16,7 @@ async function resolveOption(value: any, result: any, args: any) {
  * @param {string|Function} receiptKind - Static kind or (result, args) => kind.
  * @param {Object} options - Mappers for receipt fields.
  */
-export function withReceipt(serviceFn: any, receiptKind: any, options: any = {}) {
+export function withReceipt(serviceFn: (...args: any[]) => Promise<any>, receiptKind: string | ((...args: any[]) => string), options: Record<string, any> = {}) {
   return async function wrapped(...args: any[]) {
     const config = args[0];
     const rawActor = args[1];

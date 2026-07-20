@@ -118,11 +118,11 @@ export function registerAdminRoutes(router: Router) {
     status: query?.status || '',
     userId: query?.userId || '',
     provider: query?.provider || '',
-    from: query?.from || '',
-    to: query?.to || '',
+    from: query?.from || undefined,
+    to: query?.to || undefined,
     q: query?.q || '',
     page: Number(query?.page) || 1,
-    pageSize: Math.min(100, Math.max(1, Number(query?.pageSize || query?.limit) || 100)),
+    pageSize: Math.min(100, Math.max(1, Number(query?.pageSize || query?.limit) || 100)) as number,
   }));
 
   router.get(Routes.GET_V1_ADMIN_MANDATES, {
@@ -166,8 +166,8 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Publish mobile app component and content configuration.',
   }, ({ actor, body, config, headers }) => publishAppConfig(config, actor!, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.get(Routes.GET_V1_ADMIN_LANDING_CONFIG, {
@@ -181,15 +181,15 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Publish landing page content configuration.',
   }, ({ actor, body, config, headers }) => publishLandingConfig(config, actor!, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.get(Routes.GET_V1_ADMIN_NOTIFICATIONS, {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Admin notification list.',
-  }, ({ config, query }) => listAdminNotifications(config, { page: query?.page, limit: query?.limit }));
+  }, ({ config, query }) => listAdminNotifications(config, { page: Number(query?.page) || 1, limit: Number(query?.limit) || 25 }));
 
   router.post(Routes.POST_V1_ADMIN_NOTIFICATIONS, {
     group: 'admin',
@@ -282,8 +282,8 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Change user approval/status.',
   }, ({ actor, body, config, headers, params }) => updateUserStatus(config, actor!, params.user_id, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.patch(Routes.PATCH_V1_ADMIN_KYC_REVIEW_USER_ID, {
@@ -297,8 +297,8 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Create strategy draft.',
   }, ({ actor, body, config, headers }) => createFund(config, actor!, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.get(Routes.GET_V1_ADMIN_FUNDS, {
@@ -323,8 +323,8 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Create fund record.',
   }, ({ actor, body, config, headers }) => createFund(config, actor!, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.patch(Routes.PATCH_V1_ADMIN_FUNDS_FUND_ID, {
@@ -454,15 +454,15 @@ export function registerAdminRoutes(router: Router) {
       if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
       store.adminAuditLogs.push({
         id: randomUUID(),
-        adminId: actor?.userId || null,
+        adminId: actor?.userId || undefined,
         action: 'disclosure.create',
         entityType: 'disclosure',
         entityId: disclosure.id,
         before: null,
         after: { ...disclosure },
         reason: `Disclosure created for product ${fundId}`,
-        ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-        userAgent: headers['user-agent'] || null,
+        ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+        userAgent: String(headers?.['user-agent'] || '') || undefined,
         createdAt: now,
       });
       return disclosure;
@@ -500,15 +500,15 @@ export function registerAdminRoutes(router: Router) {
       if (!Array.isArray(store.adminAuditLogs)) store.adminAuditLogs = [];
       store.adminAuditLogs.push({
         id: randomUUID(),
-        adminId: actor?.userId || null,
+        adminId: actor?.userId || undefined,
         action: 'holdings.upload',
         entityType: 'product_holdings',
         entityId: snapshot.id,
         before: null,
         after: { ...snapshot },
         reason: `Holdings uploaded for product ${fundId}`,
-        ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-        userAgent: headers['user-agent'] || null,
+        ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+        userAgent: String(headers?.['user-agent'] || '') || undefined,
         createdAt: now,
       });
       return snapshot;
@@ -557,7 +557,7 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'List reconciliation ledger entries.',
   }, async ({ config, query }) => listReconciliationLedger(config, {
-    paymentId: query?.paymentId || null,
+    paymentId: query?.paymentId || undefined,
     limit: Math.min(100, Math.max(1, Number(query?.limit) || 50)),
   }));
 
@@ -566,8 +566,8 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Admin mandate state action.',
   }, ({ config, actor, params, body, headers }) => updateMandateStatus(config, actor, params.mandate_id, body, {
-    ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
-    userAgent: headers['user-agent'] || null,
+    ipAddress: String(String(headers?.['x-forwarded-for'] || '') || '').split(',')[0].trim() || undefined,
+    userAgent: String(headers?.['user-agent'] || '') || undefined,
   }));
 
   router.patch(Routes.PATCH_V1_ADMIN_SIP_CONTROL_REQUESTS_REQUEST_ID, {
@@ -581,11 +581,11 @@ export function registerAdminRoutes(router: Router) {
     roles: ADMIN_ROLES,
     description: 'Admin transaction list with fund pool filtering, search and pagination.',
   }, ({ config, query }) => adminTransactions(config, {
-    fundId: query?.fundId || null,
-    status: query?.status || null,
-    type: query?.type || null,
-    userId: query?.userId || null,
-    q: query?.q || null,
+    fundId: query?.fundId || undefined,
+    status: query?.status || undefined,
+    type: query?.type || undefined,
+    userId: query?.userId || undefined,
+    q: query?.q || undefined,
     page: Number(query?.page) || 1,
     limit: Math.min(100, Math.max(1, Number(query?.limit) || 25)),
   }));

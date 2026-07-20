@@ -1,3 +1,4 @@
+import type { AdminPaymentFilters } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { readJsonStore } from '#db/pgAdapter.js';
@@ -11,7 +12,7 @@ function todayStr() {
 }
 
 function fundName(store: any, fundId: string) {
-  const fund = (store.funds || []).find((item: any) => item.id === fundId);
+  const fund = (store.funds || []).find((item: Record<string, any>) => item.id === fundId);
   return fund?.name || fund?.title || fundId || 'BeOnEdge Strategy';
 }
 
@@ -21,7 +22,7 @@ function fundTrackingId(fund: any) {
 }
 
 function fundSnapshot(store: any, fundId: string) {
-  const fund = (store.funds || []).find((item: any) => item.id === fundId);
+  const fund = (store.funds || []).find((item: Record<string, any>) => item.id === fundId);
   if (!fund) {
     return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
   }
@@ -258,7 +259,7 @@ export async function clientTransactions(config: AppConfig, userId: string) {
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientPayments(config: AppConfig, userId: string, filters: any = {}) {
+export async function clientPayments(config: AppConfig, userId: string, filters: Record<string, string> = {}) {
   const store = await readJsonStore(config);
   const status = String(filters.status || '').trim();
   const statuses = status

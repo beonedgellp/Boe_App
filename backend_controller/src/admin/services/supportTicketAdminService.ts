@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore } from '#db/pgAdapter.js';
 
-export async function replyToTicket(config: AppConfig, actor: Actor, ticketId: string, body: any) {
+export async function replyToTicket(config: AppConfig, actor: Actor, ticketId: string, body: Record<string, unknown>) {
   const message = String(body?.message || '').trim();
   if (!message) {
     throw new HttpError(400, 'MESSAGE_REQUIRED', 'Reply message is required.');

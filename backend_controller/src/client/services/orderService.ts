@@ -1,3 +1,4 @@
+import type { OrderBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -45,7 +46,7 @@ export async function getOrder(config: AppConfig, actor: Actor, orderId: string)
 
 /* ---------- createLumpsumOrder ---------- */
 
-async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
+async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: OrderBody, requestContext: RequestContext = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a lumpsum order.');
   }
@@ -233,7 +234,7 @@ export const createLumpsumOrder = withReceipt(_createLumpsumOrder, 'lumpsum_crea
 
 /* ---------- payPendingInstallment ---------- */
 
-async function _payPendingInstallment(config: AppConfig, actor: Actor, orderId: string, options: any = {}) {
+async function _payPendingInstallment(config: AppConfig, actor: Actor, orderId: string, options: Record<string, unknown> = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to pay an installment.');
   }
