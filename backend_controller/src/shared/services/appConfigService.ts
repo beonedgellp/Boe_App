@@ -1,37 +1,37 @@
 import type { PublishConfigOptions, RequestContext } from '#types/services.js';
-import type { PoolClient } from 'pg';
-import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
-import { randomUUID } from 'node:crypto';
+import type { AppConfig, Actor } from '#types/index.js';
+import type { Prisma } from '@prisma/client';
 import { HttpError } from '#http/errors.js';
-import { hasDatabaseConfig, query, transaction } from '#db/client.js';
+import { hasDatabaseConfig, prisma } from '#db/client.js';
 
 const CONFIG_KEY = 'mobile_app';
 const MAX_CONFIG_BYTES = 1024 * 1024;
 
-function requireDatabase(config: AppConfig) {
+function requireDatabase(config: AppConfig): void {
   if (!hasDatabaseConfig(config)) {
     throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL is required for app configuration.');
   }
 }
 
-function plainObject(value: any) {
+function plainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function validateAppConfig(config: any) {
+function validateAppConfig(config: unknown): Record<string, unknown> {
   if (!plainObject(config)) {
     throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must be a JSON object.');
   }
 
-  if (!plainObject(config.mobile)) {
+  const mobile = config.mobile;
+  if (!plainObject(mobile)) {
     throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include a mobile object.');
   }
 
-  if (!Array.isArray(config.mobile.products)) {
+  if (!Array.isArray(mobile.products)) {
     throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include strategies.');
   }
 
-  if (!plainObject(config.mobile.screens)) {
+  if (!plainObject(mobile.screens)) {
     throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must include mobile.screens.');
   }
 
@@ -43,7 +43,25 @@ function validateAppConfig(config: any) {
   return JSON.parse(encoded);
 }
 
-function rowToPayload(row: any) {
+interface ConfigVersionRow {
+  id: string;
+  version: number;
+  configJson: Prisma.JsonValue;
+  publishedAt: Date;
+  publishedBy: string | null;
+}
+
+interface ConfigPayload {
+  id?: string;
+  version?: number;
+  config: Prisma.JsonValue | null;
+  publishedAt?: Date | null;
+  publishedBy?: string | null;
+  source: string;
+  published: boolean;
+}
+
+function rowToPayload(row: ConfigVersionRow | null): ConfigPayload {
   if (!row) {
     return {
       config: null,
@@ -55,99 +73,96 @@ function rowToPayload(row: any) {
   return {
     id: row.id,
     version: row.version,
-    config: row.config_json,
-    publishedAt: row.published_at,
-    publishedBy: row.published_by,
+    config: row.configJson,
+    publishedAt: row.publishedAt,
+    publishedBy: row.publishedBy,
     source: 'postgres',
     published: true,
   };
 }
 
-export async function getPublishedConfigVersion(config: AppConfig, configKey: any) {
-  requireDatabase(config);
-
-  const result = await query(config, `
-    SELECT id, version, config_json, published_at, published_by
-    FROM app_config_versions
-    WHERE config_key = $1 AND status = 'published'
-    ORDER BY version DESC
-    LIMIT 1
-  `, [configKey]);
-
-  return rowToPayload(result.rows[0]);
+function normalizeUserAgent(value: string | string[] | null | undefined): string | null {
+  if (Array.isArray(value)) return value.join(', ');
+  return value || null;
 }
 
-export async function publishConfigVersion(config: AppConfig, configKey: string, actor: Actor, configJson: Record<string, unknown>, {
-  reason,
-  defaultReason,
-  auditAction,
-  entityType,
-  requestContext = {},
-}: PublishConfigOptions = {}) {
+export async function getPublishedConfigVersion(config: AppConfig, configKey: string) {
   requireDatabase(config);
 
-  return transaction(config, async (client: PoolClient) => {
-    const previous = await client.query(`
-      SELECT id, version, config_json
-      FROM app_config_versions
-      WHERE config_key = $1 AND status = 'published'
-      ORDER BY version DESC
-      LIMIT 1
-    `, [configKey]);
+  const row = await prisma.appConfigVersion.findFirst({
+    where: { configKey, status: 'published' },
+    orderBy: { version: 'desc' },
+  });
 
-    const previousRow = previous.rows[0] || null;
+  return rowToPayload(row);
+}
+
+export async function publishConfigVersion(
+  config: AppConfig,
+  configKey: string,
+  actor: Actor,
+  configJson: Record<string, unknown>,
+  {
+    reason,
+    defaultReason,
+    auditAction,
+    entityType,
+    requestContext = {},
+  }: PublishConfigOptions = {},
+) {
+  requireDatabase(config);
+
+  return prisma.$transaction(async (tx) => {
+    const previousRow = await tx.appConfigVersion.findFirst({
+      where: { configKey, status: 'published' },
+      orderBy: { version: 'desc' },
+      select: { id: true, version: true, configJson: true },
+    });
+
     const nextVersion = (previousRow?.version || 0) + 1;
 
-    const inserted = await client.query(`
-      INSERT INTO app_config_versions (
-        config_key,
-        version,
-        config_json,
-        status,
-        published_by
-      )
-      VALUES ($1, $2, $3::jsonb, 'published', $4)
-      RETURNING id, version, config_json, published_at, published_by
-    `, [configKey, nextVersion, JSON.stringify(configJson), actor?.userId || null]);
+    const inserted = await tx.appConfigVersion.create({
+      data: {
+        configKey,
+        version: nextVersion,
+        configJson: configJson as Prisma.InputJsonValue,
+        status: 'published',
+        publishedBy: actor?.userId || null,
+      },
+    });
 
-    await client.query(`
-      INSERT INTO admin_audit_logs (
-        admin_id,
-        action,
-        entity_type,
-        entity_id,
-        before_json,
-        after_json,
-        reason,
-        ip_address,
-        user_agent
-      )
-      VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
-    `, [
-      actor?.userId || null,
-      auditAction,
-      entityType,
-      inserted.rows[0].id,
-      previousRow ? JSON.stringify(previousRow.config_json) : null,
-      JSON.stringify(configJson),
-      reason || defaultReason,
-      requestContext.ipAddress || null,
-      requestContext.userAgent || null,
-    ]);
+    await tx.adminAuditLog.create({
+      data: {
+        adminId: actor?.userId || null,
+        action: auditAction || 'app_config.publish',
+        entityType: entityType || 'app_config',
+        entityId: inserted.id,
+        ...(previousRow ? { beforeJson: previousRow.configJson as Prisma.InputJsonValue } : {}),
+        afterJson: configJson as Prisma.InputJsonValue,
+        reason: reason || defaultReason || null,
+        ipAddress: requestContext.ipAddress || null,
+        userAgent: normalizeUserAgent(requestContext.userAgent),
+      },
+    });
 
-    return rowToPayload(inserted.rows[0]);
+    return rowToPayload(inserted);
   });
 }
 
-export async function getPublishedAppConfig(config: AppConfig): Promise<any> {
+export async function getPublishedAppConfig(config: AppConfig) {
   return getPublishedConfigVersion(config, CONFIG_KEY);
 }
 
-export async function publishAppConfig(config: AppConfig, actor: Actor, body: Record<string, any>, requestContext: RequestContext = {}) {
+export async function publishAppConfig(
+  config: AppConfig,
+  actor: Actor,
+  body: Record<string, unknown>,
+  requestContext: RequestContext = {},
+) {
   const incoming = validateAppConfig(body?.config ?? body);
 
   return publishConfigVersion(config, CONFIG_KEY, actor, incoming, {
-    reason: body?.reason,
+    reason: typeof body?.reason === 'string' ? body.reason : undefined,
     defaultReason: 'Admin published app configuration.',
     auditAction: 'app_config.publish',
     entityType: 'app_config',
@@ -155,19 +170,29 @@ export async function publishAppConfig(config: AppConfig, actor: Actor, body: Re
   });
 }
 
+function configProducts(payload: ReturnType<typeof rowToPayload>): unknown[] {
+  const config = payload.config;
+  if (!plainObject(config)) return [];
+  const mobile = config.mobile;
+  if (!plainObject(mobile) || !Array.isArray(mobile.products)) return [];
+  return mobile.products;
+}
+
 export async function listPublishedStrategiesFromAppConfig(config: AppConfig) {
   const payload = await getPublishedAppConfig(config);
   return {
-    items: payload.config?.mobile?.products || [],
+    items: configProducts(payload),
     source: payload.published ? 'app_config_versions' : 'postgres_empty',
     publishedAt: payload.publishedAt || null,
     version: payload.version || null,
   };
 }
 
-export async function getPublishedStrategyFromAppConfig(config: AppConfig, productId: any) {
+export async function getPublishedStrategyFromAppConfig(config: AppConfig, productId: string) {
   const payload = await getPublishedAppConfig(config);
-  const strategy = payload.config?.mobile?.products?.find((item: any) => item.id === productId);
+  const strategy = configProducts(payload).find(
+    (item): item is Record<string, unknown> => plainObject(item) && item.id === productId,
+  );
 
   if (!strategy) {
     throw new HttpError(404, 'STRATEGY_NOT_FOUND', `Strategy ${productId} is not published in app configuration.`);
@@ -178,8 +203,13 @@ export async function getPublishedStrategyFromAppConfig(config: AppConfig, produ
 
 export async function listResearchContextFromAppConfig(config: AppConfig) {
   const payload = await getPublishedAppConfig(config);
+  const config_ = payload.config;
+  const researchContext =
+    plainObject(config_) && plainObject(config_.mobile) && Array.isArray(config_.mobile.researchContext)
+      ? config_.mobile.researchContext
+      : [];
   return {
-    items: payload.config?.mobile?.researchContext || [],
+    items: researchContext,
     source: payload.published ? 'app_config_versions' : 'postgres_empty',
     publishedAt: payload.publishedAt || null,
     version: payload.version || null,

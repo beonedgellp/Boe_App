@@ -1,64 +1,33 @@
-import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
-import { randomUUID } from 'node:crypto';
+import type { AppConfig } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
-import { query } from '#db/client.js';
+import { prisma } from '#db/prisma.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-function toTrimmedString(value: any, fallback = '') {
+function toTrimmedString(value: unknown, fallback = ''): string {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-function validateSlug(slug: any) {
+function validateSlug(slug: string): void {
   if (!SLUG_PATTERN.test(slug)) {
     throw new HttpError(400, 'INVALID_SLUG', 'Slug must be lowercase alphanumeric with hyphens.');
   }
 }
 
-function rowToCourse(row: any) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    level: row.level,
-    format: row.format,
-    outcome: row.outcome,
-    description: row.description,
-    pricePaise: row.price_paise,
-    status: row.status,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function sortCourses(items: any) {
-  return items.sort((a: any, b: any) => {
-    const sortDiff = (a.sortOrder || 0) - (b.sortOrder || 0);
-    if (sortDiff !== 0) return sortDiff;
-    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+export async function listCourses(config: AppConfig, _opts: Record<string, unknown> = {}) {
+  const items = await prisma.course.findMany({
+    where: { status: 'published' },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   });
-}
-
-export async function listCourses(config: AppConfig, opts: any = {}) {
-  const result = await query(config, `
-    SELECT * FROM courses
-    WHERE status = 'published'
-    ORDER BY sort_order ASC, created_at DESC
-  `);
-  const items = result.rows.map(rowToCourse);
-  return { items, count: items.length, source: 'postgres' };
+  return { items, count: items.length, source: 'prisma' };
 }
 
 export async function listAdminCourses(config: AppConfig) {
-  const result = await query(config, `
-    SELECT * FROM courses
-    ORDER BY sort_order ASC, created_at DESC
-  `);
-  const items = result.rows.map(rowToCourse);
-  return { items, count: items.length, source: 'postgres' };
+  const items = await prisma.course.findMany({
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+  });
+  return { items, count: items.length, source: 'prisma' };
 }
 
 export async function createCourse(config: AppConfig, body: Record<string, unknown>) {
@@ -76,74 +45,53 @@ export async function createCourse(config: AppConfig, body: Record<string, unkno
   if (!outcome) throw new HttpError(400, 'OUTCOME_REQUIRED', 'Outcome is required.');
   validateSlug(slug);
 
-  const now = new Date().toISOString();
-  const course = {
-    id: randomUUID(),
-    slug,
-    name,
-    level,
-    format,
-    outcome,
-    description: payload.description !== undefined ? toTrimmedString(payload.description) : null,
-    pricePaise: payload.pricePaise !== undefined ? Number(payload.pricePaise) || null : null,
-    status: 'draft',
-    sortOrder: Number(payload.sortOrder) || 0,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const result = await query(config, `
-    INSERT INTO courses (id, slug, name, level, format, outcome, description, price_paise, status, sort_order, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    RETURNING *
-  `, [
-    course.id, course.slug, course.name, course.level, course.format, course.outcome,
-    course.description, course.pricePaise, course.status, course.sortOrder, course.createdAt, course.updatedAt,
-  ]);
-  return rowToCourse(result.rows[0]);
+  return prisma.course.create({
+    data: {
+      slug,
+      name,
+      level,
+      format,
+      outcome,
+      description: payload.description !== undefined ? toTrimmedString(payload.description) : null,
+      pricePaise: payload.pricePaise !== undefined ? Number(payload.pricePaise) || null : null,
+      status: 'draft',
+      sortOrder: Number(payload.sortOrder) || 0,
+    },
+  });
 }
 
 export async function updateCourse(config: AppConfig, id: string, body: Record<string, unknown>) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
 
-  const fields = [];
-  const values = [];
-  let i = 1;
+  const data = {
+    ...(payload.slug !== undefined ? { slug: toTrimmedString(payload.slug) } : {}),
+    ...(payload.name !== undefined ? { name: toTrimmedString(payload.name) } : {}),
+    ...(payload.level !== undefined ? { level: toTrimmedString(payload.level) } : {}),
+    ...(payload.format !== undefined ? { format: toTrimmedString(payload.format) } : {}),
+    ...(payload.outcome !== undefined ? { outcome: toTrimmedString(payload.outcome) } : {}),
+    ...(payload.description !== undefined ? { description: toTrimmedString(payload.description) } : {}),
+    ...(payload.pricePaise !== undefined ? { pricePaise: Number(payload.pricePaise) || null } : {}),
+    ...(payload.status !== undefined ? { status: toTrimmedString(payload.status) } : {}),
+    ...(payload.sortOrder !== undefined ? { sortOrder: Number(payload.sortOrder) || 0 } : {}),
+  };
 
-  if (payload.slug !== undefined) { fields.push(`slug = $${i++}`); values.push(toTrimmedString(payload.slug)); }
-  if (payload.name !== undefined) { fields.push(`name = $${i++}`); values.push(toTrimmedString(payload.name)); }
-  if (payload.level !== undefined) { fields.push(`level = $${i++}`); values.push(toTrimmedString(payload.level)); }
-  if (payload.format !== undefined) { fields.push(`format = $${i++}`); values.push(toTrimmedString(payload.format)); }
-  if (payload.outcome !== undefined) { fields.push(`outcome = $${i++}`); values.push(toTrimmedString(payload.outcome)); }
-  if (payload.description !== undefined) { fields.push(`description = $${i++}`); values.push(toTrimmedString(payload.description)); }
-  if (payload.pricePaise !== undefined) { fields.push(`price_paise = $${i++}`); values.push(Number(payload.pricePaise) || null); }
-  if (payload.status !== undefined) { fields.push(`status = $${i++}`); values.push(toTrimmedString(payload.status)); }
-  if (payload.sortOrder !== undefined) { fields.push(`sort_order = $${i++}`); values.push(Number(payload.sortOrder) || 0); }
+  const existing = await prisma.course.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
 
-  if (fields.length === 0) {
-    const result = await query(config, `SELECT * FROM courses WHERE id = $1`, [id]);
-    if (!result.rows[0]) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
-    return rowToCourse(result.rows[0]);
-  }
+  if (Object.keys(data).length === 0) return existing;
 
-  fields.push(`updated_at = $${i++}`);
-  values.push(new Date().toISOString());
-  values.push(id);
-
-  const result = await query(config, `
-    UPDATE courses SET ${fields.join(', ')} WHERE id = $${i} RETURNING *
-  `, values);
-  if (!result.rows[0]) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
-  return rowToCourse(result.rows[0]);
+  return prisma.course.update({ where: { id }, data });
 }
 
 export async function deleteCourse(config: AppConfig, id: string) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
 
-  const result = await query(config, `
-    UPDATE courses SET status = 'archived', updated_at = now() WHERE id = $1 RETURNING *
-  `, [id]);
-  if (!result.rows[0]) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
-  return rowToCourse(result.rows[0]);
+  const existing = await prisma.course.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'COURSE_NOT_FOUND', `Course ${id} not found.`);
+
+  return prisma.course.update({
+    where: { id },
+    data: { status: 'archived' },
+  });
 }

@@ -1,6 +1,6 @@
 import { HttpError } from '#http/errors.js';
 import { verifyAccessToken } from './tokens.js';
-import { hasDatabaseConfig, query } from '#db/client.js';
+import { hasDatabaseConfig, prisma } from '#db/client.js';
 import type { Actor, AppConfig, Role, RouteMeta, TokenClaims } from '#types/index.js';
 
 interface RequestLike {
@@ -35,41 +35,39 @@ async function activeSessionActor(claims: TokenClaims, config: AppConfig): Promi
   }
 
   if (!claims.deviceSessionId) {
-    const result = await query(config, `
-      SELECT id, role::text, status::text
-      FROM users
-      WHERE id = $1
-      LIMIT 1
-    `, [claims.sub]);
-    const row = result.rows[0];
-    if (!row) return null;
+    const user = await prisma.user.findUnique({
+      where: { id: claims.sub },
+      select: { id: true, role: true, status: true },
+    });
+    if (!user) return null;
 
     return {
-      userId: row.id,
-      role: row.role as Role,
-      status: row.status,
+      userId: user.id,
+      role: user.role as Role,
+      status: user.status,
       deviceSessionId: claims.deviceSessionId,
     };
   }
 
-  const result = await query(config, `
-    SELECT u.id, u.role::text, u.status::text, ds.id AS device_session_id
-    FROM device_sessions ds
-    JOIN users u ON u.id = ds.user_id
-    WHERE ds.id = $1
-      AND ds.user_id = $2
-      AND ds.revoked_at IS NULL
-      AND ds.expires_at > now()
-    LIMIT 1
-  `, [claims.deviceSessionId, claims.sub]);
-  const row = result.rows[0];
-  if (!row) return null;
+  const session = await prisma.deviceSession.findFirst({
+    where: {
+      id: claims.deviceSessionId,
+      userId: claims.sub,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      user: { select: { id: true, role: true, status: true } },
+    },
+  });
+  if (!session) return null;
 
   return {
-    userId: row.id,
-    role: row.role as Role,
-    status: row.status,
-    deviceSessionId: row.device_session_id,
+    userId: session.user.id,
+    role: session.user.role as Role,
+    status: session.user.status,
+    deviceSessionId: session.id,
   };
 }
 
