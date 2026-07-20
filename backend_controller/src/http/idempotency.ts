@@ -14,12 +14,7 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 import { createHash } from 'node:crypto';
 import { HttpError } from './errors.js';
 import type { RouteContext, RouteHandler } from '#types/index.js';
-import {
-  findRecord,
-  insertJsonRecord,
-  updateJsonRecord,
-  deleteJsonRecord,
-} from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 interface StoredResult {
   status: number;
@@ -31,10 +26,8 @@ interface StoredResult {
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const IN_FLIGHT_TIMEOUT_MS = 30_000;
 
+
 // Process-local map keyed by dedup key → Promise<{ status, body }>.
-// Prevents two concurrent requests with the same key from both running the
-// handler. Survives only within a single Node process; persistence layer
-// catches cross-process duplicates after the first one commits.
 const inFlight = new Map<string, Promise<StoredResult>>();
 
 const HEADER_NAME = 'idempotency-key';
@@ -82,12 +75,9 @@ function withReplayHeader(stored: { status: number; body: unknown }) {
   };
 }
 
+
 /**
  * Wrap a route handler with Idempotency-Key behavior.
- *
- * @param {string} routePath - the registered route path (used to scope keys)
- * @param {(ctx: object) => any} handler
- * @returns {(ctx: object) => Promise<any>}
  */
 export function withIdempotency(routePath: string, handler: RouteHandler): RouteHandler {
   return async function idempotencyWrapped(context: RouteContext) {
@@ -102,19 +92,13 @@ export function withIdempotency(routePath: string, handler: RouteHandler): Route
     const dk = dedupKey(userId, routePath, key);
     const requestHash = hashBody(req, body);
 
-    // Same-process concurrency: if another request with this dedup key is
-    // already running, await its result. We register the Promise in the
-    // in-flight map synchronously (before any await) so a second concurrent
-    // request observes it.
+    // Same-process concurrency
     const pending = inFlight.get(dk);
     if (pending) {
       let result;
       try {
         result = await pending;
       } catch (error) {
-        // First-runner failed. Surface the same error to the second caller
-        // rather than silently retrying — the persistent row was rolled
-        // back, so the client can retry.
         throw error;
       }
       if (result.requestHash && result.requestHash !== requestHash) {
@@ -133,12 +117,9 @@ export function withIdempotency(routePath: string, handler: RouteHandler): Route
 
     const runHandler: Promise<StoredResult> = (async (): Promise<StoredResult> => {
       // Persisted lookup
-      const found = await findRecord(
-        config,
-        'requestIdempotency',
-        (r) => r.key === dk,
-      );
-      const existing = found.item as Record<string, any> | null;
+      const existing = await prisma.requestIdempotency.findFirst({
+        where: { key: dk },
+      });
 
       if (existing) {
         if (existing.requestHash !== requestHash) {
@@ -158,10 +139,10 @@ export function withIdempotency(routePath: string, handler: RouteHandler): Route
             );
           }
           // Stale pending row — drop it so this caller can retry.
-          await deleteJsonRecord(config, 'requestIdempotency', (r) => r.key === dk);
+          await prisma.requestIdempotency.delete({ where: { id: existing.id } });
         } else {
           return {
-            status: existing.responseStatus,
+            status: existing.responseStatus!,
             body: existing.responseBody,
             requestHash: existing.requestHash,
             replayed: true,
@@ -169,38 +150,38 @@ export function withIdempotency(routePath: string, handler: RouteHandler): Route
         }
       }
 
-      const now = new Date().toISOString();
-      const expiresAt = new Date(Date.now() + TTL_MS).toISOString();
-      await insertJsonRecord(config, 'requestIdempotency', {
-        key: dk,
-        route: routePath,
-        userId,
-        requestHash,
-        status: 'pending',
-        responseStatus: null,
-        responseBody: null,
-        createdAt: now,
-        expiresAt,
+
+      const now = new Date();
+      const expiresAt = new Date(Date.now() + TTL_MS);
+      await prisma.requestIdempotency.create({
+        data: {
+          key: dk,
+          route: routePath,
+          userId,
+          requestHash,
+          status: 'pending',
+          responseStatus: null,
+          responseBody: null,
+          createdAt: now,
+          expiresAt,
+        },
       });
 
       try {
         const raw = await handler(context);
         const normalized = normalizeHandlerResult(raw);
-        await updateJsonRecord(
-          config,
-          'requestIdempotency',
-          (r) => r.key === dk,
-          (existingRow) => ({
-            ...existingRow,
+        await prisma.requestIdempotency.update({
+          where: { key: dk },
+          data: {
             status: 'completed',
             responseStatus: normalized.status,
-            responseBody: normalized.body,
-            completedAt: new Date().toISOString(),
-          }),
-        );
+            responseBody: normalized.body as any,
+            completedAt: new Date(),
+          },
+        });
         return { status: normalized.status, body: normalized.body, requestHash };
       } catch (error) {
-        await deleteJsonRecord(config, 'requestIdempotency', (r) => r.key === dk).catch(() => {});
+        await prisma.requestIdempotency.delete({ where: { key: dk } }).catch(() => {});
         throw error;
       }
     })().finally(() => {

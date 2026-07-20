@@ -1,25 +1,21 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
-import type { NotificationRow } from '#types/models.js';
 import { HttpError } from '#http/errors.js';
-import { updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 export async function markNotificationRead(config: AppConfig, actor: Actor, notificationId: any) {
-  const updated = await updateJsonStore(config, (store) => {
-    const notifications = store.notifications || [];
-    const idx = notifications.findIndex((n) => n.id === notificationId);
-    if (idx === -1) return null;
+  const notification = await prisma.notification.findFirst({ where: { id: notificationId } });
 
-    const notification = notifications[idx];
-    if (notification.userId !== actor?.userId) {
-      throw new HttpError(403, 'FORBIDDEN', 'Notification does not belong to you.');
-    }
+  if (!notification) throw new HttpError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found.');
 
-    const now = new Date().toISOString();
-    notification.readAt = now;
-    notification.updatedAt = now;
-    return notification;
+  if (notification.userId !== actor?.userId) {
+    throw new HttpError(403, 'FORBIDDEN', 'Notification does not belong to you.');
+  }
+
+  const now = new Date();
+  const updated = await prisma.notification.updateMany({
+    where: { userId: actor.userId, id: notificationId },
+    data: { status: 'read', readAt: now },
   });
 
-  if (!updated) throw new HttpError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found.');
-  return updated;
+  return { ...notification, status: 'read', readAt: now.toISOString() };
 }

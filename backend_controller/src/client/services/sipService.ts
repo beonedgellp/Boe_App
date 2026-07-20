@@ -2,7 +2,7 @@ import type { SipBody, RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, atomicCompositeWrite } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
@@ -39,8 +39,7 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
     throw new HttpError(400, 'INVALID_PRODUCT', 'Product ID is required.');
   }
 
-  const store = await readJsonStore(config);
-  const fund = (store.funds || []).find((f) => f.id === productId);
+  const fund = await prisma.fund.findFirst({ where: { id: productId } });
   if (!fund) {
     throw new HttpError(404, 'PRODUCT_NOT_FOUND', `Product ${productId} not found.`);
   }
@@ -49,25 +48,32 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
   }
 
   // Idempotency: prevent duplicate SIP creation within 5 minutes for same user+fund+amount
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  const existingPlan = (store.investmentPlans || []).find((p) =>
-    p.userId === actor.userId &&
-    p.productId === productId &&
-    p.type === 'sip' &&
-    p.amount === amount &&
-    new Date(p.createdAt).getTime() > fiveMinutesAgo
-  );
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const existingPlan = await prisma.investmentPlan.findFirst({
+    where: {
+      userId: actor.userId,
+      productId,
+      type: 'sip',
+      amount,
+      createdAt: { gte: fiveMinutesAgo },
+    },
+  });
+
   if (existingPlan) {
-    const existingPayment = (store.payments || []).find((p) => p.id === existingPlan.paymentId);
-    const existingMandate = (store.mandates || []).find((m) => m.id === existingPlan.mandateId);
+    const existingPayment = await prisma.payment.findFirst({
+      where: { transactionId: existingPlan.id },
+    });
+    const existingMandate = existingPlan.mandateId
+      ? await prisma.mandate.findFirst({ where: { id: existingPlan.mandateId } })
+      : null;
     return {
       planId: existingPlan.id,
-      paymentId: existingPlan.paymentId,
+      paymentId: existingPayment?.id || null,
       mandateId: existingPlan.mandateId,
       status: existingPlan.status,
       nextAction: 'complete_payment',
-      paymentUrl: `/app/payment/${existingPlan.paymentId}`,
-      providerOrderId: existingPayment?.providerOrderId || existingPayment?.providerPaymentId || null,
+      paymentUrl: `/app/payment/${existingPayment?.id || ''}`,
+      providerOrderId: existingPayment?.providerPaymentId || null,
       providerKeyId: config.razorpayKeyId || null,
       providerName: existingPayment?.provider || getPaymentProvider(config).name,
       amount: existingPayment?.amount || existingPlan.amount,
@@ -76,7 +82,7 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
   }
 
   const minSipAmount = toNumber(fund.minSip, 500) || 500;
-  const minDuration = toNumber(fund.minDurationMonths, 12) || 12;
+  const minDuration = toNumber((fund.metadata as any)?.minDurationMonths, 12) || 12;
 
   if (amount < minSipAmount) {
     throw new HttpError(400, 'BELOW_MINIMUM_AMOUNT', `Minimum SIP amount is ₹${minSipAmount}.`);
@@ -88,56 +94,12 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
     throw new HttpError(400, 'INVALID_DEBIT_DAY', 'Debit day must be between 1 and 28.');
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
   const planId = randomUUID();
   const transactionId = randomUUID();
   const paymentId = randomUUID();
   const mandateId = randomUUID();
-
-  const plan = {
-    id: planId,
-    userId: actor.userId,
-    productId,
-    type: 'sip',
-    amount,
-    durationMonths,
-    debitDay,
-    status: 'submitted',
-    transactionId,
-    paymentId,
-    mandateId,
-    consentTextVersion,
-    consentedAt,
-    disclosureVersionSnapshot: fund.disclosureVersion || null,
-    disclosureTextSnapshot: fund.disclosureText || null,
-    disclosureTextHash: hashDisclosureText(fund.disclosureText),
-    startDate: null,
-    nextDueDate: null,
-    completedAt: null,
-    cancelledAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const transaction = {
-    id: transactionId,
-    userId: actor.userId,
-    productId,
-    investmentPlanId: planId,
-    type: 'sip_installment',
-    amount,
-    date: now,
-    nav: null,
-    units: null,
-    status: 'submitted',
-    idempotencyKey: randomUUID(),
-    requestedAt: now,
-    paymentConfirmedAt: null,
-    allottedAt: null,
-    cancelledAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
 
   const provider = getPaymentProvider(config);
   const order = await provider.createPaymentOrder({
@@ -155,91 +117,130 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
         notes: { planId, userId: actor.userId },
       });
 
-  const payment = {
-    id: paymentId,
-    userId: actor.userId,
-    transactionId,
-    provider: provider.name,
-    providerOrderId: order.id,
-    providerPaymentId: order.id,
-    amount,
-    currency: 'INR',
-    mode: 'upi_autopay',
-    status: 'created',
-    failureReason: null,
-    lastFailureReason: null,
-    attemptCount: 0,
-    idempotencyKey: requestContext.idempotencyKey
-      ? `sip_${actor.userId}_${requestContext.idempotencyKey}_payment`
-      : `sip_${planId}_payment`,
-    createdAt: now,
-    confirmedAt: null,
-    reconciledAt: null,
-    updatedAt: now,
-  };
+  const idempotencyKeyPayment = requestContext.idempotencyKey
+    ? `sip_${actor.userId}_${requestContext.idempotencyKey}_payment`
+    : `sip_${planId}_payment`;
 
-  const mandate = {
-    id: mandateId,
-    userId: actor.userId,
-    investmentPlanId: planId,
-    provider: provider.name,
-    providerMandateId: mandateToken.id || null,
-    maxAmount: amount,
-    frequency: 'monthly',
-    debitDay,
-    status: mandateToken.status === 'pending_user_auth' ? 'pending_user_auth' : 'setup_required',
-    idempotencyKey: randomUUID(),
-    validFrom: null,
-    validTo: null,
-    lastDebitAt: null,
-    nextDebitAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  // Finalize plan state before atomic persistence
-  plan.status = 'pending_first_payment';
-  plan.updatedAt = now;
-
-  const existingPayment = store.payments.find((p) => p.idempotencyKey === payment.idempotencyKey);
-  if (existingPayment) {
-    const existingPlan = (store.investmentPlans || []).find((p) => p.paymentId === existingPayment.id);
-    const existingMandate = (store.mandates || []).find((m) => m.id === (existingPlan?.mandateId));
+  // Check idempotency on payment
+  const existingPaymentByKey = await prisma.payment.findFirst({
+    where: { idempotencyKey: idempotencyKeyPayment },
+  });
+  if (existingPaymentByKey) {
+    const existingPlanByPayment = await prisma.investmentPlan.findFirst({
+      where: { mandateId: { not: undefined } },
+    });
     return {
-      planId: existingPlan?.id || null,
-      paymentId: existingPayment.id,
-      mandateId: existingMandate?.id || null,
-      status: existingPlan?.status || 'pending_first_payment',
+      planId: existingPlanByPayment?.id || null,
+      paymentId: existingPaymentByKey.id,
+      mandateId: existingPlanByPayment?.mandateId || null,
+      status: existingPlanByPayment?.status || 'pending_first_payment',
       nextAction: 'complete_payment',
-      paymentUrl: `/app/payment/${existingPayment.id}`,
-      providerOrderId: existingPayment.providerOrderId || existingPayment.providerPaymentId || null,
+      paymentUrl: `/app/payment/${existingPaymentByKey.id}`,
+      providerOrderId: existingPaymentByKey.providerPaymentId || null,
       providerKeyId: config.razorpayKeyId || null,
-      providerName: existingPayment.provider || provider.name,
-      amount: existingPayment.amount,
-      currency: existingPayment.currency,
+      providerName: existingPaymentByKey.provider || provider.name,
+      amount: existingPaymentByKey.amount,
+      currency: existingPaymentByKey.currency,
     };
   }
 
-  const auditLog = {
-    id: randomUUID(),
-    adminId: actor?.userId || null,
-    action: 'sip.create',
-    entityType: 'investment_plan',
-    entityId: planId,
-    before: null,
-    after: plan,
-    reason: 'Client created SIP investment plan.',
-    ipAddress: requestContext.ipAddress || null,
-    userAgent: requestContext.userAgent || null,
-    createdAt: now,
-  };
+  const mandateStatus = mandateToken.status === 'pending_user_auth' ? 'pending_user_auth' : 'setup_required';
 
-  await atomicCompositeWrite(config, [
-    { collection: 'investmentPlans', record: plan },
-    { collection: 'transactions', record: transaction },
-    { collection: 'payments', record: payment },
-    { collection: 'mandates', record: mandate },
-    { collection: 'adminAuditLogs', record: auditLog },
+  // Atomic write: investmentPlan + transaction + payment + mandate + auditLog
+  await prisma.$transaction([
+    prisma.investmentPlan.create({
+      data: {
+        id: planId,
+        userId: actor.userId,
+        productId,
+        type: 'sip',
+        amount,
+        durationMonths,
+        debitDay,
+        status: 'pending_first_payment',
+        mandateId,
+        startDate: null,
+        nextDueDate: null,
+        completedAt: null,
+        cancelledAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    }),
+    prisma.transaction.create({
+      data: {
+        id: transactionId,
+        userId: actor.userId,
+        productId,
+        investmentPlanId: planId,
+        type: 'sip_installment',
+        amount,
+        nav: null,
+        units: null,
+        status: 'submitted',
+        idempotencyKey: randomUUID(),
+        requestedAt: now,
+        paymentConfirmedAt: null,
+        allottedAt: null,
+        cancelledAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    }),
+    prisma.payment.create({
+      data: {
+        id: paymentId,
+        userId: actor.userId,
+        transactionId,
+        provider: provider.name,
+        providerPaymentId: order.id,
+        amount,
+        currency: 'INR',
+        mode: 'upi_autopay',
+        status: 'created',
+        failureReason: null,
+        idempotencyKey: idempotencyKeyPayment,
+        createdAt: now,
+        confirmedAt: null,
+        reconciledAt: null,
+        updatedAt: now,
+      },
+    }),
+    prisma.mandate.create({
+      data: {
+        id: mandateId,
+        userId: actor.userId,
+        investmentPlanId: planId,
+        provider: provider.name,
+        providerMandateId: mandateToken.id || null,
+        maxAmount: amount,
+        frequency: 'monthly',
+        debitDay,
+        status: mandateStatus as any,
+        idempotencyKey: randomUUID(),
+        validFrom: null,
+        validTo: null,
+        lastDebitAt: null,
+        nextDebitAt: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    }),
+    prisma.adminAuditLog.create({
+      data: {
+        id: randomUUID(),
+        adminId: actor?.userId || null,
+        action: 'sip.create',
+        entityType: 'investment_plan',
+        entityId: planId,
+        beforeJson: null,
+        afterJson: { planId, status: 'pending_first_payment', amount, productId } as any,
+        reason: 'Client created SIP investment plan.',
+        ipAddress: (requestContext as any).ipAddress || null,
+        userAgent: (requestContext as any).userAgent || null,
+        createdAt: now,
+      },
+    }),
   ]);
 
   return {
@@ -252,8 +253,8 @@ async function _createSip(config: AppConfig, actor: Actor, body: SipBody, reques
     providerOrderId: order.id,
     providerKeyId: config.razorpayKeyId || null,
     providerName: provider.name,
-    amount: payment.amount,
-    currency: payment.currency,
+    amount,
+    currency: 'INR',
   };
 }
 

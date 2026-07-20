@@ -1,11 +1,11 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { validateReceipt } from '../contracts/receipt.js';
 
 export async function emitReceipt(config: AppConfig, receiptData: any) {
-  const now = new Date().toISOString();
+  const now = new Date();
 
   const receipt = {
     id: randomUUID(),
@@ -20,11 +20,11 @@ export async function emitReceipt(config: AppConfig, receiptData: any) {
     afterState: receiptData.afterState,
     amount: receiptData.amount ?? null,
     currency: receiptData.currency ?? null,
-    asOfTimestamp: receiptData.asOfTimestamp || now,
+    asOfTimestamp: receiptData.asOfTimestamp || now.toISOString(),
     source: receiptData.source || 'derived',
     consentOrDisclosureSnapshotRef: receiptData.consentOrDisclosureSnapshotRef ?? null,
     taxRegimeVersion: receiptData.taxRegimeVersion ?? null,
-    createdAt: now,
+    createdAt: now.toISOString(),
   };
 
   const errors = validateReceipt(receipt);
@@ -32,37 +32,51 @@ export async function emitReceipt(config: AppConfig, receiptData: any) {
     throw new HttpError(400, 'INVALID_RECEIPT', `Receipt validation failed: ${errors.join('; ')}`);
   }
 
-  await updateJsonStore(config, (store) => {
-    if (!Array.isArray(store.receipts)) store.receipts = [];
-    store.receipts.push(receipt);
-    return receipt;
+  await prisma.receipt.create({
+    data: {
+      id: receipt.id,
+      kind: receipt.kind,
+      actor: receipt.actor as any,
+      subjectUserId: receipt.subjectUserId,
+      entityType: receipt.entityType,
+      entityId: receipt.entityId,
+      beforeState: receipt.beforeState as any,
+      afterState: receipt.afterState as any,
+      amount: receipt.amount,
+      currency: receipt.currency,
+      asOfTimestamp: receipt.asOfTimestamp ? new Date(receipt.asOfTimestamp) : null,
+      source: receipt.source,
+      consentOrDisclosureSnapshotRef: receipt.consentOrDisclosureSnapshotRef,
+      taxRegimeVersion: receipt.taxRegimeVersion,
+      createdAt: now,
+    },
   });
 
   return receipt;
 }
 
+
 export async function getReceipts(config: AppConfig, filters: any = {}) {
-  const store = await readJsonStore(config);
-  let receipts = Array.isArray(store.receipts) ? [...store.receipts] : [];
+  const where: any = {};
 
   if (filters.subjectUserId) {
-    receipts = receipts.filter((r) => r.subjectUserId === filters.subjectUserId);
+    where.subjectUserId = filters.subjectUserId;
   }
   if (filters.entityType) {
-    receipts = receipts.filter((r) => r.entityType === filters.entityType);
+    where.entityType = filters.entityType;
   }
   if (filters.entityId) {
-    receipts = receipts.filter((r) => r.entityId === filters.entityId);
+    where.entityId = filters.entityId;
   }
   if (filters.kind) {
-    receipts = receipts.filter((r) => r.kind === filters.kind);
+    where.kind = filters.kind;
   }
 
+  const receipts = await prisma.receipt.findMany({ where });
   return receipts;
 }
 
 export async function getReceipt(config: AppConfig, receiptId: any) {
-  const store = await readJsonStore(config);
-  const receipts = Array.isArray(store.receipts) ? store.receipts : [];
-  return receipts.find((r) => r.id === receiptId) || null;
+  const receipt = await prisma.receipt.findFirst({ where: { id: receiptId } });
+  return receipt || null;
 }

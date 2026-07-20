@@ -1,7 +1,7 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 const VALID_CATEGORIES = ['general', 'technical', 'billing', 'kyc', 'sip', 'withdrawal', 'mandate'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -97,49 +97,55 @@ export async function createTicket(config: AppConfig, actor: Actor, body: Record
     throw new HttpError(400, 'INVALID_PRIORITY', `Priority must be one of: ${VALID_PRIORITIES.join(', ')}.`);
   }
 
-  const store = await readJsonStore(config);
-  const user = store.users.find((u) => u.id === actor?.userId);
+  const user = await prisma.user.findFirst({ where: { id: actor?.userId } });
   if (!user) {
     throw new HttpError(404, 'USER_NOT_FOUND', 'User not found.');
   }
 
-  const now = new Date().toISOString();
-  const ticket = {
-    id: randomUUID(),
-    userId: actor.userId,
-    title: resolvedTitle.trim(),
-    description: resolvedDescription.trim(),
-    category,
-    priority,
-    status: 'open',
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  await updateJsonStore(config, (s) => {
-    if (!Array.isArray(s.supportTickets)) s.supportTickets = [];
-    s.supportTickets.push(ticket);
-    return ticket;
+  const now = new Date();
+  const ticket = await prisma.supportTicket.create({
+    data: {
+      id: randomUUID(),
+      userId: actor.userId,
+      subject: resolvedTitle.trim(),
+      category,
+      priority,
+      status: 'open',
+      metadata: { description: resolvedDescription.trim() },
+      createdAt: now,
+      updatedAt: now,
+    },
   });
 
-  return ticket;
+  return {
+    id: ticket.id,
+    userId: ticket.userId,
+    title: ticket.subject,
+    description: resolvedDescription.trim(),
+    category: ticket.category,
+    priority: ticket.priority,
+    status: ticket.status,
+    createdAt: ticket.createdAt.toISOString(),
+    updatedAt: ticket.updatedAt.toISOString(),
+  };
 }
 
 export async function listFaqs(config: AppConfig) {
-  const store = await readJsonStore(config);
-  const publishedFaqs = (store.faqs || [])
-    .filter((f) => f.status === 'published')
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((f) => ({
+  const publishedFaqs = await prisma.faq.findMany({
+    where: { active: true },
+    orderBy: { displayOrder: 'asc' },
+  });
+
+  if (publishedFaqs.length > 0) {
+    const items = publishedFaqs.map((f) => ({
       id: f.id,
       question: f.question,
       answer: f.answer,
       category: f.category,
     }));
-  if (publishedFaqs.length > 0) {
     return {
-      items: publishedFaqs,
-      count: publishedFaqs.length,
+      items,
+      count: items.length,
       source: 'json',
     };
   }

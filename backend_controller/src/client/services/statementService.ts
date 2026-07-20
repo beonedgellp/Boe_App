@@ -1,7 +1,6 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
-import type { TransactionRow } from '#types/models.js';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 function getMonthKey(dateStr: any) {
   return dateStr.slice(0, 7); // YYYY-MM
@@ -22,8 +21,8 @@ function buildStatement(userId: string, monthKey: any, transactions: any) {
   const periodStart = `${monthKey}-01`;
   const periodEnd = new Date(year, month, 0).toISOString().slice(0, 10);
 
-  const totalAmount = transactions.reduce((sum: any, t: any) => sum + (t.amount || 0), 0);
-  const totalUnits = transactions.reduce((sum: any, t: any) => sum + (t.units || 0), 0);
+  const totalAmount = transactions.reduce((sum: any, t: any) => sum + (Number(t.amount) || 0), 0);
+  const totalUnits = transactions.reduce((sum: any, t: any) => sum + (Number(t.units) || 0), 0);
 
   return {
     id: buildStatementId(userId, monthKey),
@@ -34,14 +33,14 @@ function buildStatement(userId: string, monthKey: any, transactions: any) {
     generatedAt: new Date().toISOString(),
     lineItems: transactions.map((t: any) => ({
       transactionId: t.id,
-      date: t.date,
+      date: t.requestedAt || t.createdAt,
       type: t.type,
       fundName: t.fundName,
-      amount: t.amount,
-      units: t.units,
-      nav: t.nav,
+      amount: Number(t.amount),
+      units: t.units ? Number(t.units) : null,
+      nav: t.nav ? Number(t.nav) : null,
       status: t.status,
-      reference: t.reference,
+      reference: t.idempotencyKey,
     })),
     summary: {
       totalTransactions: transactions.length,
@@ -53,14 +52,16 @@ function buildStatement(userId: string, monthKey: any, transactions: any) {
 }
 
 export async function listStatements(config: AppConfig, actor: Actor) {
-  const store = await readJsonStore(config);
-  const userTxns = (store.transactions || []).filter((t) => t.userId === actor?.userId);
+  const userTxns = await prisma.transaction.findMany({
+    where: { userId: actor?.userId },
+  });
 
   const byMonth: Record<string, any[]> = {};
   for (const t of userTxns) {
-    const key = getMonthKey(t.date);
+    const dateStr = (t.requestedAt || t.createdAt).toISOString();
+    const key = getMonthKey(dateStr);
     if (!byMonth[key]) byMonth[key] = [];
-    byMonth[key].push(t);
+    byMonth[key].push({ ...t, date: dateStr });
   }
 
   const items = Object.entries(byMonth)
@@ -75,10 +76,14 @@ export async function getStatement(config: AppConfig, actor: Actor, statementId:
   if (!parsed) throw new HttpError(404, 'STATEMENT_NOT_FOUND', 'Statement not found.');
   if (parsed.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Statement does not belong to you.');
 
-  const store = await readJsonStore(config);
-  const transactions = (store.transactions || []).filter(
-    (t) => t.userId === actor?.userId && getMonthKey(t.date) === parsed.monthKey,
-  );
+  const allTxns = await prisma.transaction.findMany({
+    where: { userId: actor?.userId },
+  });
+
+  const transactions = allTxns.filter((t) => {
+    const dateStr = (t.requestedAt || t.createdAt).toISOString();
+    return getMonthKey(dateStr) === parsed.monthKey;
+  }).map((t) => ({ ...t, date: (t.requestedAt || t.createdAt).toISOString() }));
 
   if (transactions.length === 0) {
     throw new HttpError(404, 'STATEMENT_NOT_FOUND', 'Statement not found.');

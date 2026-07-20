@@ -1,6 +1,6 @@
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 // Disclosure content service — SEBI/AMFI mandated blocks
-import { readJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 
 const RISKOMETER_CONFIG = {
   low: {
@@ -25,16 +25,19 @@ const RISKOMETER_CONFIG = {
   },
 };
 
+
 export async function getDisclosures(config: AppConfig & Record<string, any>) {
   const riskLevel = config?.riskLevel || 'moderate';
   const riskometer = RISKOMETER_CONFIG[riskLevel as keyof typeof RISKOMETER_CONFIG] || RISKOMETER_CONFIG.moderate;
 
-  let publishedDisclosure = null;
-  const store = await readJsonStore(config);
-  if (store.disclosures) {
-    publishedDisclosure = store.disclosures
-      .filter((d) => d.status === 'published')
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())[0];
+  let publishedDisclosure: any = null;
+  const disclosures = await prisma.disclosure.findMany({
+    where: { publishedAt: { not: null } },
+    orderBy: { publishedAt: 'desc' },
+    take: 1,
+  });
+  if (disclosures.length > 0) {
+    publishedDisclosure = disclosures[0];
   }
 
   return {
@@ -44,27 +47,24 @@ export async function getDisclosures(config: AppConfig & Record<string, any>) {
       label: riskometer.label,
       description: riskometer.description,
     },
-    sebiDisclosure: publishedDisclosure?.content
+    sebiDisclosure: (publishedDisclosure?.payload as any)?.content || publishedDisclosure?.body
       || 'Mutual fund investments are subject to market risks. Read all scheme-related documents carefully before investing. Past performance is not indicative of future returns.',
     expenseRatio: config?.expenseRatio || '1.25%',
     exitLoad: config?.exitLoad || '1% if redeemed within 12 months',
     schemeCategory: config?.schemeCategory || 'Equity - Large Cap',
     investorCharterUrl: '/investor-charter',
     grievanceUrl: '/grievance',
-    disclosureVersion: publishedDisclosure?.version || '1.0',
-    disclosurePublishedAt: publishedDisclosure?.publishedAt || null,
+    disclosureVersion: (publishedDisclosure?.payload as any)?.version || '1.0',
+    disclosurePublishedAt: publishedDisclosure?.publishedAt?.toISOString() || null,
   };
 }
 
-export async function getInvestorCharter(config: AppConfig & Record<string, any>) {
-  let page = null;
-  const store = await readJsonStore(config);
-  if (store.staticPages) {
-    page = store.staticPages.find((p) => p.slug === 'investor-charter' && p.status === 'published');
-  }
 
-  if (page?.content) {
-    try { return JSON.parse(page.content); } catch { /* fall through */ }
+export async function getInvestorCharter(config: AppConfig & Record<string, any>) {
+  const page = await prisma.staticPage.findFirst({ where: { slug: 'investor-charter' } });
+
+  if (page?.body) {
+    try { return JSON.parse(page.body); } catch { /* fall through */ }
   }
 
   return {
@@ -120,15 +120,12 @@ export async function getInvestorCharter(config: AppConfig & Record<string, any>
   };
 }
 
-export async function getGrievanceContent(config: AppConfig & Record<string, any>) {
-  let page = null;
-  const store = await readJsonStore(config);
-  if (store.staticPages) {
-    page = store.staticPages.find((p) => p.slug === 'grievance' && p.status === 'published');
-  }
 
-  if (page?.content) {
-    try { return JSON.parse(page.content); } catch { /* fall through */ }
+export async function getGrievanceContent(config: AppConfig & Record<string, any>) {
+  const page = await prisma.staticPage.findFirst({ where: { slug: 'grievance' } });
+
+  if (page?.body) {
+    try { return JSON.parse(page.body); } catch { /* fall through */ }
   }
 
   return {

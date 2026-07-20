@@ -1,7 +1,7 @@
 import type { TimelineEventInput } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
-import { readJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { isValidMoneyState } from '../contracts/moneyState.js';
 import { getCopy, getLatestVersion } from './copyRegistry.js';
 
@@ -9,9 +9,9 @@ function displayName(user: any) {
   return [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || undefined;
 }
 
-function buildUserMap(store: Record<string, any>) {
+function buildUserMap(users: any[]) {
   const map = new Map();
-  for (const user of store.users || []) {
+  for (const user of users) {
     map.set(user.id, user);
   }
   return map;
@@ -25,6 +25,7 @@ function actorFor(userId: string, userMap: any, fallbackRole = 'client') {
     name: displayName(user),
   };
 }
+
 
 function makeEvent({ entity, kind, category, actor, entityType, description, source, timestamp, beforeState, afterState, metadata }: TimelineEventInput) {
   return {
@@ -51,13 +52,13 @@ function sanitizeMetadata(entity: any, keys: any) {
   return meta;
 }
 
-function receiptsToEvents(receipts: any, userMap: any) {
+function receiptsToEvents(receipts: any[], userMap: any) {
   return receipts.map((r: any) =>
     makeEvent({
       entity: r,
       kind: 'receipt',
       category: 'money',
-      actor: actorFor(r.userId, userMap),
+      actor: actorFor(r.subjectUserId || r.userId, userMap),
       entityType: 'receipt',
       description: r.description || `Receipt ${r.status || 'generated'}`,
       source: r.source || 'derived',
@@ -66,7 +67,7 @@ function receiptsToEvents(receipts: any, userMap: any) {
   );
 }
 
-function auditLogsToEvents(logs: any, userMap: any) {
+function auditLogsToEvents(logs: any[], userMap: any) {
   return logs.map((log: any) =>
     makeEvent({
       entity: log,
@@ -84,7 +85,8 @@ function auditLogsToEvents(logs: any, userMap: any) {
   );
 }
 
-function investmentPlansToEvents(plans: any, userMap: any) {
+
+function investmentPlansToEvents(plans: any[], userMap: any) {
   return plans.map((p: any) =>
     makeEvent({
       entity: p,
@@ -99,7 +101,7 @@ function investmentPlansToEvents(plans: any, userMap: any) {
   );
 }
 
-function paymentsToEvents(payments: any, userMap: any) {
+function paymentsToEvents(payments: any[], userMap: any) {
   return payments.map((p: any) =>
     makeEvent({
       entity: p,
@@ -114,7 +116,7 @@ function paymentsToEvents(payments: any, userMap: any) {
   );
 }
 
-function mandatesToEvents(mandates: any, userMap: any) {
+function mandatesToEvents(mandates: any[], userMap: any) {
   return mandates.map((m: any) =>
     makeEvent({
       entity: m,
@@ -129,7 +131,7 @@ function mandatesToEvents(mandates: any, userMap: any) {
   );
 }
 
-function transactionsToEvents(transactions: any, userMap: any) {
+function transactionsToEvents(transactions: any[], userMap: any) {
   return transactions.map((t: any) =>
     makeEvent({
       entity: t,
@@ -144,7 +146,8 @@ function transactionsToEvents(transactions: any, userMap: any) {
   );
 }
 
-function sipControlRequestsToEvents(requests: any, userMap: any) {
+
+function sipControlRequestsToEvents(requests: any[], userMap: any) {
   return requests.map((r: any) =>
     makeEvent({
       entity: r,
@@ -159,7 +162,7 @@ function sipControlRequestsToEvents(requests: any, userMap: any) {
   );
 }
 
-function redemptionRequestsToEvents(requests: any, userMap: any) {
+function redemptionRequestsToEvents(requests: any[], userMap: any) {
   return requests.map((r: any) =>
     makeEvent({
       entity: r,
@@ -174,7 +177,7 @@ function redemptionRequestsToEvents(requests: any, userMap: any) {
   );
 }
 
-function supportTicketsToEvents(tickets: any, userMap: any) {
+function supportTicketsToEvents(tickets: any[], userMap: any) {
   return tickets.map((t: any) =>
     makeEvent({
       entity: t,
@@ -189,36 +192,41 @@ function supportTicketsToEvents(tickets: any, userMap: any) {
   );
 }
 
-async function readStore(config: AppConfig) {
-  return readJsonStore(config);
-}
 
 export async function buildTimelineForUser(config: AppConfig, userId: string, options: any = {}) {
-  const store = await readStore(config);
-  const userMap = buildUserMap(store);
+  const [users, receipts, auditLogs, plans, payments, mandates, transactions, sipRequests, redemptions, tickets] = await Promise.all([
+    prisma.user.findMany(),
+    prisma.receipt.findMany({ where: { subjectUserId: userId } }),
+    prisma.adminAuditLog.findMany(),
+    prisma.investmentPlan.findMany({ where: { userId } }),
+    prisma.payment.findMany({ where: { userId } }),
+    prisma.mandate.findMany({ where: { userId } }),
+    prisma.transaction.findMany({ where: { userId } }),
+    prisma.sipControlRequest.findMany({ where: { userId } }),
+    prisma.redemptionRequest.findMany({ where: { userId } }),
+    prisma.supportTicket.findMany({ where: { userId } }),
+  ]);
 
-  const filterByUser = (item: any) => item.userId === userId;
+  const userMap = buildUserMap(users);
 
-  const receipts = (store.receipts || []).filter(filterByUser);
-
-  const userPaymentIds = new Set((store.payments || []).filter(filterByUser).map((p) => p.id));
-  const userMandateIds = new Set((store.mandates || []).filter(filterByUser).map((m) => m.id));
-  const userPlanIds = new Set((store.investmentPlans || []).filter(filterByUser).map((p) => p.id));
-  const userTxIds = new Set((store.transactions || []).filter(filterByUser).map((t) => t.id));
-  const userSipIds = new Set((store.sipControlRequests || []).filter(filterByUser).map((r) => r.id));
-  const userRedemptionIds = new Set((store.redemptionRequests || []).filter(filterByUser).map((r) => r.id));
+  const userPaymentIds = new Set(payments.map((p) => p.id));
+  const userMandateIds = new Set(mandates.map((m) => m.id));
+  const userPlanIds = new Set(plans.map((p) => p.id));
+  const userTxIds = new Set(transactions.map((t) => t.id));
+  const userSipIds = new Set(sipRequests.map((r) => r.id));
+  const userRedemptionIds = new Set(redemptions.map((r) => r.id));
   const userReceiptIds = new Set(receipts.map((r) => r.id));
 
-  const filteredAuditLogs = (store.adminAuditLogs || []).filter((log) => {
+  const filteredAuditLogs = auditLogs.filter((log) => {
     if (log.entityType === 'users' && log.entityId === userId) return true;
     switch (log.entityType) {
-      case 'payment': return userPaymentIds.has(log.entityId);
-      case 'mandate': return userMandateIds.has(log.entityId);
-      case 'investment_plan': return userPlanIds.has(log.entityId);
-      case 'transaction': return userTxIds.has(log.entityId);
-      case 'sip_control_request': return userSipIds.has(log.entityId);
-      case 'redemption_request': return userRedemptionIds.has(log.entityId);
-      case 'receipt': return userReceiptIds.has(log.entityId);
+      case 'payment': return userPaymentIds.has(log.entityId!);
+      case 'mandate': return userMandateIds.has(log.entityId!);
+      case 'investment_plan': return userPlanIds.has(log.entityId!);
+      case 'transaction': return userTxIds.has(log.entityId!);
+      case 'sip_control_request': return userSipIds.has(log.entityId!);
+      case 'redemption_request': return userRedemptionIds.has(log.entityId!);
+      case 'receipt': return userReceiptIds.has(log.entityId!);
       default: return false;
     }
   });
@@ -226,13 +234,13 @@ export async function buildTimelineForUser(config: AppConfig, userId: string, op
   const events = [
     ...receiptsToEvents(receipts, userMap),
     ...auditLogsToEvents(filteredAuditLogs, userMap),
-    ...investmentPlansToEvents((store.investmentPlans || []).filter(filterByUser), userMap),
-    ...paymentsToEvents((store.payments || []).filter(filterByUser), userMap),
-    ...mandatesToEvents((store.mandates || []).filter(filterByUser), userMap),
-    ...transactionsToEvents((store.transactions || []).filter(filterByUser), userMap),
-    ...sipControlRequestsToEvents((store.sipControlRequests || []).filter(filterByUser), userMap),
-    ...redemptionRequestsToEvents((store.redemptionRequests || []).filter(filterByUser), userMap),
-    ...supportTicketsToEvents((store.supportTickets || []).filter(filterByUser), userMap),
+    ...investmentPlansToEvents(plans, userMap),
+    ...paymentsToEvents(payments, userMap),
+    ...mandatesToEvents(mandates, userMap),
+    ...transactionsToEvents(transactions, userMap),
+    ...sipControlRequestsToEvents(sipRequests, userMap),
+    ...redemptionRequestsToEvents(redemptions, userMap),
+    ...supportTicketsToEvents(tickets, userMap),
   ];
 
   events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -245,20 +253,33 @@ export async function buildTimelineForUser(config: AppConfig, userId: string, op
   return { events: paginated, total };
 }
 
+
 export async function buildTimelineForEntity(config: AppConfig, entityType: any, entityId: any, options: any = {}) {
-  const store = await readStore(config);
-  const userMap = buildUserMap(store);
+  const [users, receipts, auditLogs, plans, payments, mandates, transactions, sipRequests, redemptions, tickets] = await Promise.all([
+    prisma.user.findMany(),
+    prisma.receipt.findMany(),
+    prisma.adminAuditLog.findMany(),
+    prisma.investmentPlan.findMany(),
+    prisma.payment.findMany(),
+    prisma.mandate.findMany(),
+    prisma.transaction.findMany(),
+    prisma.sipControlRequest.findMany(),
+    prisma.redemptionRequest.findMany(),
+    prisma.supportTicket.findMany(),
+  ]);
+
+  const userMap = buildUserMap(users);
 
   const allEvents = [
-    ...receiptsToEvents(store.receipts || [], userMap),
-    ...auditLogsToEvents(store.adminAuditLogs || [], userMap),
-    ...investmentPlansToEvents(store.investmentPlans || [], userMap),
-    ...paymentsToEvents(store.payments || [], userMap),
-    ...mandatesToEvents(store.mandates || [], userMap),
-    ...transactionsToEvents(store.transactions || [], userMap),
-    ...sipControlRequestsToEvents(store.sipControlRequests || [], userMap),
-    ...redemptionRequestsToEvents(store.redemptionRequests || [], userMap),
-    ...supportTicketsToEvents(store.supportTickets || [], userMap),
+    ...receiptsToEvents(receipts, userMap),
+    ...auditLogsToEvents(auditLogs, userMap),
+    ...investmentPlansToEvents(plans, userMap),
+    ...paymentsToEvents(payments, userMap),
+    ...mandatesToEvents(mandates, userMap),
+    ...transactionsToEvents(transactions, userMap),
+    ...sipControlRequestsToEvents(sipRequests, userMap),
+    ...redemptionRequestsToEvents(redemptions, userMap),
+    ...supportTicketsToEvents(tickets, userMap),
   ];
 
   const filtered = allEvents.filter((e) => e.entityType === entityType && e.entityId === entityId);
@@ -271,6 +292,7 @@ export async function buildTimelineForEntity(config: AppConfig, entityType: any,
 
   return { events: paginated, total };
 }
+
 
 const STATUS_TO_MONEY_STATE = {
   payment: {
@@ -317,35 +339,35 @@ const STATUS_TO_MONEY_STATE = {
   },
 };
 
-function deriveMoneyState(store: Record<string, any>, userId: string) {
-  const candidates = [];
 
-  for (const p of store.payments || []) {
-    if (p.userId !== userId) continue;
+async function deriveMoneyState(userId: string) {
+  const candidates: { state: string; ts: string }[] = [];
+
+  const payments = await prisma.payment.findMany({ where: { userId } });
+  for (const p of payments) {
     const state = (STATUS_TO_MONEY_STATE.payment as Record<string, string>)[p.status];
-    if (state) candidates.push({ state, ts: p.updatedAt || p.createdAt });
+    if (state) candidates.push({ state, ts: (p.updatedAt || p.createdAt).toISOString() });
   }
 
-  for (const m of store.mandates || []) {
-    if (m.userId !== userId) continue;
+  const mandates = await prisma.mandate.findMany({ where: { userId } });
+  for (const m of mandates) {
     const state = (STATUS_TO_MONEY_STATE.mandate as Record<string, string>)[m.status];
-    if (state) candidates.push({ state, ts: m.updatedAt || m.createdAt });
+    if (state) candidates.push({ state, ts: (m.updatedAt || m.createdAt).toISOString() });
   }
 
-  for (const p of store.investmentPlans || []) {
-    if (p.userId !== userId) continue;
+  const plans = await prisma.investmentPlan.findMany({ where: { userId } });
+  for (const p of plans) {
     const state = (STATUS_TO_MONEY_STATE.investment_plan as Record<string, string>)[p.status];
-    if (state) candidates.push({ state, ts: p.updatedAt || p.createdAt });
+    if (state) candidates.push({ state, ts: (p.updatedAt || p.createdAt).toISOString() });
   }
 
-  for (const r of store.redemptionRequests || []) {
-    if (r.userId !== userId) continue;
+  const redemptions = await prisma.redemptionRequest.findMany({ where: { userId } });
+  for (const r of redemptions) {
     const state = (STATUS_TO_MONEY_STATE.redemption_request as Record<string, string>)[r.status];
-    if (state) candidates.push({ state, ts: r.updatedAt || r.createdAt });
+    if (state) candidates.push({ state, ts: (r.updatedAt || r.createdAt).toISOString() });
   }
 
   if (candidates.length === 0) return null;
-
   candidates.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
   return candidates[0].state;
 }
@@ -356,7 +378,6 @@ export async function getNextStepText(config: AppConfig, userId: string, explici
     return getCopy(version, explicitState);
   }
 
-  const store = await readJsonStore(config);
-  const derived = deriveMoneyState(store, userId);
+  const derived = await deriveMoneyState(userId);
   return getCopy(version, derived || '');
 }

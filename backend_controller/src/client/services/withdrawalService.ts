@@ -1,9 +1,8 @@
 import type { RequestContext } from '#types/services.js';
 import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
-import type { HoldingItem } from '#types/models.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
-import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
+import { prisma } from '#db/prisma.js';
 import { TAX_REGIMES, getTaxRegimeForDate } from '#shared/config/taxConfig.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
@@ -14,12 +13,12 @@ function toNumber(value: any, fallback = 0) {
 }
 
 function getExitLoadRate(fund: any, holdingPeriodMonths: any) {
-  const schedule = Array.isArray(fund.exitLoadSchedule) ? fund.exitLoadSchedule : [];
+  const metadata = fund.metadata || {};
+  const schedule = Array.isArray(metadata.exitLoadSchedule) ? metadata.exitLoadSchedule : [];
   if (schedule.length === 0) {
-    // Default: 1% if redeemed within 12 months
     return holdingPeriodMonths < 12 ? 0.01 : 0;
   }
-  const sorted = [...schedule].sort((a, b) => b.months - a.months);
+  const sorted = [...schedule].sort((a: any, b: any) => b.months - a.months);
   for (const entry of sorted) {
     if (holdingPeriodMonths < entry.months) {
       return toNumber(entry.rate, 0);
@@ -37,27 +36,38 @@ function monthsBetween(startIso: any, endIso: any) {
   return Math.max(0, yearDiff * 12 + monthDiff);
 }
 
-function findHolding(store: any, userId: string, holdingId: string) {
-  const portfolio = store[`portfolio_${userId}`];
-  if (!portfolio || !Array.isArray(portfolio.holdings)) return null;
-  return portfolio.holdings.find((h: HoldingItem) => (h.id || h.fundId) === holdingId) || null;
+
+async function findHolding(userId: string, holdingId: string) {
+  const snapshot = await prisma.portfolioSnapshot.findFirst({
+    where: { userId },
+    orderBy: { asOfDate: 'desc' },
+  });
+  if (!snapshot) return null;
+  const holdings = (snapshot.payload as any)?.holdings;
+  if (!Array.isArray(holdings)) return null;
+  return holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
 }
 
-function findHoldingAllottedAt(store: any, userId: string, fundId: string) {
-  const portfolio = store[`portfolio_${userId}`];
-  if (portfolio?.holdings) {
-    const h = portfolio.holdings.find((h: HoldingItem) => h.fundId === fundId || h.id === fundId);
-    if (h?.allottedAt) return h.allottedAt;
-    if (h?.createdAt) return h.createdAt;
+async function findHoldingAllottedAt(userId: string, fundId: string) {
+  const snapshot = await prisma.portfolioSnapshot.findFirst({
+    where: { userId },
+    orderBy: { asOfDate: 'desc' },
+  });
+  if (snapshot) {
+    const holdings = (snapshot.payload as any)?.holdings;
+    if (Array.isArray(holdings)) {
+      const h = holdings.find((h: any) => h.fundId === fundId || h.id === fundId);
+      if (h?.allottedAt) return h.allottedAt;
+      if (h?.createdAt) return h.createdAt;
+    }
   }
-  const txs = (store.transactions || [])
-    .filter((t: any) => t.userId === userId && t.fundId === fundId)
-    .sort((a: any, b: any) => new Date(a.date || a.createdAt || 0).getTime() - new Date(b.date || b.createdAt || 0).getTime());
-  if (txs.length > 0) {
-    return txs[0].date || txs[0].createdAt || null;
-  }
-  return null;
+  const tx = await prisma.transaction.findFirst({
+    where: { userId, productId: fundId },
+    orderBy: { requestedAt: 'asc' },
+  });
+  return tx ? (tx.requestedAt || tx.createdAt).toISOString() : null;
 }
+
 
 export async function previewWithdrawal(config: AppConfig, actor: Actor, holdingId: string, amount: any, previewDate: any) {
   const amt = toNumber(amount, 0);
@@ -68,14 +78,13 @@ export async function previewWithdrawal(config: AppConfig, actor: Actor, holding
     throw new HttpError(400, 'INVALID_DATE', 'Invalid previewDate.');
   }
 
-  const store = await readJsonStore(config);
-  const holding = findHolding(store, actor.userId, holdingId);
+  const holding = await findHolding(actor.userId, holdingId);
   if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
 
-  const fund = (store.funds || []).find((f) => f.id === holding.fundId);
+  const fund = await prisma.fund.findFirst({ where: { id: holding.fundId } });
   if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
 
-  const nav = toNumber(fund.nav, holding.currentNav || 0) || null;
+  const nav = toNumber((fund.metadata as any)?.nav, holding.currentNav || 0) || null;
   const units = nav && nav > 0 ? amt / nav : null;
 
   const holdingUnits = toNumber(holding.units, 0);
@@ -89,7 +98,7 @@ export async function previewWithdrawal(config: AppConfig, actor: Actor, holding
     throw new HttpError(400, 'BELOW_MINIMUM', `Minimum redemption is ₹${minRedemption}.`);
   }
 
-  const allottedAt = findHoldingAllottedAt(store, actor.userId, holding.fundId);
+  const allottedAt = await findHoldingAllottedAt(actor.userId, holding.fundId);
   const holdingPeriodMonths = allottedAt ? monthsBetween(allottedAt, effectivePreviewDate.toISOString()) : 0;
 
   const exitLoadRate = getExitLoadRate(fund, holdingPeriodMonths);
@@ -108,6 +117,7 @@ export async function previewWithdrawal(config: AppConfig, actor: Actor, holding
 
   const isSTCG = holdingPeriodMonths < regime.holdingPeriodCutoffMonths;
   const gainType = isSTCG ? 'STCG' : 'LTCG';
+
 
   let taxableGain = 0;
   let taxAmount = 0;
@@ -172,14 +182,19 @@ export async function previewWithdrawal(config: AppConfig, actor: Actor, holding
     createdAt: calculationDate,
   };
 
-  await updateJsonStore(config, (store) => {
-    if (!Array.isArray(store.withdrawalPreviews)) store.withdrawalPreviews = [];
-    store.withdrawalPreviews.push(preview);
-    const cutoff = Date.now() - 30 * 60 * 1000;
-    store.withdrawalPreviews = store.withdrawalPreviews.filter(
-      (p) => new Date(p.createdAt).getTime() > cutoff
-    );
-    return preview;
+
+  await prisma.withdrawalPreview.create({
+    data: {
+      id: previewId,
+      userId: actor.userId,
+      holdingId,
+      amount: amt,
+      assumptions: preview.assumptions as any,
+      taxConfigVersion: preview.taxConfigVersion,
+      payload: preview as any,
+      createdAt: new Date(calculationDate),
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    },
   });
 
   return preview;
@@ -190,66 +205,73 @@ const DUAL_APPROVAL_THRESHOLD = 500000;
 async function _createRedemption(config: AppConfig, actor: Actor, previewId: any) {
   if (!previewId) throw new HttpError(400, 'INVALID_REQUEST', 'Preview ID is required.');
 
-  const request = await updateJsonStore(config, (store) => {
-    const preview = (store.withdrawalPreviews || []).find(
-      (p) => p.id === previewId && p.userId === actor.userId
-    );
-    if (!preview) throw new HttpError(404, 'PREVIEW_NOT_FOUND', 'Preview not found or expired.');
+  const previewRecord = await prisma.withdrawalPreview.findFirst({
+    where: { id: previewId, userId: actor.userId },
+  });
+  if (!previewRecord) throw new HttpError(404, 'PREVIEW_NOT_FOUND', 'Preview not found or expired.');
 
-    const holding = findHolding(store, actor.userId, preview.holdingId);
-    if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
+  const preview = previewRecord.payload as any;
 
-    const holdingValue = toNumber(holding.currentValue, 0);
-    if (preview.grossAmount > holdingValue + 0.001) {
-      throw new HttpError(400, 'INSUFFICIENT_HOLDINGS', `Insufficient holdings. Available: ₹${holdingValue}, requested: ₹${preview.grossAmount}.`);
-    }
+  const holding = await findHolding(actor.userId, preview.holdingId);
+  if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
 
-    const redemptionType = preview.grossAmount >= holdingValue - 0.001 ? 'full' : 'partial';
-    const requiresDualApproval = preview.grossAmount > DUAL_APPROVAL_THRESHOLD;
+  const holdingValue = toNumber(holding.currentValue, 0);
+  if (preview.grossAmount > holdingValue + 0.001) {
+    throw new HttpError(400, 'INSUFFICIENT_HOLDINGS', `Insufficient holdings. Available: ₹${holdingValue}, requested: ₹${preview.grossAmount}.`);
+  }
 
-    // Decrement holding
-    const oldValue = holdingValue;
-    const oldUnits = toNumber(holding.units, 0);
-    const reservedUnits = oldValue > 0
-      ? oldUnits * (preview.grossAmount / oldValue)
-      : toNumber(preview.units, 0);
-    const newValue = oldValue - preview.grossAmount;
-    if (newValue <= 0.001) {
-      holding.currentValue = 0;
-      holding.units = 0;
-    } else {
-      holding.currentValue = newValue;
-      holding.units = Math.max(0, oldUnits - reservedUnits);
-    }
+  const redemptionType = preview.grossAmount >= holdingValue - 0.001 ? 'full' : 'partial';
+  const requiresDualApproval = preview.grossAmount > DUAL_APPROVAL_THRESHOLD;
 
-    const request = {
+  const oldUnits = toNumber(holding.units, 0);
+  const reservedUnits = holdingValue > 0
+    ? oldUnits * (preview.grossAmount / holdingValue)
+    : toNumber(preview.units, 0);
+
+  const request = await prisma.redemptionRequest.create({
+    data: {
       id: randomUUID(),
       userId: actor.userId,
-      fundId: preview.fundId,
-      fundName: preview.fundName || holding.fundName || '',
+      fundId: preview.fundId || null,
+      previewId,
       amount: preview.grossAmount,
-      type: redemptionType,
       status: 'pending',
       reason: '',
-      requestedAt: new Date().toISOString(),
-      processedAt: null,
-      processedBy: null,
       requiresDualApproval,
       dualApprovalThresholdConfigVersion: requiresDualApproval ? 'default-500000' : null,
       approvals: [],
-      previewId,
-      previewSnapshot: preview,
-      reservedHoldingValue: preview.grossAmount,
-      reservedHoldingUnits: reservedUnits,
-    };
-
-    if (!Array.isArray(store.redemptionRequests)) store.redemptionRequests = [];
-    store.redemptionRequests.push(request);
-
-    return request;
+      metadata: {
+        type: redemptionType,
+        fundName: preview.fundName || holding.fundName || '',
+        reservedHoldingValue: preview.grossAmount,
+        reservedHoldingUnits: reservedUnits,
+        previewSnapshot: preview,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   });
 
-  return request;
+  return {
+    id: request.id,
+    userId: request.userId,
+    fundId: request.fundId,
+    fundName: preview.fundName || holding.fundName || '',
+    amount: Number(request.amount),
+    type: redemptionType,
+    status: request.status,
+    reason: '',
+    requestedAt: request.createdAt.toISOString(),
+    processedAt: null,
+    processedBy: null,
+    requiresDualApproval,
+    dualApprovalThresholdConfigVersion: requiresDualApproval ? 'default-500000' : null,
+    approvals: [],
+    previewId,
+    previewSnapshot: preview,
+    reservedHoldingValue: preview.grossAmount,
+    reservedHoldingUnits: reservedUnits,
+  };
 }
 
 export const createRedemption = withReceipt(_createRedemption, 'withdrawal_submitted', {
