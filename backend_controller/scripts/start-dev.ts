@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { createBackendServer } from '../src/server.js';
+import { createBackendApp } from '../src/server.js';
 import { loadConfig } from '#config/env.js';
 import { createConnection } from 'node:net';
 
@@ -35,7 +35,7 @@ function shutdown(signal: any) {
           if (frontendProc && !frontendProc.killed) frontendProc.kill('SIGKILL');
           resolve();
         }, 5000);
-        frontendProc.once('exit', () => {
+        frontendProc.on('exit', () => {
           clearTimeout(t);
           resolve();
         });
@@ -82,8 +82,8 @@ async function startFrontend() {
 function isPortInUse(port: any, host: any) {
   return new Promise<boolean>((resolve) => {
     const conn = createConnection(port, host);
-    conn.once('connect', () => { conn.destroy(); resolve(true); });
-    conn.once('error', () => resolve(false));
+    conn.on('connect', () => { conn.destroy(); resolve(true); });
+    conn.on('error', () => resolve(false));
   });
 }
 
@@ -97,7 +97,7 @@ async function main() {
     process.exit(1);
   }
 
-  backendServer = createBackendServer({ config });
+  backendServer = createBackendApp({ config });
 
   await new Promise<void>((resolve, reject) => {
     backendServer.listen(config.port, config.host, () => {

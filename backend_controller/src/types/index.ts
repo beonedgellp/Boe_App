@@ -5,8 +5,6 @@
 // `unknown`/`JsonValue` and narrowed by services; everything the domain owns
 // (config, actors, sessions, route contracts, DB rows) is fully typed.
 
-import type { IncomingMessage } from 'node:http';
-
 // -------------------- primitives --------------------
 
 export type JsonPrimitive = string | number | boolean | null;
@@ -137,11 +135,15 @@ export type RouteGroup =
   | 'internal'
   | 'provider-webhook';
 
-/** A compiled, registered route. */
-export interface RouteDefinition extends Required<Omit<RouteOptions, 'group'>> {
+/** Metadata stored alongside each registered route for introspection/authorization. */
+export interface RouteMeta extends Required<Omit<RouteOptions, 'group'>> {
   method: HttpMethod;
   path: string;
   group: RouteGroup;
+}
+
+/** Legacy RouteDefinition — kept for backward compat with scripts that call router.describe(). */
+export interface RouteDefinition extends RouteMeta {
   keys: string[];
   regex: RegExp;
   handler: RouteHandler;
@@ -157,6 +159,10 @@ export interface HandlerResponse {
 
 export type HandlerResult = HandlerResponse | unknown;
 
+/**
+ * The context object passed to every route handler.
+ * With Express, this is assembled from req/res in the handler adapter.
+ */
 export interface RouteContext {
   requestId: string;
   config: AppConfig;
@@ -165,9 +171,9 @@ export interface RouteContext {
   query: Record<string, string>;
   /** Raw parsed JSON body from the request; services validate/narrow it. */
   body: UnknownRecord;
-  headers: IncomingMessage['headers'];
-  route: RouteDefinition;
-  req: IncomingMessage;
+  headers: Record<string, string | string[] | undefined>;
+  route: RouteMeta;
+  req: any; // Express Request (typed as any to avoid coupling types/index to express)
 }
 
 export type RouteHandler = (context: RouteContext) => HandlerResult | Promise<HandlerResult>;

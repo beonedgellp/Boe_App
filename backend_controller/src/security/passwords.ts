@@ -21,7 +21,7 @@ export async function hashPassword(password: any) {
     SCRYPT_BLOCK_SIZE,
     SCRYPT_PARALLELIZATION,
     salt,
-    Buffer.from(derived).toString('base64url'),
+    Buffer.from(derived as any).toString('base64url' as any),
   ].join('$');
 }
 
@@ -37,7 +37,7 @@ export async function verifyPassword(password: any, storedHash: any) {
     r: Number(blockSize),
     p: Number(parallelization),
   });
-  const actual = Buffer.from(derived);
+  const actual = Buffer.from(derived as any);
 
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }

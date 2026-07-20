@@ -57,10 +57,10 @@ function runPsql(config: any, sql: any): Promise<string> {
 
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', (chunk: any) => {
+    child.stdout!.on('data', (chunk: any) => {
       stdout += chunk.toString();
     });
-    child.stderr.on('data', (chunk: any) => {
+    child.stderr!.on('data', (chunk: any) => {
       stderr += chunk.toString();
     });
     child.on('error', rejectPromise);
@@ -69,7 +69,7 @@ function runPsql(config: any, sql: any): Promise<string> {
       else rejectPromise(new Error(stderr.trim() || `psql exited with code ${code}`));
     });
 
-    child.stdin.end(sql);
+    child.stdin!.end(sql as any);
   });
 }
 

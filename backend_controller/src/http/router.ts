@@ -1,6 +1,7 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import express, { Router as ExpressRouter, Request, Response, NextFunction } from 'express';
+import type { Application } from 'express';
 import { HttpError } from './errors.js';
-import { readJsonBody, requestId, sendError, sendJson } from './response.js';
+import { requestId } from './response.js';
 import { authenticateRequest, authorizeRoute } from '#security/auth.js';
 import type {
   Actor,
@@ -10,90 +11,66 @@ import type {
   HttpMethod,
   Logger,
   RouteContext,
-  RouteDefinition,
   RouteHandler,
+  RouteMeta,
   RouteOptions,
+  RouteGroup,
+  UnknownRecord,
 } from '#types/index.js';
 
-const METHODS_WITH_BODY = new Set<HttpMethod>(['POST', 'PUT', 'PATCH']);
+// ────────────────────────────────────────────────────────────────
+// Rate limiter (in-process, same logic as before)
+// ────────────────────────────────────────────────────────────────
 
-const RATE_LIMIT_WINDOWS_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_WINDOWS_MS = 15 * 60 * 1000;
 const RATE_LIMIT_DEFAULT_MAX = 100;
 const RATE_LIMIT_SENSITIVE_MAX = 3;
 const RATE_LIMIT_AUTH_MAX = 30;
 const RATE_LIMIT_MODERATE_MAX = 10;
 const RATE_LIMIT_ADMIN_MAX = 30;
 
-interface MethodPattern {
-  method: HttpMethod;
-  pattern: RegExp;
-}
+interface MethodPattern { method: HttpMethod; pattern: RegExp }
 
 const AUTH_ROUTES: MethodPattern[] = [
   { method: 'POST', pattern: /^\/v1\/auth\/login$/ },
   { method: 'POST', pattern: /^\/v1\/auth\/signup$/ },
   { method: 'POST', pattern: /^\/v1\/auth\/refresh$/ },
 ];
-
 const SENSITIVE_ROUTES: MethodPattern[] = [
   { method: 'POST', pattern: /^\/v1\/client\/payments\/[^/]+\/retry$/ },
   { method: 'POST', pattern: /^\/v1\/client\/mandates\/[^/]+\/authorize$/ },
   { method: 'POST', pattern: /^\/v1\/client\/withdrawals$/ },
   { method: 'POST', pattern: /^\/v1\/client\/redemptions$/ },
 ];
-
 const ADMIN_ROUTES: MethodPattern[] = [
   { method: 'PATCH', pattern: /^\/v1\/admin\/users\/[^/]+\/status$/ },
 ];
-
-function isAuthRoute(method: string, pathname: string): boolean {
-  return AUTH_ROUTES.some((r) => r.method === method && r.pattern.test(pathname));
-}
-
-function isSensitiveRoute(method: string, pathname: string): boolean {
-  return SENSITIVE_ROUTES.some((r) => r.method === method && r.pattern.test(pathname));
-}
-
-function isAdminRoute(method: string, pathname: string): boolean {
-  return ADMIN_ROUTES.some((r) => r.method === method && r.pattern.test(pathname));
-}
-
 const MODERATE_ROUTES: MethodPattern[] = [
   { method: 'POST', pattern: /^\/v1\/onboarding\// },
 ];
 
-function isModerateRoute(method: string, pathname: string): boolean {
-  return MODERATE_ROUTES.some((r) => r.method === method && r.pattern.test(pathname));
-}
-
-function getRateLimitKey(method: string, pathname: string, ip: string): string {
-  if (isModerateRoute(method, pathname)) return `${ip}:moderate:onboarding`;
-  return `${ip}:${method}:${pathname}`;
+function matchesPatternList(list: MethodPattern[], method: string, path: string): boolean {
+  return list.some((r) => r.method === method && r.pattern.test(path));
 }
 
 function rateLimitMax(method: string, pathname: string): number {
-  if (isAuthRoute(method, pathname)) return RATE_LIMIT_AUTH_MAX;
-  if (isSensitiveRoute(method, pathname)) return RATE_LIMIT_SENSITIVE_MAX;
-  if (isModerateRoute(method, pathname)) return RATE_LIMIT_MODERATE_MAX;
-  if (isAdminRoute(method, pathname)) return RATE_LIMIT_ADMIN_MAX;
+  if (matchesPatternList(AUTH_ROUTES, method, pathname)) return RATE_LIMIT_AUTH_MAX;
+  if (matchesPatternList(SENSITIVE_ROUTES, method, pathname)) return RATE_LIMIT_SENSITIVE_MAX;
+  if (matchesPatternList(MODERATE_ROUTES, method, pathname)) return RATE_LIMIT_MODERATE_MAX;
+  if (matchesPatternList(ADMIN_ROUTES, method, pathname)) return RATE_LIMIT_ADMIN_MAX;
   return RATE_LIMIT_DEFAULT_MAX;
 }
 
-interface RateLimitResult {
-  allowed: boolean;
-  retryAfter?: number;
+function getRateLimitKey(method: string, pathname: string, ip: string): string {
+  if (matchesPatternList(MODERATE_ROUTES, method, pathname)) return `${ip}:moderate:onboarding`;
+  return `${ip}:${method}:${pathname}`;
 }
 
 class RateLimiter {
-  private requests: Map<string, number>;
-  private windows: Map<string, number>;
+  private requests = new Map<string, number>();
+  private windows = new Map<string, number>();
 
-  constructor() {
-    this.requests = new Map();
-    this.windows = new Map();
-  }
-
-  isAllowed(method: string, pathname: string, ip: string): RateLimitResult {
+  isAllowed(method: string, pathname: string, ip: string): { allowed: boolean; retryAfter?: number } {
     const now = Date.now();
     const key = getRateLimitKey(method, pathname, ip);
     const windowStart = this.windows.get(key) || 0;
@@ -109,51 +86,257 @@ class RateLimiter {
     this.requests.set(key, count);
 
     if (count > max) {
-      return {
-        allowed: false,
-        retryAfter: Math.ceil((windowStart + RATE_LIMIT_WINDOWS_MS - now) / 1000),
-      };
+      return { allowed: false, retryAfter: Math.ceil((windowStart + RATE_LIMIT_WINDOWS_MS - now) / 1000) };
     }
     return { allowed: true };
   }
 }
 
-interface CompiledPath {
-  keys: string[];
-  regex: RegExp;
+// ────────────────────────────────────────────────────────────────
+// Express augmentation: attach app-level context to Request
+// ────────────────────────────────────────────────────────────────
+
+declare global {
+  namespace Express {
+    interface Request {
+      /** Unique request ID */
+      requestId: string;
+      /** Authenticated actor (null if unauthenticated route) */
+      actor: Actor | null;
+      /** App config injected by middleware */
+      appConfig: AppConfig;
+      /** Route metadata for authorization */
+      routeMeta: RouteMeta;
+      /** Raw body string for webhook signature verification */
+      rawBody?: string;
+    }
+  }
 }
 
-function compilePath(path: string): CompiledPath {
-  const keys: string[] = [];
-  const pattern = path
-    .split('/')
-    .map((part) => {
-      if (part.startsWith(':')) {
-        keys.push(part.slice(1));
-        return '([^/]+)';
+// ────────────────────────────────────────────────────────────────
+// Router class: wraps Express app + keeps describe() for scripts
+// ────────────────────────────────────────────────────────────────
+
+export class Router {
+  readonly app: Application;
+  readonly config: AppConfig;
+  readonly logger: Partial<Logger>;
+  private routeRegistry: RouteMeta[] = [];
+  private rateLimiter = new RateLimiter();
+
+  constructor({ config, logger = console }: { config: AppConfig; logger?: Partial<Logger> }) {
+    this.config = config;
+    this.logger = logger;
+
+    const app = express();
+
+    // ── Global middleware ──
+    app.disable('x-powered-by');
+
+    // Raw body capture (for webhook signature verification)
+    app.use(express.json({
+      limit: '1mb',
+      verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); },
+    }));
+
+    // Inject config + requestId
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      req.appConfig = config;
+      req.requestId = requestId();
+      next();
+    });
+
+    // CORS
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const origin = req.headers.origin;
+      const allowed = config.corsOrigins;
+      const allowOrigin = allowed.includes('*') ? '*' : allowed.find((o) => o === origin);
+      if (allowOrigin) {
+        res.setHeader('access-control-allow-origin', allowOrigin);
+        res.setHeader('vary', 'origin');
       }
-      return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    })
-    .join('/');
+      res.setHeader('access-control-allow-methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+      res.setHeader('access-control-allow-headers', 'authorization,content-type,x-beonedge-signature,x-request-id');
+      res.setHeader('access-control-allow-credentials', 'true');
 
-  return { keys, regex: new RegExp(`^${pattern}$`) };
+      if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
+      next();
+    });
+
+    // Security headers
+    app.use((_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader('x-content-type-options', 'nosniff');
+      res.setHeader('x-frame-options', 'DENY');
+      res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+      res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';");
+      res.setHeader('x-xss-protection', '1; mode=block');
+      res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
+      res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+      next();
+    });
+
+    // Rate limiting
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+      const rateCheck = this.rateLimiter.isAllowed(req.method, req.path, ip);
+      if (!rateCheck.allowed) {
+        res.setHeader('retry-after', String(rateCheck.retryAfter));
+        next(new HttpError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.'));
+        return;
+      }
+      next();
+    });
+
+    this.app = app;
+  }
+
+  // ── Route registration methods (same API as before) ──
+
+  private wrapHandler(method: HttpMethod, path: string, options: RouteOptions, handler: RouteHandler) {
+    const meta: RouteMeta = {
+      method,
+      path,
+      group: options.group || 'public',
+      auth: options.auth ?? true,
+      roles: options.roles || [],
+      allowPendingClient: options.allowPendingClient || false,
+      allowDisabledAccount: options.allowDisabledAccount || false,
+      description: options.description || '',
+    };
+    this.routeRegistry.push(meta);
+
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        // Auth
+        req.routeMeta = meta;
+        const actor: Actor | null = meta.auth
+          ? await authenticateRequest(req as any, this.config)
+          : null;
+        if (meta.auth) authorizeRoute(meta as any, actor);
+        req.actor = actor;
+
+        // Build RouteContext for handler (backwards-compatible)
+        const context: RouteContext = {
+          requestId: req.requestId,
+          config: this.config,
+          actor,
+          params: req.params as Record<string, string>,
+          query: req.query as Record<string, string>,
+          body: (req.body || {}) as UnknownRecord,
+          headers: req.headers as Record<string, string | string[] | undefined>,
+          route: meta,
+          req,
+        };
+
+        const result = normalizeResult(await handler(context));
+
+        // Set cookies
+        if (result.cookies && result.cookies.length > 0) {
+          for (const c of result.cookies) {
+            const opts: any = {};
+            if (c.httpOnly) opts.httpOnly = true;
+            if (c.secure) opts.secure = true;
+            if (c.sameSite) opts.sameSite = c.sameSite.toLowerCase();
+            if (c.maxAge !== undefined) opts.maxAge = c.maxAge * 1000;
+            if (c.path) opts.path = c.path;
+            res.cookie(c.name, c.value, opts);
+          }
+        }
+
+        // Set response headers
+        res.setHeader('x-request-id', req.requestId);
+        if (result.headers) {
+          for (const [k, v] of Object.entries(result.headers)) res.setHeader(k, v);
+        }
+
+        if (result.status === 204) {
+          res.sendStatus(204);
+          return;
+        }
+
+        res.status(result.status || 200).json({
+          ok: true,
+          data: result.body ?? null,
+          requestId: req.requestId,
+        });
+      } catch (err) {
+        next(err);
+      } finally {
+        this.logger.info?.(`${req.method} ${req.originalUrl} ${Date.now() - (req as any)._startTime || 0}ms ${req.requestId}`);
+      }
+    };
+  }
+
+  private expressPath(path: string): string {
+    // Convert :param style (already Express-compatible) — no change needed
+    return path;
+  }
+
+  get(path: string, options: RouteOptions, handler: RouteHandler): void {
+    this.app.get(this.expressPath(path), this.wrapHandler('GET', path, options, handler));
+  }
+
+  post(path: string, options: RouteOptions, handler: RouteHandler): void {
+    this.app.post(this.expressPath(path), this.wrapHandler('POST', path, options, handler));
+  }
+
+  patch(path: string, options: RouteOptions, handler: RouteHandler): void {
+    this.app.patch(this.expressPath(path), this.wrapHandler('PATCH', path, options, handler));
+  }
+
+  delete(path: string, options: RouteOptions, handler: RouteHandler): void {
+    this.app.delete(this.expressPath(path), this.wrapHandler('DELETE', path, options, handler));
+  }
+
+  register(method: HttpMethod, path: string, options: RouteOptions, handler: RouteHandler): void {
+    const m = method.toLowerCase() as 'get' | 'post' | 'patch' | 'delete';
+    this[m](path, options, handler);
+  }
+
+  // ── Finalize: attach error handler (call after all routes registered) ──
+
+  finalize(): Application {
+    // 404 fallback
+    this.app.use((req: Request, res: Response, _next: NextFunction) => {
+      res.status(404).json({
+        ok: false,
+        error: { code: 'ROUTE_NOT_FOUND', message: `No route registered for ${req.method} ${req.path}.` },
+        requestId: req.requestId,
+      });
+    });
+
+    // Central error handler
+    this.app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+      const httpError = err instanceof HttpError ? err : null;
+      const status = httpError ? httpError.status : 500;
+      const code = httpError ? httpError.code : 'INTERNAL_ERROR';
+      const message = status === 500
+        ? 'Unexpected server error.'
+        : err instanceof Error ? err.message : String(err);
+      const details = httpError ? httpError.details : undefined;
+
+      res.status(status).json({
+        ok: false,
+        error: { code, message, details },
+        requestId: req.requestId,
+      });
+    });
+
+    return this.app;
+  }
+
+  // ── Introspection (used by scripts/print-routes, authz checks) ──
+
+  describe(): Array<Pick<RouteMeta, 'method' | 'path' | 'group' | 'auth' | 'roles' | 'allowPendingClient' | 'description'>> {
+    return this.routeRegistry.map(({ method, path, group, auth, roles, allowPendingClient, description }) => ({
+      method, path, group, auth, roles, allowPendingClient, description,
+    }));
+  }
 }
 
-function matchRoute(
-  route: RouteDefinition,
-  method: string | undefined,
-  pathname: string,
-): Record<string, string> | null {
-  if (route.method !== method) return null;
-
-  const match = route.regex.exec(pathname);
-  if (!match) return null;
-
-  return route.keys.reduce<Record<string, string>>((params, key, index) => {
-    params[key] = decodeURIComponent(match[index + 1]);
-    return params;
-  }, {});
-}
+// ────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────
 
 function normalizeResult(result: unknown): Required<Pick<HandlerResponse, 'status' | 'cookies'>> & HandlerResponse {
   if (result == null) return { status: 204, body: null, cookies: [] };
@@ -162,171 +345,4 @@ function normalizeResult(result: unknown): Required<Pick<HandlerResponse, 'statu
     return { ...maybe, status: maybe.status, cookies: maybe.cookies || [] };
   }
   return { status: 200, body: result, cookies: [] };
-}
-
-type OutgoingHeaders = Record<string, string | number | string[]>;
-
-export class Router {
-  config: AppConfig;
-  logger: Partial<Logger>;
-  routes: RouteDefinition[];
-  private rateLimiter: RateLimiter;
-
-  constructor({ config, logger = console }: { config: AppConfig; logger?: Partial<Logger> }) {
-    this.config = config;
-    this.logger = logger;
-    this.routes = [];
-    this.rateLimiter = new RateLimiter();
-  }
-
-  register(method: HttpMethod, path: string, options: RouteOptions, handler: RouteHandler): void {
-    const compiled = compilePath(path);
-    this.routes.push({
-      method,
-      path,
-      keys: compiled.keys,
-      regex: compiled.regex,
-      group: options.group || 'public',
-      auth: options.auth ?? true,
-      roles: options.roles || [],
-      allowPendingClient: options.allowPendingClient || false,
-      allowDisabledAccount: options.allowDisabledAccount || false,
-      description: options.description || '',
-      handler,
-    });
-  }
-
-  get(path: string, options: RouteOptions, handler: RouteHandler): void {
-    this.register('GET', path, options, handler);
-  }
-
-  post(path: string, options: RouteOptions, handler: RouteHandler): void {
-    this.register('POST', path, options, handler);
-  }
-
-  patch(path: string, options: RouteOptions, handler: RouteHandler): void {
-    this.register('PATCH', path, options, handler);
-  }
-
-  delete(path: string, options: RouteOptions, handler: RouteHandler): void {
-    this.register('DELETE', path, options, handler);
-  }
-
-  applySecurityHeaders(res: ServerResponse): void {
-    res.setHeader('x-content-type-options', 'nosniff');
-    res.setHeader('x-frame-options', 'DENY');
-    res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
-    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';");
-    res.setHeader('x-xss-protection', '1; mode=block');
-    res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
-    res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-  }
-
-  async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const startedAt = Date.now();
-    const id = requestId();
-
-    try {
-      const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-      const route = this.routes.find((candidate) => matchRoute(candidate, req.method, url.pathname));
-
-      this.applyCors(req, res);
-      this.applySecurityHeaders(res);
-
-      if (req.method === 'OPTIONS') {
-        res.writeHead(204);
-        res.end();
-        return;
-      }
-
-      if (!route) {
-        throw new HttpError(404, 'ROUTE_NOT_FOUND', `No route registered for ${req.method} ${url.pathname}.`);
-      }
-
-      const forwardedFor = req.headers['x-forwarded-for'];
-      const clientIp = String(
-        (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor) || req.socket?.remoteAddress || 'unknown',
-      ).split(',')[0].trim();
-      const rateCheck = this.rateLimiter.isAllowed(req.method || 'GET', url.pathname, clientIp);
-      if (!rateCheck.allowed) {
-        res.setHeader('retry-after', String(rateCheck.retryAfter));
-        throw new HttpError(429, 'RATE_LIMITED', 'Too many requests. Please try again later.');
-      }
-
-      const params = matchRoute(route, req.method, url.pathname) || {};
-      const actor: Actor | null = await authenticateRequest(req, this.config);
-      authorizeRoute(route, actor);
-
-      const body = req.method && METHODS_WITH_BODY.has(req.method as HttpMethod) ? await readJsonBody(req) : {};
-      const context: RouteContext = {
-        requestId: id,
-        config: this.config,
-        actor,
-        params,
-        query: Object.fromEntries(url.searchParams.entries()),
-        body,
-        headers: req.headers,
-        route,
-        req,
-      };
-
-      const result = normalizeResult(await route.handler(context));
-      const responseHeaders: OutgoingHeaders = { 'x-request-id': id };
-
-      if (result.cookies && result.cookies.length > 0) {
-        responseHeaders['set-cookie'] = result.cookies.map((c: Cookie) => {
-          let cookie = `${c.name}=${c.value}`;
-          if (c.httpOnly) cookie += '; HttpOnly';
-          if (c.secure) cookie += '; Secure';
-          if (c.sameSite) cookie += `; SameSite=${c.sameSite}`;
-          if (c.maxAge !== undefined) cookie += `; Max-Age=${c.maxAge}`;
-          if (c.path) cookie += `; Path=${c.path}`;
-          return cookie;
-        });
-      }
-
-      if (result.status === 204) {
-        res.writeHead(204, responseHeaders);
-        res.end();
-        return;
-      }
-
-      sendJson(res, result.status || 200, {
-        ok: true,
-        data: result.body ?? null,
-        requestId: id,
-      }, responseHeaders);
-    } catch (error) {
-      sendError(res, error, { requestId: id });
-    } finally {
-      this.logger.info?.(`${req.method} ${req.url} ${Date.now() - startedAt}ms ${id}`);
-    }
-  }
-
-  applyCors(req: IncomingMessage, res: ServerResponse): void {
-    const origin = req.headers.origin as string | undefined;
-    const allowed = this.config.corsOrigins;
-    const allowOrigin = allowed.includes('*') ? '*' : allowed.find((item) => item === origin);
-
-    if (allowOrigin) {
-      res.setHeader('access-control-allow-origin', allowOrigin);
-      res.setHeader('vary', 'origin');
-    }
-
-    res.setHeader('access-control-allow-methods', 'GET,POST,PATCH,DELETE,OPTIONS');
-    res.setHeader('access-control-allow-headers', 'authorization,content-type,x-beonedge-signature,x-request-id');
-    res.setHeader('access-control-allow-credentials', 'true');
-  }
-
-  describe(): Array<Pick<RouteDefinition, 'method' | 'path' | 'group' | 'auth' | 'roles' | 'allowPendingClient' | 'description'>> {
-    return this.routes.map(({ method, path, group, auth, roles, allowPendingClient, description }) => ({
-      method,
-      path,
-      group,
-      auth,
-      roles,
-      allowPendingClient,
-      description,
-    }));
-  }
 }

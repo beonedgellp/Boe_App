@@ -1,8 +1,8 @@
-import pg from 'pg';
-import type { Pool as PgPool, PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
+import Pool from 'pg';
+import type { PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
 import type { AppConfig, DatabaseStatus } from '#types/index.js';
 
-const { Pool } = pg;
+type PgPool = InstanceType<typeof Pool>;
 
 let pool: PgPool | null = null;
 let poolKey = '';
@@ -81,7 +81,7 @@ export async function query<R extends QueryResultRow = QueryResultRow>(
   text: string,
   params: readonly unknown[] = [],
 ): Promise<QueryResult<R>> {
-  return getPool(config).query<R>(text, params);
+  return getPool(config).query<R>(text, params as any[]);
 }
 
 export async function transaction<T>(

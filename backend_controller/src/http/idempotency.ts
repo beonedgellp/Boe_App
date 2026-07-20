@@ -12,7 +12,6 @@ import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.
 // Storage: `request_idempotency` table in PostgreSQL.
 
 import { createHash } from 'node:crypto';
-import type { IncomingMessage } from 'node:http';
 import { HttpError } from './errors.js';
 import type { RouteContext, RouteHandler } from '#types/index.js';
 import {
@@ -40,7 +39,7 @@ const inFlight = new Map<string, Promise<StoredResult>>();
 
 const HEADER_NAME = 'idempotency-key';
 
-function readHeader(headers: IncomingMessage['headers'] | undefined): string | null {
+function readHeader(headers: Record<string, string | string[] | undefined> | undefined): string | null {
   if (!headers) return null;
   const raw = headers[HEADER_NAME] ?? headers[HEADER_NAME.toUpperCase()];
   if (raw == null) return null;
@@ -49,7 +48,7 @@ function readHeader(headers: IncomingMessage['headers'] | undefined): string | n
   return trimmed.length === 0 ? null : trimmed;
 }
 
-function hashBody(req: IncomingMessage | undefined, body: unknown): string {
+function hashBody(req: { rawBody?: string }, body: unknown): string {
   const raw = req?.rawBody;
   let canonical;
   if (typeof raw === 'string' && raw.length > 0) {

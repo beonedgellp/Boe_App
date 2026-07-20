@@ -13,9 +13,6 @@ interface CreateRouterOptions {
   groups?: RouteGroup[];
 }
 
-// Mount only the selected audience groups so a future admin-only or client-only
-// service is a one-line composition (e.g. groups: ['shared', 'admin']) with no
-// edits to the audience modules. Defaults to all groups (current behavior).
 export function createRouter({ config, logger, groups = ROUTE_GROUPS }: CreateRouterOptions): Router {
   const router = new Router({ config, logger });
 

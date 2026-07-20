@@ -1,20 +1,20 @@
-import { createServer, type Server } from 'node:http';
 import { loadConfig, assertProductionConfig, assertRuntimeConfig } from './config/env.js';
 import { createRouter } from './router.js';
 import { createLogger } from './shared/logger.js';
 import type { AppConfig, Logger, LogLevel } from '#types/index.js';
+import type { Application } from 'express';
 
 interface CreateServerOptions {
   config?: AppConfig;
   logger?: Logger;
 }
 
-export function createBackendServer({
+export function createBackendApp({
   config = loadConfig(),
   logger = createLogger({ level: (process.env.LOG_LEVEL as LogLevel) || 'info' }),
-}: CreateServerOptions = {}): Server {
+}: CreateServerOptions = {}): Application {
   const router = createRouter({ config, logger });
-  return createServer((req, res) => router.handle(req, res));
+  return router.finalize();
 }
 
 interface ListenErrorOptions {
@@ -46,11 +46,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   }
 
-  const server = createBackendServer({ config, logger });
-  server.on('error', (error) => handleListenError({ error, config, logger }));
+  const app = createBackendApp({ config, logger });
 
-  server.listen(config.port, config.host, () => {
-    logger.info(`BeOnEdge backend listening on http://${config.host}:${config.port}`);
+  const server = app.listen(config.port, config.host, () => {
+    logger.info(`BeOnEdge backend (Express) listening on http://${config.host}:${config.port}`);
     for (const warning of warnings) logger.warn(`config: ${warning}`);
   });
+
+  server.on('error', (error: NodeJS.ErrnoException) => handleListenError({ error, config, logger }));
 }

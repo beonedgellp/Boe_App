@@ -1,14 +1,17 @@
-import type { IncomingMessage } from 'node:http';
 import { HttpError } from '#http/errors.js';
 import { verifyAccessToken } from './tokens.js';
 import { hasDatabaseConfig, query } from '#db/client.js';
-import type { Actor, AppConfig, Role, RouteDefinition, TokenClaims } from '#types/index.js';
+import type { Actor, AppConfig, Role, RouteMeta, TokenClaims } from '#types/index.js';
 
-function bearerToken(req: IncomingMessage): string {
+interface RequestLike {
+  headers: Record<string, string | string[] | undefined>;
+  socket?: { remoteAddress?: string };
+}
+
+function bearerToken(req: RequestLike): string {
   const header = (req.headers.authorization as string | undefined) || '';
   const [scheme, token] = header.split(' ');
   if (scheme?.toLowerCase() === 'bearer' && token) return token;
-  // Fallback to cookie
   const cookieHeader = (req.headers.cookie as string | undefined) || '';
   const match = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : '';
@@ -70,7 +73,7 @@ async function activeSessionActor(claims: TokenClaims, config: AppConfig): Promi
   };
 }
 
-export async function authenticateRequest(req: IncomingMessage, config: AppConfig): Promise<Actor | null> {
+export async function authenticateRequest(req: RequestLike, config: AppConfig): Promise<Actor | null> {
   const token = bearerToken(req);
   const claims = verifyAccessToken(token, config);
   if (!claims) return null;
@@ -78,7 +81,7 @@ export async function authenticateRequest(req: IncomingMessage, config: AppConfi
   return activeSessionActor(claims, config);
 }
 
-export function authorizeRoute(route: RouteDefinition, actor: Actor | null): void {
+export function authorizeRoute(route: RouteMeta, actor: Actor | null): void {
   if (route.auth === false) return;
 
   if (!actor) {

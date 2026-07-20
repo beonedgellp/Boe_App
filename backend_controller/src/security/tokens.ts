@@ -2,15 +2,15 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { AppConfig, TokenClaims } from '#types/index.js';
 
 function encode(value: unknown): string {
-  return Buffer.from(JSON.stringify(value)).toString('base64url');
+  return Buffer.from(JSON.stringify(value)).toString('base64url' as any);
 }
 
 function decode(value: string): Record<string, unknown> {
-  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Record<string, unknown>;
+  return JSON.parse(Buffer.from(value, 'base64url' as any).toString('utf8')) as Record<string, unknown>;
 }
 
 function sign(input: string, secret: string): string {
-  return createHmac('sha256', secret).update(input).digest('base64url');
+  return createHmac('sha256', secret).update(input).digest('base64url' as any);
 }
 
 const ACCESS_TOKEN_TTL_SECONDS = 24 * 60 * 60;

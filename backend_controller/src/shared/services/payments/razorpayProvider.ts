@@ -36,7 +36,7 @@ export function createRazorpayProvider(config: AppConfig) {
     async createMandate({ amount, frequency, customerId, notes }: any) {
       // Razorpay mandates are created via customer + token APIs
       // For test mode, we simulate the token creation
-      const token = await client.tokens.create({
+      const token = await (client as any).tokens.create({
         customer_id: customerId,
         method: 'upi',
         notes: notes || undefined,
@@ -64,7 +64,7 @@ export function createRazorpayProvider(config: AppConfig) {
     },
 
     async fetchMandate(mandateId: any) {
-      const token = await client.tokens.fetch(mandateId);
+      const token = await (client as any).tokens.fetch(mandateId);
       return {
         id: token.id,
         status: token.status || 'active',
