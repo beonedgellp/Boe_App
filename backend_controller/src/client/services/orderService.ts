@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import {
@@ -10,23 +11,23 @@ import { getPaymentProvider } from '#shared/services/payments/providerFactory.js
 
 const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed']);
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function hashDisclosureText(text) {
+function hashDisclosureText(text: any) {
   if (!text) return null;
   return createHash('sha256').update(text).digest('hex').slice(0, 16);
 }
 
-function shortReceipt(prefix, id) {
+function shortReceipt(prefix: any, id: string) {
   return `${prefix}_${String(id).replace(/-/g, '').slice(0, 32)}`;
 }
 
 /* ---------- getOrder ---------- */
 
-export async function getOrder(config, actor, orderId) {
+export async function getOrder(config: AppConfig, actor: Actor, orderId: string) {
   const store = await readJsonStore(config);
   const plan = (store.investmentPlans || []).find((o) => o.id === orderId)
     || (store.orders || []).find((o) => o.id === orderId);
@@ -44,7 +45,7 @@ export async function getOrder(config, actor, orderId) {
 
 /* ---------- createLumpsumOrder ---------- */
 
-async function _createLumpsumOrder(config, actor, body, requestContext: any = {}) {
+async function _createLumpsumOrder(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a lumpsum order.');
   }
@@ -219,9 +220,9 @@ async function _createLumpsumOrder(config, actor, body, requestContext: any = {}
 
 export const createLumpsumOrder = withReceipt(_createLumpsumOrder, 'lumpsum_created', {
   entityType: 'investment_plan',
-  entityId: (result) => result.planId,
-  afterState: (result) => result.status,
-  amount: (result, args) => {
+  entityId: (result: any) => result.planId,
+  afterState: (result: any) => result.status,
+  amount: (result: any, args: any) => {
     const body = args[2] || {};
     const n = Number(body.amount);
     return Number.isFinite(n) ? n : null;
@@ -232,7 +233,7 @@ export const createLumpsumOrder = withReceipt(_createLumpsumOrder, 'lumpsum_crea
 
 /* ---------- payPendingInstallment ---------- */
 
-async function _payPendingInstallment(config, actor, orderId, options: any = {}) {
+async function _payPendingInstallment(config: AppConfig, actor: Actor, orderId: string, options: any = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to pay an installment.');
   }
@@ -324,9 +325,9 @@ async function _payPendingInstallment(config, actor, orderId, options: any = {})
 
 export const payPendingInstallment = withReceipt(_payPendingInstallment, 'installment_paid', {
   entityType: 'payment',
-  entityId: (result) => result.paymentId,
-  afterState: (result) => result.status,
-  amount: (result, args) => {
+  entityId: (result: any) => result.paymentId,
+  afterState: (result: any) => result.status,
+  amount: (result: any, args: any) => {
     const config = args[0];
     // We don't have easy access to the plan amount here without re-reading;
     // withReceipt will default to null for amount if undefined.

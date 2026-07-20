@@ -13,13 +13,13 @@ import {
 } from './fundClientView.js';
 
 let passed = 0;
-function test(name, fn) {
+function test(name: any, fn: any) {
   try {
     fn();
     passed += 1;
     console.log(`✓ ${name}`);
   } catch (err) {
-    console.error(`✗ ${name}: ${err.message}`);
+    console.error(`✗ ${name}: ${(err as Error).message}`);
     process.exitCode = 1;
   }
 }
@@ -203,8 +203,8 @@ test('normalizePerformanceSeries sorts by date and drops invalid rows', () => {
     { date: '2025-05-20', fund: -3, nifty: 120 }, // non-positive fund value dropped
   ]);
   assert.equal(out.length, 2);
-  assert.equal(out[0].date, '2023-05-20');
-  assert.equal(out[1].date, '2024-05-20');
+  assert.equal(out[0]!.date, '2023-05-20');
+  assert.equal(out[1]!.date, '2024-05-20');
 });
 
 test('sanitizeAssetAllocation drops out-of-range and non-finite percentages', () => {
@@ -214,7 +214,7 @@ test('sanitizeAssetAllocation drops out-of-range and non-finite percentages', ()
     { id: 'nan', label: 'NaN', percentage: 'x', color: '#000' },
   ]);
   assert.equal(out.length, 1);
-  assert.equal(out[0].id, 'equity');
+  assert.equal(out[0]!.id, 'equity');
 });
 
 test('sanitizeAdvancedRatios keeps finite numbers and drops blanks/non-finite', () => {
@@ -231,7 +231,7 @@ test('sanitizePerformancePeriods keeps known keys and coerces numbers', () => {
     { key: 'BOGUS', label: 'x', fundReturnPct: 1, niftyReturnPct: 1 },
   ]);
   assert.equal(out.length, 1);
-  assert.equal(out[0].fundReturnPct, 2.1);
+  assert.equal(out[0]!.fundReturnPct, 2.1);
 });
 
 /* -------------------- security hardening (review follow-ups) -------------------- */
@@ -250,14 +250,14 @@ test('sanitizeAssetAllocation rejects unsafe color strings', () => {
     { id: 'a', label: 'A', percentage: 50, color: '#1f7a4d' },
     { id: 'b', label: 'B', percentage: 50, color: 'red; background:url(javascript:alert(1))' },
   ]);
-  assert.equal(out[0].color, '#1f7a4d');
-  assert.equal(out[1].color, '');
+  assert.equal(out[0]!.color, '#1f7a4d');
+  assert.equal(out[1]!.color, '');
 });
 
 test('sanitizeRating clamps value to scale and rejects negatives', () => {
-  assert.equal(sanitizeRating({ value: 9, scale: 5 }).value, 5);
+  assert.equal(sanitizeRating({ value: 9, scale: 5 })!.value, 5);
   assert.equal(sanitizeRating({ value: -2, scale: 5 }), null);
-  assert.equal(sanitizeRating({ value: 4 }).scale, 5);
+  assert.equal(sanitizeRating({ value: 4 })!.scale, 5);
 });
 
 console.log(`\n${passed} checks passed`);

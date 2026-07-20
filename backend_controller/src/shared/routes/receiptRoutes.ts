@@ -1,11 +1,13 @@
+import type { Role } from '#types/index.js';
+import type { Router } from '#http/router.js';
 import { Routes } from './constants.js';
 import { getReceipts, getReceipt } from '../services/receiptService.js';
 import { HttpError } from '#http/errors.js';
 
-const CLIENT_ROLES = ['client', 'admin'];
-const ADMIN_ROLES = ['admin'];
+const CLIENT_ROLES: Role[] = ['client', 'admin'];
+const ADMIN_ROLES: Role[] = ['admin'];
 
-export function registerClientReceiptRoutes(router) {
+export function registerClientReceiptRoutes(router: Router) {
   router.get(Routes.GET_V1_CLIENT_RECEIPTS, {
     group: 'client',
     roles: CLIENT_ROLES,
@@ -13,7 +15,7 @@ export function registerClientReceiptRoutes(router) {
     description: 'List receipts for the current user.',
   }, async ({ config, actor, query }) => {
     const filters = {
-      subjectUserId: actor.userId,
+      subjectUserId: actor!.userId,
       entityType: query?.entityType || undefined,
       entityId: query?.entityId || undefined,
       kind: query?.kind || undefined,
@@ -32,14 +34,14 @@ export function registerClientReceiptRoutes(router) {
     if (!receipt) {
       throw new HttpError(404, 'RECEIPT_NOT_FOUND', 'Receipt not found.');
     }
-    if (receipt.subjectUserId !== actor.userId) {
+    if (receipt.subjectUserId !== actor!.userId) {
       throw new HttpError(403, 'FORBIDDEN', 'Receipt does not belong to you.');
     }
     return receipt;
   });
 }
 
-export function registerAdminReceiptRoutes(router) {
+export function registerAdminReceiptRoutes(router: Router) {
   router.get(Routes.GET_V1_ADMIN_RECEIPTS, {
     group: 'admin',
     roles: ADMIN_ROLES,

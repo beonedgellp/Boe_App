@@ -2,12 +2,12 @@ import { loadConfig } from '#config/env.js';
 import { closePool, query } from '#db/client.js';
 import { hashPassword } from '#security/passwords.js';
 
-function enabled(value) {
+function enabled(value: any) {
   if (value == null || value === '') return true;
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
-function userSeed(prefix, defaults) {
+function userSeed(prefix: any, defaults: any) {
   return {
     email: (process.env[`${prefix}_EMAIL`] || defaults.email).toLowerCase(),
     password: process.env[`${prefix}_PASSWORD`] || defaults.password,
@@ -22,12 +22,12 @@ function userSeed(prefix, defaults) {
   };
 }
 
-function canSeed(config, seeds) {
+function canSeed(config: any, seeds: any) {
   const sharedRuntime = config.nodeEnv === 'production' || config.providerMode === 'live';
   if (!sharedRuntime) return;
 
   const allowProductionSeed = enabled(process.env.SEED_AUTH_ALLOW_PRODUCTION);
-  const usesDefaultPassword = seeds.some((seed) => seed.usesDefaultPassword);
+  const usesDefaultPassword = seeds.some((seed: any) => seed.usesDefaultPassword);
 
   if (!allowProductionSeed) {
     throw new Error('Refusing to seed auth users in production/live mode without SEED_AUTH_ALLOW_PRODUCTION=true.');
@@ -37,7 +37,7 @@ function canSeed(config, seeds) {
   }
 }
 
-async function upsertUser(config, seed) {
+async function upsertUser(config: any, seed: any) {
   const passwordHash = await hashPassword(seed.password);
   const overwrite = enabled(process.env.SEED_AUTH_OVERWRITE);
 

@@ -3,50 +3,44 @@
 // Design notes:
 // - Reuses `query` / `transaction` from `db/client.js` (which manages the pool).
 // - Each JSON "collection" maps to one Postgres table via `COLLECTION_MAP` below.
-//   The mapping declares: tableName, idColumn, and column<->jsonField translators
-//   so callers can keep using camelCased records identical to the JSON store.
-// - Idempotency-key paths use INSERT ... ON CONFLICT (idempotency_key) DO NOTHING
-//   RETURNING ... so concurrent inserts are race-safe without a SELECT-then-INSERT.
-// - `atomicCompositeWrite` runs all ops inside one transaction.
-// - Functions that don't have a structural Postgres equivalent (writeJsonStore for
-//   the entire blob) still exist as no-ops or throw a clear error to keep the
-//   factory `getStore(config)` strictly equivalent at the surface level.
+// - Idempotency-key paths use INSERT ... ON CONFLICT ... DO NOTHING RETURNING.
 
 import { query, transaction, hasDatabaseConfig, databaseStatus } from './client.js';
+import type { PoolClient, QueryResultRow } from 'pg';
+import type { AppConfig, DatabaseStatus, StoreRecord } from '#types/index.js';
+
+interface CollectionMapping {
+  table: string;
+  idColumn: string;
+}
+
+type StoreSnapshot = Record<string, StoreRecord[]>;
+type RecordUpdater = ((existing: StoreRecord) => StoreRecord) | Partial<StoreRecord>;
+
+function isPgError(err: unknown, code: string): boolean {
+  return Boolean(err && typeof err === 'object' && (err as { code?: string }).code === code);
+}
 
 // -------------------- collection ↔ table mapping --------------------
 
-// Helper to convert camelCase key -> snake_case column. Conservative — only
-// touches the keys we declare here; we never try to round-trip arbitrary JSON
-// objects, so rows that don't have a declared shape go to a generic `payload`
-// column where applicable.
-
-function camelToSnake(s) {
+function camelToSnake(s: string): string {
   return s.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
 }
 
-function snakeToCamel(s) {
-  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+function snakeToCamel(s: string): string {
+  return s.replace(/_([a-z])/g, (_full, c: string) => c.toUpperCase());
 }
 
-function rowToRecord(row) {
+function rowToRecord(row: QueryResultRow | null | undefined): StoreRecord | null {
   if (!row) return null;
-  const out = {};
+  const out: StoreRecord = {};
   for (const [k, v] of Object.entries(row)) {
     out[snakeToCamel(k)] = v;
   }
   return out;
 }
 
-// Each entry: { table, idColumn, jsonbColumns?, columns? }
-// - `columns` lists the explicit column whitelist; anything not in this list is
-//   stuffed into the `payload` jsonb column on insert/update (if present).
-// - `jsonbColumns` lists columns that should be JSON.stringify'd before send.
-//
-// Where the JSON store uses fields not yet modeled in 001-004 or 005, we leave
-// them inside `payload` jsonb so we can round-trip without losing data.
-
-const COLLECTION_MAP = {
+const COLLECTION_MAP: Record<string, CollectionMapping> = {
   users: { table: 'users', idColumn: 'id' },
   deviceSessions: { table: 'device_sessions', idColumn: 'id' },
   appConfigVersions: { table: 'app_config_versions', idColumn: 'id' },
@@ -85,7 +79,7 @@ const COLLECTION_MAP = {
   requestIdempotency: { table: 'request_idempotency', idColumn: 'id' },
 };
 
-function mappingFor(collection) {
+function mappingFor(collection: string): CollectionMapping {
   const m = COLLECTION_MAP[collection];
   if (!m) {
     throw new Error(`pgAdapter: unknown collection '${collection}'.`);
@@ -95,12 +89,7 @@ function mappingFor(collection) {
 
 // -------------------- column inference --------------------
 
-// We don't introspect information_schema on every call (would be slow); instead
-// we let Postgres reject unknown columns. Callers should pass records that
-// match the column whitelist for the table. The `payload` column is appended
-// when the table is known to have one.
-
-const TABLES_WITH_PAYLOAD = new Set([
+const TABLES_WITH_PAYLOAD = new Set<string>([
   'orders',
   'sip_control_requests',
   'redemption_requests',
@@ -123,18 +112,15 @@ const TABLES_WITH_PAYLOAD = new Set([
 
 // -------------------- public surface --------------------
 
-// Read everything: returned as a JSON-store-shaped object so that callers that
-// loop over a single collection still work. This is potentially expensive — use
-// `findRecord` / collection-specific helpers when possible.
-export async function readJsonStore(config): Promise<Record<string, any>> {
-  const out: Record<string, any> = {};
+export async function readJsonStore(config: AppConfig): Promise<StoreSnapshot> {
+  const out: StoreSnapshot = {};
   for (const [collection, m] of Object.entries(COLLECTION_MAP)) {
     try {
       const r = await query(config, `SELECT * FROM ${m.table}`);
-      out[collection] = r.rows.map(rowToRecord);
+      out[collection] = r.rows.map(rowToRecord).filter((row): row is StoreRecord => row !== null);
     } catch (err) {
       // Table may not exist yet (migrations not applied). Default to empty.
-      if (err && err.code === '42P01') {
+      if (isPgError(err, '42P01')) {
         out[collection] = [];
       } else {
         throw err;
@@ -145,34 +131,28 @@ export async function readJsonStore(config): Promise<Record<string, any>> {
 }
 
 // No-op in pg mode: the store is the database. Kept for interface parity.
-export async function writeJsonStore(/* config, data */) {
-  // Intentionally a no-op. Callers in pg mode should be using granular helpers.
+export async function writeJsonStore(): Promise<void> {
   return;
 }
 
-// In pg mode, treat updateJsonStore like a transaction: hand the updater a
-// minimal store-shaped object lazily populated on demand. To keep behaviour
-// predictable we emulate by calling readJsonStore + executing the updater
-// inside a single tx, persisting deltas with INSERT/UPDATE per collection.
-//
-// NOTE: This is a best-effort compatibility shim. Services that need true ACID
-// semantics for mass mutations should be rewritten to use `transaction(...)`
-// directly. The shim is sufficient for the existing JSON-mode use sites which
-// mostly mutate one row at a time.
-export async function updateJsonStore(config, updater): Promise<any> {
+export async function updateJsonStore<T>(
+  config: AppConfig,
+  updater: (store: StoreSnapshot) => T | Promise<T>,
+): Promise<T> {
   return transaction(config, async (client) => {
     const before = await readJsonStore(config);
-    const beforeSnapshot = JSON.parse(JSON.stringify(before));
+    const beforeSnapshot: StoreSnapshot = JSON.parse(JSON.stringify(before));
     const result = await updater(before);
 
     // Write deltas per collection.
     for (const [collection, m] of Object.entries(COLLECTION_MAP)) {
       const current = before[collection] || [];
       const previous = beforeSnapshot[collection] || [];
-      const previousById = new Map(previous.map((r) => [r[snakeToCamel(m.idColumn)], r]));
+      const idKey = snakeToCamel(m.idColumn);
+      const previousById = new Map(previous.map((r) => [r[idKey], r]));
 
       for (const record of current) {
-        const id = record[snakeToCamel(m.idColumn)];
+        const id = record[idKey];
         if (!id) continue;
         const prev = previousById.get(id);
         if (!prev) {
@@ -187,7 +167,12 @@ export async function updateJsonStore(config, updater): Promise<any> {
   });
 }
 
-export async function atomicCompositeWrite(config, operations) {
+export interface CompositeWriteOp {
+  collection: string;
+  record: StoreRecord;
+}
+
+export async function atomicCompositeWrite(config: AppConfig, operations: CompositeWriteOp[]): Promise<void> {
   return transaction(config, async (client) => {
     for (const op of operations) {
       await insertWithClient(client, op.collection, op.record);
@@ -197,30 +182,46 @@ export async function atomicCompositeWrite(config, operations) {
 
 // -------------------- granular helpers --------------------
 
-export async function insertJsonRecord(config, collection, record) {
+export async function insertJsonRecord(
+  config: AppConfig,
+  collection: string,
+  record: StoreRecord,
+): Promise<StoreRecord | null> {
   return transaction(config, async (client) => insertWithClient(client, collection, record));
 }
 
-export async function findRecord(config, collection, predicate) {
-  // Postgres has no general predicate-pushdown for arbitrary JS callbacks.
-  // Fall back to fetching the collection and filtering in JS.
+export interface FindResult {
+  item: StoreRecord | null;
+  store: null;
+}
+
+export async function findRecord(
+  config: AppConfig,
+  collection: string,
+  predicate: (record: StoreRecord) => boolean,
+): Promise<FindResult> {
   const m = mappingFor(collection);
-  let rows;
+  let rows: StoreRecord[];
   try {
     const r = await query(config, `SELECT * FROM ${m.table}`);
-    rows = r.rows.map(rowToRecord);
+    rows = r.rows.map(rowToRecord).filter((row): row is StoreRecord => row !== null);
   } catch (err) {
-    if (err && err.code === '42P01') return { item: null, store: null };
+    if (isPgError(err, '42P01')) return { item: null, store: null };
     throw err;
   }
   const item = rows.find(predicate) || null;
   return { item, store: null };
 }
 
-export async function updateJsonRecord(config, collection, predicate, updater) {
+export async function updateJsonRecord(
+  config: AppConfig,
+  collection: string,
+  predicate: (record: StoreRecord) => boolean,
+  updater: RecordUpdater,
+): Promise<StoreRecord | null> {
   const m = mappingFor(collection);
   const r = await query(config, `SELECT * FROM ${m.table}`);
-  const rows = r.rows.map(rowToRecord);
+  const rows = r.rows.map(rowToRecord).filter((row): row is StoreRecord => row !== null);
   const idx = rows.findIndex(predicate);
   if (idx === -1) return null;
   const existing = rows[idx];
@@ -229,26 +230,30 @@ export async function updateJsonRecord(config, collection, predicate, updater) {
   return next;
 }
 
-export async function updatePayment(config, id, updater) {
+export async function updatePayment(config: AppConfig, id: unknown, updater: UpdaterFn): Promise<StoreRecord | null> {
   return updateByIdWithUpdater(config, 'payments', id, updater);
 }
 
-export async function updateMandate(config, id, updater) {
+export async function updateMandate(config: AppConfig, id: unknown, updater: UpdaterFn): Promise<StoreRecord | null> {
   return updateByIdWithUpdater(config, 'mandates', id, updater);
 }
 
-export async function updateSipControlRequest(config, id, updater) {
+export async function updateSipControlRequest(config: AppConfig, id: unknown, updater: UpdaterFn): Promise<StoreRecord | null> {
   return updateByIdWithUpdater(config, 'sipControlRequests', id, updater);
 }
 
-export async function deleteJsonRecord(config, collection, predicate) {
+export async function deleteJsonRecord(
+  config: AppConfig,
+  collection: string,
+  predicate: (record: StoreRecord) => boolean,
+): Promise<StoreRecord | null> {
   const m = mappingFor(collection);
-  let rows;
+  let rows: StoreRecord[];
   try {
     const r = await query(config, `SELECT * FROM ${m.table}`);
-    rows = r.rows.map(rowToRecord);
+    rows = r.rows.map(rowToRecord).filter((row): row is StoreRecord => row !== null);
   } catch (err) {
-    if (err && err.code === '42P01') return null;
+    if (isPgError(err, '42P01')) return null;
     throw err;
   }
   const idx = rows.findIndex(predicate);
@@ -259,7 +264,16 @@ export async function deleteJsonRecord(config, collection, predicate) {
   return existing;
 }
 
-async function updateByIdWithUpdater(config, collection, id, updater) {
+// The mutator receives the existing row and (in legacy JSON mode) a store handle.
+// Both are dynamically shaped, so the callback operates on `any`.
+type UpdaterFn = (existing: any, store: any) => any;
+
+async function updateByIdWithUpdater(
+  config: AppConfig,
+  collection: string,
+  id: unknown,
+  updater: UpdaterFn,
+): Promise<StoreRecord | null> {
   const m = mappingFor(collection);
   const r = await query(config, `SELECT * FROM ${m.table} WHERE ${m.idColumn} = $1 LIMIT 1`, [id]);
   if (r.rows.length === 0) return null;
@@ -272,11 +286,16 @@ async function updateByIdWithUpdater(config, collection, id, updater) {
 
 // -------------------- internals --------------------
 
-function buildInsert(table, record, hasPayload) {
-  const cols = [];
-  const placeholders = [];
-  const values = [];
-  const payloadExtras = {};
+interface BuiltInsert {
+  sql: string;
+  values: unknown[];
+}
+
+function buildInsert(table: string, record: StoreRecord, hasPayload: boolean): BuiltInsert {
+  const cols: string[] = [];
+  const placeholders: string[] = [];
+  const values: unknown[] = [];
+  const payloadExtras: StoreRecord = {};
   let i = 1;
 
   for (const [k, v] of Object.entries(record)) {
@@ -303,14 +322,18 @@ function buildInsert(table, record, hasPayload) {
 // Loose column-name regex: snake_case alphanum + underscore only.
 const KNOWN_COLUMN_RE = /^[a-z_][a-z0-9_]*$/;
 
-function serializeValue(v) {
+function serializeValue(v: unknown): unknown {
   if (v && typeof v === 'object' && !(v instanceof Date)) {
     return JSON.stringify(v);
   }
   return v;
 }
 
-async function insertWithClient(client, collection, record) {
+async function insertWithClient(
+  client: PoolClient,
+  collection: string,
+  record: StoreRecord,
+): Promise<StoreRecord | null> {
   const m = mappingFor(collection);
   const hasPayload = TABLES_WITH_PAYLOAD.has(m.table);
 
@@ -327,17 +350,27 @@ async function insertWithClient(client, collection, record) {
   return rowToRecord(r.rows[0]);
 }
 
-async function updateById(config, collection, id, record) {
+async function updateById(
+  config: AppConfig,
+  collection: string,
+  id: unknown,
+  record: StoreRecord,
+): Promise<StoreRecord | null> {
   return transaction(config, async (client) => updateByIdWithClient(client, collection, id, record));
 }
 
-async function updateByIdWithClient(client, collection, id, record) {
+async function updateByIdWithClient(
+  client: PoolClient,
+  collection: string,
+  id: unknown,
+  record: StoreRecord,
+): Promise<StoreRecord | null> {
   const m = mappingFor(collection);
   const hasPayload = TABLES_WITH_PAYLOAD.has(m.table);
 
-  const sets = [];
-  const values = [];
-  const payloadExtras = {};
+  const sets: string[] = [];
+  const values: unknown[] = [];
+  const payloadExtras: StoreRecord = {};
   let i = 1;
 
   for (const [k, v] of Object.entries(record)) {
@@ -366,8 +399,7 @@ async function updateByIdWithClient(client, collection, id, record) {
 
 // -------------------- status --------------------
 
-export async function jsonDatabaseStatus(config) {
-  // In pg mode the json status is just the pg status — surface forwarded.
+export async function jsonDatabaseStatus(config: AppConfig): Promise<DatabaseStatus> {
   if (!hasDatabaseConfig(config)) {
     return {
       configured: false,

@@ -1,58 +1,58 @@
 import { isValidMoneyState } from './moneyState.js';
 
-function plainObject(value) {
+function plainObject(value: any) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function assertPlainObject(value, name) {
+function assertPlainObject(value: any, name: any) {
   if (!plainObject(value)) {
     throw new TypeError(`${name} must be a plain object.`);
   }
 }
 
-function assertString(value, name) {
+function assertString(value: any, name: any) {
   if (typeof value !== 'string' || value.length === 0) {
     throw new TypeError(`${name} must be a non-empty string.`);
   }
 }
 
-function assertNumber(value, name) {
+function assertNumber(value: any, name: any) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new TypeError(`${name} must be a finite number.`);
   }
 }
 
-function assertOptionalNumber(value, name) {
+function assertOptionalNumber(value: any, name: any) {
   if (value !== undefined && value !== null && (typeof value !== 'number' || !Number.isFinite(value))) {
     throw new TypeError(`${name} must be a finite number or null/undefined.`);
   }
 }
 
-function assertDateString(value, name) {
+function assertDateString(value: any, name: any) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value)) {
     throw new TypeError(`${name} must be an ISO date string.`);
   }
 }
 
-function assertOptionalString(value, name) {
+function assertOptionalString(value: any, name: any) {
   if (value !== undefined && value !== null && typeof value !== 'string') {
     throw new TypeError(`${name} must be a string or null/undefined.`);
   }
 }
 
-function assertArray(value, name) {
+function assertArray(value: any, name: any) {
   if (!Array.isArray(value)) {
     throw new TypeError(`${name} must be an array.`);
   }
 }
 
-function assertOptionalArray(value, name) {
+function assertOptionalArray(value: any, name: any) {
   if (value !== undefined && value !== null && !Array.isArray(value)) {
     throw new TypeError(`${name} must be an array or null/undefined.`);
   }
 }
 
-function assertMoneyState(value, name) {
+function assertMoneyState(value: any, name: any) {
   if (!isValidMoneyState(value)) {
     throw new TypeError(`${name} must be a valid MoneyState value.`);
   }
@@ -71,7 +71,7 @@ function assertMoneyState(value, name) {
  * @property {HoldingSnapshot[]} holdings
  */
 
-export function validatePortfolioSummary(payload) {
+export function validatePortfolioSummary(payload: any) {
   assertPlainObject(payload, 'PortfolioSummary');
   assertOptionalNumber(payload.currentValue, 'currentValue');
   assertNumber(payload.invested, 'invested');
@@ -84,11 +84,11 @@ export function validatePortfolioSummary(payload) {
     throw new TypeError('staleFlag must be a boolean.');
   }
   assertArray(payload.holdings, 'holdings');
-  payload.holdings.forEach((h, i) => {
+  payload.holdings.forEach((h: any, i: any) => {
     try {
       validateHoldingSnapshot(h);
     } catch (err) {
-      throw new TypeError(`holdings[${i}]: ${err.message}`);
+      throw new TypeError(`holdings[${i}]: ${(err as Error).message}`);
     }
   });
   return payload;
@@ -103,7 +103,7 @@ export function validatePortfolioSummary(payload) {
  * @property {string} status - MoneyState
  */
 
-export function validateHoldingSnapshot(payload) {
+export function validateHoldingSnapshot(payload: any) {
   assertPlainObject(payload, 'HoldingSnapshot');
   assertString(payload.fundId, 'fundId');
   assertString(payload.fundName, 'fundName');
@@ -130,7 +130,7 @@ export function validateHoldingSnapshot(payload) {
  * @property {Object} providerConfig
  */
 
-export function validateProductDetail(payload) {
+export function validateProductDetail(payload: any) {
   assertPlainObject(payload, 'ProductDetail');
   assertString(payload.id, 'id');
   assertString(payload.name, 'name');
@@ -158,7 +158,7 @@ export function validateProductDetail(payload) {
  * @property {string} reviewUrl
  */
 
-export function validateSipCreateResponse(payload) {
+export function validateSipCreateResponse(payload: any) {
   assertPlainObject(payload, 'SipCreateResponse');
   assertString(payload.planId, 'planId');
   assertString(payload.paymentId, 'paymentId');
@@ -181,7 +181,7 @@ export function validateSipCreateResponse(payload) {
  * @property {string|null} failureReason
  */
 
-export function validatePaymentStatus(payload) {
+export function validatePaymentStatus(payload: any) {
   assertPlainObject(payload, 'PaymentStatus');
   assertString(payload.id, 'id');
   assertNumber(payload.amount, 'amount');
@@ -206,7 +206,7 @@ export function validatePaymentStatus(payload) {
  * @property {string|null} authorizedAt
  */
 
-export function validateMandateStatus(payload) {
+export function validateMandateStatus(payload: any) {
   assertPlainObject(payload, 'MandateStatus');
   assertString(payload.id, 'id');
   assertMoneyState(payload.status, 'status');

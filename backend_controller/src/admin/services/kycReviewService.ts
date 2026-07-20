@@ -1,9 +1,11 @@
+import type { PoolClient } from 'pg';
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { query, transaction } from '#db/client.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
-async function _reviewKyc(config, actor, userId, body) {
+async function _reviewKyc(config: AppConfig, actor: Actor, userId: string, body: any) {
   const action = String(body?.action || '').trim().toLowerCase();
   const reason = String(body?.reason || '').trim();
 
@@ -17,7 +19,7 @@ async function _reviewKyc(config, actor, userId, body) {
 
   const now = new Date().toISOString();
 
-  return transaction(config, async (client) => {
+  return transaction(config, async (client: PoolClient) => {
     const userResult = await client.query(`
       SELECT id, status::text, kyc_status::text, risk_profile_status::text
       FROM users
@@ -96,12 +98,12 @@ async function _reviewKyc(config, actor, userId, body) {
   });
 }
 
-export const reviewKyc = withReceipt(_reviewKyc, (result) => {
+export const reviewKyc = withReceipt(_reviewKyc, (result: any) => {
   return result.action === 'approve' ? 'kyc_approved' : 'kyc_rejected';
 }, {
   entityType: 'kyc_profile',
-  entityId: (result) => result.userId,
-  afterState: (result) => result.reviewStatus,
-  subjectUserId: (result) => result.userId,
+  entityId: (result: any) => result.userId,
+  afterState: (result: any) => result.reviewStatus,
+  subjectUserId: (result: any) => result.userId,
   source: 'mock',
 });

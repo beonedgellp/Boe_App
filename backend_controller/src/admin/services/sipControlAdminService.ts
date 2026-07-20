@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
 import { updateSipControlRequest } from '#db/pgAdapter.js';
 
-export async function reviewSipControlRequest(config, actor, requestId, body: any = {}) {
+export async function reviewSipControlRequest(config: AppConfig, actor: Actor, requestId: string, body: any = {}) {
   const nextStatus = String(body.status || '').trim().toLowerCase();
   if (!['approved', 'rejected'].includes(nextStatus)) {
     throw new HttpError(400, 'INVALID_STATUS', 'Status must be approved or rejected.');

@@ -1,8 +1,21 @@
 import { HttpError } from './errors.js';
 
-export function validateBody(body: any, schema: Record<string, any>) {
+export interface FieldRule {
+  required?: boolean;
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  pattern?: RegExp;
+  enum?: readonly unknown[];
+}
+
+export type ValidationSchema = Record<string, FieldRule>;
+
+export function validateBody(body: Record<string, unknown> | undefined, schema: ValidationSchema): void {
   const errors: string[] = [];
-  for (const [key, rules] of Object.entries<any>(schema)) {
+  for (const [key, rules] of Object.entries(schema)) {
     const value = body?.[key];
     if (rules.required && (value === undefined || value === null || value === '')) {
       errors.push(`${key} is required.`);

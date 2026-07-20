@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -14,29 +15,29 @@ export { computeFundAge, computeFundAnalytics, toClientFund, toClientFunds };
 
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function toTrimmedString(value, fallback = '') {
+function toTrimmedString(value: any, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-function enrichFundWithAnalytics(fund) {
+function enrichFundWithAnalytics(fund: any) {
   const trackingId = fund.trackingId || fund.fundCode || `FP-${String(fund.id || '').replace(/-/g, '').slice(0, 10).toUpperCase()}`;
   return { ...fund, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(fund) };
 }
 
-export async function listFunds(config) {
+export async function listFunds(config: AppConfig) {
   const store = await readJsonStore(config);
   const items = Array.isArray(store.funds) ? store.funds : [];
   return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
 }
 
-export async function getFund(config, fundId) {
+export async function getFund(config: AppConfig, fundId: string) {
   const store = await readJsonStore(config);
   const fund = (store.funds || []).find((f) => f.id === fundId);
 
@@ -47,7 +48,7 @@ export async function getFund(config, fundId) {
   return fund;
 }
 
-export async function createRedemptionRequest(config, userId, body) {
+export async function createRedemptionRequest(config: AppConfig, userId: string, body: any) {
   const { fundId, amount, type, holdingId } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -59,9 +60,9 @@ export async function createRedemptionRequest(config, userId, body) {
     let holding = null;
 
     if (holdingId && !resolvedFundId) {
-      const portfolio = store[`portfolio_${userId}`];
+      const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -71,9 +72,9 @@ export async function createRedemptionRequest(config, userId, body) {
     if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
 
     if (!holding) {
-      const portfolio = store[`portfolio_${userId}`];
+      const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: any) => h.fundId === resolvedFundId) || null;
       }
     }
 
@@ -128,7 +129,7 @@ export async function createRedemptionRequest(config, userId, body) {
   });
 }
 
-export async function listRedemptionRequests(config, { status, userId, fundId }: any = {}) {
+export async function listRedemptionRequests(config: AppConfig, { status, userId, fundId }: any = {}) {
   const store = await readJsonStore(config);
   let items = store.redemptionRequests || [];
 

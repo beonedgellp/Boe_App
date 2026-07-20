@@ -1,21 +1,22 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { query } from '#db/client.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-function toTrimmedString(value, fallback = '') {
+function toTrimmedString(value: any, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-function validateSlug(slug) {
+function validateSlug(slug: any) {
   if (!SLUG_PATTERN.test(slug)) {
     throw new HttpError(400, 'INVALID_SLUG', 'Slug must be lowercase alphanumeric with hyphens.');
   }
 }
 
-function rowToCourse(row) {
+function rowToCourse(row: any) {
   if (!row) return null;
   return {
     id: row.id,
@@ -33,15 +34,15 @@ function rowToCourse(row) {
   };
 }
 
-function sortCourses(items) {
-  return items.sort((a, b) => {
+function sortCourses(items: any) {
+  return items.sort((a: any, b: any) => {
     const sortDiff = (a.sortOrder || 0) - (b.sortOrder || 0);
     if (sortDiff !== 0) return sortDiff;
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 }
 
-export async function listCourses(config, opts: any = {}) {
+export async function listCourses(config: AppConfig, opts: any = {}) {
   const result = await query(config, `
     SELECT * FROM courses
     WHERE status = 'published'
@@ -51,7 +52,7 @@ export async function listCourses(config, opts: any = {}) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function listAdminCourses(config) {
+export async function listAdminCourses(config: AppConfig) {
   const result = await query(config, `
     SELECT * FROM courses
     ORDER BY sort_order ASC, created_at DESC
@@ -60,7 +61,7 @@ export async function listAdminCourses(config) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function createCourse(config, body) {
+export async function createCourse(config: AppConfig, body: any) {
   const payload = body && typeof body === 'object' ? body : {};
   const slug = toTrimmedString(payload.slug);
   const name = toTrimmedString(payload.name);
@@ -102,7 +103,7 @@ export async function createCourse(config, body) {
   return rowToCourse(result.rows[0]);
 }
 
-export async function updateCourse(config, id, body) {
+export async function updateCourse(config: AppConfig, id: string, body: any) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
 
@@ -137,7 +138,7 @@ export async function updateCourse(config, id, body) {
   return rowToCourse(result.rows[0]);
 }
 
-export async function deleteCourse(config, id) {
+export async function deleteCourse(config: AppConfig, id: string) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Course ID is required.');
 
   const result = await query(config, `

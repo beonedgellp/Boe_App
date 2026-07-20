@@ -1,8 +1,9 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 
-export async function sendNotification(config, actor, body) {
+export async function sendNotification(config: AppConfig, actor: Actor, body: any) {
   const title = String(body?.title || '').trim();
   const messageBody = String(body?.body || '').trim();
   const target = String(body?.target || '').trim().toLowerCase();
@@ -32,7 +33,7 @@ export async function sendNotification(config, actor, body) {
       .map((u) => u.id);
   }
 
-  const notificationIds = [];
+  const notificationIds: any[] = [];
   await updateJsonStore(config, (s) => {
     if (!Array.isArray(s.notifications)) s.notifications = [];
     for (const userId of targetUserIds) {
@@ -54,7 +55,7 @@ export async function sendNotification(config, actor, body) {
   return { sentCount: targetUserIds.length, notificationIds };
 }
 
-export async function notifyUserApproved(config, userId, userName) {
+export async function notifyUserApproved(config: AppConfig, userId: string, userName: any) {
   const now = new Date().toISOString();
   let notificationId;
   await updateJsonStore(config, (s) => {
@@ -75,7 +76,7 @@ export async function notifyUserApproved(config, userId, userName) {
   return { notificationId };
 }
 
-export async function notifyUserRejected(config, userId, userName, reason) {
+export async function notifyUserRejected(config: AppConfig, userId: string, userName: any, reason: any) {
   const now = new Date().toISOString();
   let notificationId;
   await updateJsonStore(config, (s) => {
@@ -96,7 +97,7 @@ export async function notifyUserRejected(config, userId, userName, reason) {
   return { notificationId };
 }
 
-export async function listAdminNotifications(config, { page = 1, limit = 25 }: any = {}) {
+export async function listAdminNotifications(config: AppConfig, { page = 1, limit = 25 }: any = {}) {
   const store = await readJsonStore(config);
   let items = Array.isArray(store.notifications) ? store.notifications : [];
   items = items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());

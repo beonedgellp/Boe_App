@@ -18,7 +18,7 @@ export const MoneyState = Object.freeze({
 
 const ALL_VALUES: string[] = Object.values(MoneyState);
 
-export function isValidMoneyState(value) {
+export function isValidMoneyState(value: any) {
   return typeof value === 'string' && ALL_VALUES.includes(value);
 }
 
@@ -27,7 +27,7 @@ export function isValidMoneyState(value) {
  * @param {string} moneyState
  * @returns {string[] | null}
  */
-export function toPaymentStatus(moneyState) {
+export function toPaymentStatus(moneyState: any) {
   switch (moneyState) {
     case MoneyState.PENDING_PAYMENT:
       return ['created', 'gateway_initiated', 'pending'];
@@ -47,7 +47,7 @@ export function toPaymentStatus(moneyState) {
  * @param {string} moneyState
  * @returns {string[] | null}
  */
-export function toMandateStatus(moneyState) {
+export function toMandateStatus(moneyState: any) {
   switch (moneyState) {
     case MoneyState.MANDATE_PENDING:
       return ['setup_required', 'created', 'pending_user_auth'];
@@ -65,7 +65,7 @@ export function toMandateStatus(moneyState) {
  * @param {string} moneyState
  * @returns {string[] | null}
  */
-export function toTransactionStatus(moneyState) {
+export function toTransactionStatus(moneyState: any) {
   switch (moneyState) {
     case MoneyState.PENDING_PAYMENT:
       return ['payment_pending'];
@@ -89,7 +89,7 @@ export function toTransactionStatus(moneyState) {
  * @param {string} moneyState
  * @returns {string[] | null}
  */
-export function toInvestmentPlanStatus(moneyState) {
+export function toInvestmentPlanStatus(moneyState: any) {
   switch (moneyState) {
     case MoneyState.PENDING_PAYMENT:
       return ['pending_first_payment', 'installment_due'];

@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { loadConfig } from '#config/env.js';
 
-function sqlLiteral(value) {
+function sqlLiteral(value: any) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-async function migrationFiles(dir) {
+async function migrationFiles(dir: any) {
   const entries = await readdir(dir, { withFileTypes: true });
   return entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
@@ -16,11 +16,11 @@ async function migrationFiles(dir) {
     .sort();
 }
 
-function hasDatabaseConfig(config) {
+function hasDatabaseConfig(config: any) {
   return Boolean(config.databaseUrl || (config.databaseHost && config.databaseName && config.databaseUser));
 }
 
-function psqlConnection(config) {
+function psqlConnection(config: any) {
   if (config.databaseUrl) {
     return {
       args: [config.databaseUrl],
@@ -41,7 +41,7 @@ function psqlConnection(config) {
   };
 }
 
-function runPsql(config, sql): Promise<string> {
+function runPsql(config: any, sql: any): Promise<string> {
   return new Promise<string>((resolvePromise, rejectPromise) => {
     const connection = psqlConnection(config);
     const child = spawn('psql', [
@@ -57,14 +57,14 @@ function runPsql(config, sql): Promise<string> {
 
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', (chunk) => {
+    child.stdout.on('data', (chunk: any) => {
       stdout += chunk.toString();
     });
-    child.stderr.on('data', (chunk) => {
+    child.stderr.on('data', (chunk: any) => {
       stderr += chunk.toString();
     });
     child.on('error', rejectPromise);
-    child.on('close', (code) => {
+    child.on('close', (code: any) => {
       if (code === 0) resolvePromise(stdout.trim());
       else rejectPromise(new Error(stderr.trim() || `psql exited with code ${code}`));
     });
@@ -73,7 +73,7 @@ function runPsql(config, sql): Promise<string> {
   });
 }
 
-async function appliedVersions(config) {
+async function appliedVersions(config: any) {
   const sql = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version text PRIMARY KEY,
@@ -87,7 +87,7 @@ SELECT version FROM schema_migrations ORDER BY version;
   return new Set(output.split('\n').map((line) => line.trim()).filter(Boolean));
 }
 
-async function status(config, files) {
+async function status(config: any, files: any) {
   if (!hasDatabaseConfig(config)) {
     for (const file of files) console.log(`pending ${file}`);
     console.log('Database connection is not configured; status is local-only.');
@@ -101,7 +101,7 @@ async function status(config, files) {
   }
 }
 
-async function up(config, dir, files) {
+async function up(config: any, dir: any, files: any) {
   if (!hasDatabaseConfig(config)) {
     throw new Error('Database connection is required to run migrations.');
   }

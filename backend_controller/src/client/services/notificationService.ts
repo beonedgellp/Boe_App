@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore } from '#db/pgAdapter.js';
 
-export async function markNotificationRead(config, actor, notificationId) {
+export async function markNotificationRead(config: AppConfig, actor: Actor, notificationId: any) {
   const updated = await updateJsonStore(config, (store) => {
     const notifications = store.notifications || [];
     const idx = notifications.findIndex((n) => n.id === notificationId);

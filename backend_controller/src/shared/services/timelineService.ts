@@ -1,13 +1,14 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { readJsonStore } from '#db/pgAdapter.js';
 import { isValidMoneyState } from '../contracts/moneyState.js';
 import { getCopy, getLatestVersion } from './copyRegistry.js';
 
-function displayName(user) {
+function displayName(user: any) {
   return [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || undefined;
 }
 
-function buildUserMap(store) {
+function buildUserMap(store: any) {
   const map = new Map();
   for (const user of store.users || []) {
     map.set(user.id, user);
@@ -15,7 +16,7 @@ function buildUserMap(store) {
   return map;
 }
 
-function actorFor(userId, userMap, fallbackRole = 'client') {
+function actorFor(userId: string, userMap: any, fallbackRole = 'client') {
   const user = userMap.get(userId);
   return {
     userId: userId || null,
@@ -53,16 +54,16 @@ function makeEvent({
   };
 }
 
-function sanitizeMetadata(entity, keys) {
-  const meta = {};
+function sanitizeMetadata(entity: any, keys: any) {
+  const meta: Record<string, any> = {};
   for (const key of keys) {
     if (key in entity) meta[key] = entity[key];
   }
   return meta;
 }
 
-function receiptsToEvents(receipts, userMap) {
-  return receipts.map((r) =>
+function receiptsToEvents(receipts: any, userMap: any) {
+  return receipts.map((r: any) =>
     makeEvent({
       entity: r,
       kind: 'receipt',
@@ -76,8 +77,8 @@ function receiptsToEvents(receipts, userMap) {
   );
 }
 
-function auditLogsToEvents(logs, userMap) {
-  return logs.map((log) =>
+function auditLogsToEvents(logs: any, userMap: any) {
+  return logs.map((log: any) =>
     makeEvent({
       entity: log,
       kind: 'audit',
@@ -94,8 +95,8 @@ function auditLogsToEvents(logs, userMap) {
   );
 }
 
-function investmentPlansToEvents(plans, userMap) {
-  return plans.map((p) =>
+function investmentPlansToEvents(plans: any, userMap: any) {
+  return plans.map((p: any) =>
     makeEvent({
       entity: p,
       kind: 'state_change',
@@ -109,8 +110,8 @@ function investmentPlansToEvents(plans, userMap) {
   );
 }
 
-function paymentsToEvents(payments, userMap) {
-  return payments.map((p) =>
+function paymentsToEvents(payments: any, userMap: any) {
+  return payments.map((p: any) =>
     makeEvent({
       entity: p,
       kind: 'state_change',
@@ -124,8 +125,8 @@ function paymentsToEvents(payments, userMap) {
   );
 }
 
-function mandatesToEvents(mandates, userMap) {
-  return mandates.map((m) =>
+function mandatesToEvents(mandates: any, userMap: any) {
+  return mandates.map((m: any) =>
     makeEvent({
       entity: m,
       kind: 'state_change',
@@ -139,8 +140,8 @@ function mandatesToEvents(mandates, userMap) {
   );
 }
 
-function transactionsToEvents(transactions, userMap) {
-  return transactions.map((t) =>
+function transactionsToEvents(transactions: any, userMap: any) {
+  return transactions.map((t: any) =>
     makeEvent({
       entity: t,
       kind: 'state_change',
@@ -154,8 +155,8 @@ function transactionsToEvents(transactions, userMap) {
   );
 }
 
-function sipControlRequestsToEvents(requests, userMap) {
-  return requests.map((r) =>
+function sipControlRequestsToEvents(requests: any, userMap: any) {
+  return requests.map((r: any) =>
     makeEvent({
       entity: r,
       kind: 'state_change',
@@ -169,8 +170,8 @@ function sipControlRequestsToEvents(requests, userMap) {
   );
 }
 
-function redemptionRequestsToEvents(requests, userMap) {
-  return requests.map((r) =>
+function redemptionRequestsToEvents(requests: any, userMap: any) {
+  return requests.map((r: any) =>
     makeEvent({
       entity: r,
       kind: 'state_change',
@@ -184,8 +185,8 @@ function redemptionRequestsToEvents(requests, userMap) {
   );
 }
 
-function supportTicketsToEvents(tickets, userMap) {
-  return tickets.map((t) =>
+function supportTicketsToEvents(tickets: any, userMap: any) {
+  return tickets.map((t: any) =>
     makeEvent({
       entity: t,
       kind: 'state_change',
@@ -199,15 +200,15 @@ function supportTicketsToEvents(tickets, userMap) {
   );
 }
 
-async function readStore(config) {
+async function readStore(config: AppConfig) {
   return readJsonStore(config);
 }
 
-export async function buildTimelineForUser(config, userId, options: any = {}) {
+export async function buildTimelineForUser(config: AppConfig, userId: string, options: any = {}) {
   const store = await readStore(config);
   const userMap = buildUserMap(store);
 
-  const filterByUser = (item) => item.userId === userId;
+  const filterByUser = (item: any) => item.userId === userId;
 
   const receipts = (store.receipts || []).filter(filterByUser);
 
@@ -255,7 +256,7 @@ export async function buildTimelineForUser(config, userId, options: any = {}) {
   return { events: paginated, total };
 }
 
-export async function buildTimelineForEntity(config, entityType, entityId, options: any = {}) {
+export async function buildTimelineForEntity(config: AppConfig, entityType: any, entityId: any, options: any = {}) {
   const store = await readStore(config);
   const userMap = buildUserMap(store);
 
@@ -327,30 +328,30 @@ const STATUS_TO_MONEY_STATE = {
   },
 };
 
-function deriveMoneyState(store, userId) {
+function deriveMoneyState(store: any, userId: string) {
   const candidates = [];
 
   for (const p of store.payments || []) {
     if (p.userId !== userId) continue;
-    const state = STATUS_TO_MONEY_STATE.payment[p.status];
+    const state = (STATUS_TO_MONEY_STATE.payment as Record<string, string>)[p.status];
     if (state) candidates.push({ state, ts: p.updatedAt || p.createdAt });
   }
 
   for (const m of store.mandates || []) {
     if (m.userId !== userId) continue;
-    const state = STATUS_TO_MONEY_STATE.mandate[m.status];
+    const state = (STATUS_TO_MONEY_STATE.mandate as Record<string, string>)[m.status];
     if (state) candidates.push({ state, ts: m.updatedAt || m.createdAt });
   }
 
   for (const p of store.investmentPlans || []) {
     if (p.userId !== userId) continue;
-    const state = STATUS_TO_MONEY_STATE.investment_plan[p.status];
+    const state = (STATUS_TO_MONEY_STATE.investment_plan as Record<string, string>)[p.status];
     if (state) candidates.push({ state, ts: p.updatedAt || p.createdAt });
   }
 
   for (const r of store.redemptionRequests || []) {
     if (r.userId !== userId) continue;
-    const state = STATUS_TO_MONEY_STATE.redemption_request[r.status];
+    const state = (STATUS_TO_MONEY_STATE.redemption_request as Record<string, string>)[r.status];
     if (state) candidates.push({ state, ts: r.updatedAt || r.createdAt });
   }
 
@@ -360,7 +361,7 @@ function deriveMoneyState(store, userId) {
   return candidates[0].state;
 }
 
-export async function getNextStepText(config, userId, explicitState = null) {
+export async function getNextStepText(config: AppConfig, userId: string, explicitState: string | null = null) {
   const version = getLatestVersion();
   if (explicitState && isValidMoneyState(explicitState)) {
     return getCopy(version, explicitState);

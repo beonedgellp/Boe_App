@@ -1,3 +1,5 @@
+import type { Role } from '#types/index.js';
+import type { Router } from '#http/router.js';
 import { Routes } from '#shared/routes/constants.js';
 import { HttpError } from '#http/errors.js';
 import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
@@ -75,9 +77,9 @@ import { registerWebhookRoutes } from '#shared/routes/webhookRoutes.js';
 import { registerClientReceiptRoutes } from '#shared/routes/receiptRoutes.js';
 import { registerClientTimelineRoutes } from '#shared/routes/timelineRoutes.js';
 
-const CLIENT_ROLES = ['client', 'admin'];
+const CLIENT_ROLES: Role[] = ['client', 'admin'];
 
-function readIdempotencyHeader(headers) {
+function readIdempotencyHeader(headers: any) {
   if (!headers) return null;
   const raw = headers['idempotency-key'] ?? headers['Idempotency-Key'];
   if (raw == null) return null;
@@ -86,7 +88,7 @@ function readIdempotencyHeader(headers) {
   return trimmed.length === 0 ? null : trimmed;
 }
 
-export function registerClientRoutes(router) {
+export function registerClientRoutes(router: Router) {
   // Provider webhooks (payments/mandates) + client-facing receipts/timeline belong to
   // the client/payment surface so an admin-only server doesn't expose them.
   registerWebhookRoutes(router);
@@ -98,21 +100,21 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client portfolio dashboard.',
-  }, ({ config, actor }) => clientDashboard(config, actor.userId));
+  }, ({ config, actor }) => clientDashboard(config, actor!.userId));
 
   router.get(Routes.GET_V1_CLIENT_PORTFOLIO, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client portfolio detail.',
-  }, ({ config, actor }) => clientPortfolio(config, actor.userId));
+  }, ({ config, actor }) => clientPortfolio(config, actor!.userId));
 
   router.get(Routes.GET_V1_CLIENT_PORTFOLIO_HOLDINGS_FUND_ID, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Single client holding detail.',
-  }, ({ config, actor, params }) => getHolding(config, actor, params.fund_id));
+  }, ({ config, actor, params }) => getHolding(config, actor!, params.fund_id));
 
   router.get(Routes.GET_V1_CLIENT_RESEARCH_CONTEXT, {
     group: 'client',
@@ -129,7 +131,7 @@ export function registerClientRoutes(router) {
   }, async ({ config }) => {
     const { items } = await listFunds(config);
     const clientItems = toClientFunds(items)
-      .filter((f) => f.lifecycleStage === 'active' || f.lifecycleStage === 'published');
+      .filter((f: any) => f.lifecycleStage === 'active' || f.lifecycleStage === 'published');
     return { items: clientItems, count: clientItems.length };
   });
 
@@ -186,14 +188,14 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client investment plan and order list.',
-  }, ({ config, actor }) => clientOrders(config, actor.userId));
+  }, ({ config, actor }) => clientOrders(config, actor!.userId));
 
   router.get(Routes.GET_V1_CLIENT_ORDERS_ORDER_ID, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client order/transaction status.',
-  }, ({ config, actor, params }) => getOrder(config, actor, params.order_id));
+  }, ({ config, actor, params }) => getOrder(config, actor!, params.order_id));
 
   router.post(Routes.POST_V1_CLIENT_ORDERS_ORDER_ID_PAY_PENDING_INSTALLMENT, {
     group: 'client',
@@ -214,7 +216,7 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client payment list filtered by status.',
-  }, ({ config, actor, query }) => clientPayments(config, actor.userId, {
+  }, ({ config, actor, query }) => clientPayments(config, actor!.userId, {
     status: query?.status || '',
   }));
 
@@ -223,7 +225,7 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client payment status.',
-  }, ({ config, actor, params }) => getPayment(config, actor, params.payment_id));
+  }, ({ config, actor, params }) => getPayment(config, actor!, params.payment_id));
 
   router.post(Routes.POST_V1_CLIENT_PAYMENTS_PAYMENT_ID_CONFIRM_RAZORPAY, {
     group: 'client',
@@ -235,7 +237,7 @@ export function registerClientRoutes(router) {
       razorpay_order_id: { required: true, type: 'string', minLength: 1 },
       razorpay_signature: { required: true, type: 'string', minLength: 1 },
     });
-    return confirmRazorpayPayment(config, actor, params.payment_id, body);
+    return confirmRazorpayPayment(config, actor!, params.payment_id, body);
   });
 
   router.post(Routes.POST_V1_CLIENT_PAYMENTS_PAYMENT_ID_RETRY, {
@@ -257,14 +259,14 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client UPI AutoPay mandates.',
-  }, ({ config, actor }) => clientMandates(config, actor.userId));
+  }, ({ config, actor }) => clientMandates(config, actor!.userId));
 
   router.get(Routes.GET_V1_CLIENT_MANDATES_MANDATE_ID, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client mandate detail.',
-  }, ({ config, actor, params }) => getMandate(config, actor, params.mandate_id));
+  }, ({ config, actor, params }) => getMandate(config, actor!, params.mandate_id));
 
   router.post(Routes.POST_V1_CLIENT_MANDATES_MANDATE_ID_AUTHORIZE, {
     group: 'client',
@@ -291,7 +293,7 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client SIP control request list.',
-  }, ({ config, actor }) => listSipControlRequests(config, actor));
+  }, ({ config, actor }) => listSipControlRequests(config, actor!));
 
   router.get(Routes.GET_V1_CLIENT_TRANSACTIONS, {
     group: 'client',
@@ -300,7 +302,7 @@ export function registerClientRoutes(router) {
     description: 'Client transaction ledger.',
   }, async ({ config, actor, query }) => {
     const filter = String(query?.filter || 'all').trim();
-    const result = await clientTransactions(config, actor.userId);
+    const result = await clientTransactions(config, actor!.userId);
     let items = result.items || [];
     if (filter === 'sip') items = items.filter((transaction) => transaction.type === 'sip');
     if (filter === 'lumpsum') items = items.filter((transaction) => transaction.type === 'lumpsum');
@@ -315,41 +317,41 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client transaction detail.',
-  }, ({ config, actor, params }) => getTransaction(config, actor, params.transaction_id));
+  }, ({ config, actor, params }) => getTransaction(config, actor!, params.transaction_id));
 
   router.get(Routes.GET_V1_CLIENT_STATEMENTS, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client generated statements.',
-  }, ({ config, actor }) => listStatements(config, actor));
+  }, ({ config, actor }) => listStatements(config, actor!));
 
   router.get(Routes.GET_V1_CLIENT_STATEMENTS_STATEMENT_ID, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client statement detail.',
-  }, ({ config, actor, params }) => getStatement(config, actor, params.statement_id));
+  }, ({ config, actor, params }) => getStatement(config, actor!, params.statement_id));
 
   router.get(Routes.GET_V1_CLIENT_NOTIFICATIONS, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client notifications.',
-  }, ({ config, actor }) => clientNotifications(config, actor.userId));
+  }, ({ config, actor }) => clientNotifications(config, actor!.userId));
 
   router.patch(Routes.PATCH_V1_CLIENT_NOTIFICATIONS_NOTIFICATION_ID, {
     group: 'client',
     roles: CLIENT_ROLES,
     description: 'Mark a notification read or update client notification state.',
-  }, ({ config, actor, params }) => markNotificationRead(config, actor, params.notification_id));
+  }, ({ config, actor, params }) => markNotificationRead(config, actor!, params.notification_id));
 
   router.get(Routes.GET_V1_CLIENT_KYC_STATUS, {
     group: 'client',
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client KYC status.',
-  }, ({ config, actor }) => getKycStatus(config, actor));
+  }, ({ config, actor }) => getKycStatus(config, actor!));
 
   router.post(Routes.POST_V1_CLIENT_KYC_DEPTH, {
     group: 'client',
@@ -370,7 +372,7 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client support ticket list.',
-  }, ({ config, actor }) => clientSupportTickets(config, actor.userId));
+  }, ({ config, actor }) => clientSupportTickets(config, actor!.userId));
 
   router.post(Routes.POST_V1_CLIENT_SUPPORT_TICKETS, {
     group: 'client',
@@ -385,7 +387,7 @@ export function registerClientRoutes(router) {
       category: { required: false, type: 'string', enum: ['general', 'technical', 'billing', 'kyc', 'sip', 'withdrawal', 'mandate'] },
       priority: { required: false, type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
     });
-    return createTicket(config, actor, body);
+    return createTicket(config, actor!, body);
   });
 
   router.get(Routes.GET_V1_CLIENT_SUPPORT_TICKETS_TICKET_ID, {
@@ -393,7 +395,7 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'Client support ticket detail with messages.',
-  }, ({ config, actor, params }) => getTicketWithMessages(config, actor, params.ticket_id));
+  }, ({ config, actor, params }) => getTicketWithMessages(config, actor!, params.ticket_id));
 
   /* ----- Withdrawal / Redemption APIs ----- */
 
@@ -401,7 +403,7 @@ export function registerClientRoutes(router) {
     group: 'client',
     roles: CLIENT_ROLES,
     description: 'Preview withdrawal with tax assumptions.',
-  }, ({ config, actor, query, body }) => previewWithdrawal(config, actor, query.holdingId, Number(query.amount), body?.previewDate));
+  }, ({ config, actor, query, body }) => previewWithdrawal(config, actor!, query.holdingId, Number(query.amount), body?.previewDate));
 
   router.post(Routes.POST_V1_CLIENT_WITHDRAWALS, {
     group: 'client',
@@ -424,7 +426,7 @@ export function registerClientRoutes(router) {
       amount: { required: true, type: 'number', min: 1 },
       reason: { required: false, type: 'string', maxLength: 500 },
     });
-    return createRedemptionRequest(config, actor.userId, body);
+    return createRedemptionRequest(config, actor!.userId, body);
   });
 
   router.get(Routes.GET_V1_CLIENT_REDEMPTIONS, {
@@ -432,5 +434,5 @@ export function registerClientRoutes(router) {
     roles: CLIENT_ROLES,
     allowPendingClient: true,
     description: 'List client redemption requests.',
-  }, ({ config, actor }) => listRedemptionRequests(config, { userId: actor.userId }));
+  }, ({ config, actor }) => listRedemptionRequests(config, { userId: actor!.userId }));
 }

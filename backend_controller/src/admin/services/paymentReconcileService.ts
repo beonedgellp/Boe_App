@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -26,7 +27,7 @@ function clientIp(headers: any = {}) {
     .trim() || null;
 }
 
-function requireReason(body) {
+function requireReason(body: any) {
   const reason = String(body?.reason || '').trim();
   if (!reason) {
     throw new HttpError(400, 'RECONCILE_REASON_REQUIRED', 'Reconciliation reason is required.');
@@ -34,7 +35,7 @@ function requireReason(body) {
   return reason;
 }
 
-function requireDecisionReason(body, code, message) {
+function requireDecisionReason(body: any, code: any, message: any) {
   const reason = String(body?.reason || '').trim();
   if (!reason) {
     throw new HttpError(400, code, message);
@@ -42,36 +43,36 @@ function requireDecisionReason(body, code, message) {
   return reason;
 }
 
-function findPaymentPlan(store, payment, transaction) {
+function findPaymentPlan(store: any, payment: any, transaction: any) {
   const plans = store.investmentPlans || store.orders || [];
   if (transaction?.investmentPlanId) {
-    const byTransaction = plans.find((item) => item.id === transaction.investmentPlanId);
+    const byTransaction = plans.find((item: any) => item.id === transaction.investmentPlanId);
     if (byTransaction) return byTransaction;
   }
   if (payment.investmentPlanId) {
-    const byPaymentPlanId = plans.find((item) => item.id === payment.investmentPlanId);
+    const byPaymentPlanId = plans.find((item: any) => item.id === payment.investmentPlanId);
     if (byPaymentPlanId) return byPaymentPlanId;
   }
   if (payment.id) {
-    const byPaymentId = plans.find((item) => item.paymentId === payment.id);
+    const byPaymentId = plans.find((item: any) => item.paymentId === payment.id);
     if (byPaymentId) return byPaymentId;
   }
   return null;
 }
 
-function resolvePaymentFund(store, payment, transaction, plan) {
+function resolvePaymentFund(store: any, payment: any, transaction: any, plan: any) {
   const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
   if (!fundId) {
     throw new HttpError(400, 'PAYMENT_FUND_NOT_FOUND', 'Payment is not linked to a fund pool.');
   }
-  const fund = (store.funds || []).find((item) => item.id === fundId);
+  const fund = (store.funds || []).find((item: any) => item.id === fundId);
   if (!fund) {
     throw new HttpError(404, 'PAYMENT_FUND_NOT_FOUND', `Fund ${fundId} not found for this payment.`);
   }
   return { fundId, fund };
 }
 
-function updateInvestmentState(transaction, plan, now) {
+function updateInvestmentState(transaction: any, plan: any, now: any) {
   if (transaction) {
     transaction.status = 'awaiting_approval';
     transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
@@ -84,7 +85,7 @@ function updateInvestmentState(transaction, plan, now) {
   }
 }
 
-function approveInvestmentState(transaction, plan, now) {
+function approveInvestmentState(transaction: any, plan: any, now: any) {
   if (transaction) {
     transaction.status = 'approved';
     transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
@@ -99,11 +100,11 @@ function approveInvestmentState(transaction, plan, now) {
   }
 }
 
-function portfolioKey(userId) {
+function portfolioKey(userId: string) {
   return `portfolio_${userId}`;
 }
 
-function postApprovedPaymentToPortfolio(store, { payment, transaction, plan, fund, fundId, amount, now }) {
+function postApprovedPaymentToPortfolio(store: any, { payment, transaction, plan, fund, fundId, amount, now }: any) {
   const userId = payment.userId || transaction?.userId || plan?.userId;
   if (!userId) return null;
 
@@ -120,7 +121,7 @@ function postApprovedPaymentToPortfolio(store, { payment, transaction, plan, fun
   };
 
   if (!Array.isArray(portfolio.holdings)) portfolio.holdings = [];
-  const holding = portfolio.holdings.find((item) => item.fundId === fundId);
+  const holding = portfolio.holdings.find((item: any) => item.fundId === fundId);
   const nav = Number(transaction?.nav || fund?.nav || 1) || 1;
   const units = Number(transaction?.units || 0) || amount / nav;
 
@@ -150,8 +151,8 @@ function postApprovedPaymentToPortfolio(store, { payment, transaction, plan, fun
     });
   }
 
-  portfolio.invested = portfolio.holdings.reduce((sum, item) => sum + (Number(item.invested) || 0), 0);
-  portfolio.currentValue = portfolio.holdings.reduce((sum, item) => sum + (Number(item.currentValue ?? item.invested) || 0), 0);
+  portfolio.invested = portfolio.holdings.reduce((sum: any, item: any) => sum + (Number(item.invested) || 0), 0);
+  portfolio.currentValue = portfolio.holdings.reduce((sum: any, item: any) => sum + (Number(item.currentValue ?? item.invested) || 0), 0);
   portfolio.allTimeGain = portfolio.currentValue - portfolio.invested;
   portfolio.allTimeGainPct = portfolio.invested > 0 ? (portfolio.allTimeGain / portfolio.invested) * 100 : 0;
   portfolio.asOf = now;
@@ -160,7 +161,7 @@ function postApprovedPaymentToPortfolio(store, { payment, transaction, plan, fun
   return portfolio;
 }
 
-async function _reconcilePayment(config, actor, paymentId, body: any = {}, requestContext: any = {}) {
+async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
   const reason = requireReason(body);
   const providerReference = String(body.providerReference || body.providerRef || '').trim() || null;
   const settlementReference = String(body.settlementReference || '').trim() || null;
@@ -193,7 +194,7 @@ async function _reconcilePayment(config, actor, paymentId, body: any = {}, reque
     payment.updatedAt = now;
 
     const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId);
-    let transactionBefore = beforeTransaction;
+    let transactionBefore: any = beforeTransaction;
     if (transaction) {
       transactionBefore = { ...transaction };
     }
@@ -201,7 +202,7 @@ async function _reconcilePayment(config, actor, paymentId, body: any = {}, reque
     const plan = transaction
       ? (store.investmentPlans || []).find((item) => item.id === transaction.investmentPlanId)
       : null;
-    let planBefore = beforePlan;
+    let planBefore: any = beforePlan;
     if (plan) {
       planBefore = { ...plan };
     }
@@ -265,7 +266,7 @@ async function _reconcilePayment(config, actor, paymentId, body: any = {}, reque
   return result;
 }
 
-export async function approvePayment(config, actor, paymentId, body: any = {}, requestContext: any = {}) {
+export async function approvePayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
   const reason = requireDecisionReason(
     body,
     'APPROVAL_REASON_REQUIRED',
@@ -392,7 +393,7 @@ export async function approvePayment(config, actor, paymentId, body: any = {}, r
   return result;
 }
 
-export async function rejectPayment(config, actor, paymentId, body: any = {}, requestContext: any = {}) {
+export async function rejectPayment(config: AppConfig, actor: Actor, paymentId: string, body: any = {}, requestContext: any = {}) {
   const reason = requireDecisionReason(
     body,
     'REJECTION_REASON_REQUIRED',
@@ -467,12 +468,12 @@ export async function rejectPayment(config, actor, paymentId, body: any = {}, re
 
 export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconciled', {
   entityType: 'payment',
-  entityId: (result) => result.payment.id,
-  beforeState: (result) => result.ledgerEntry.previousStatus,
-  afterState: (result) => result.payment.status,
-  subjectUserId: (result) => result.payment.userId,
-  amount: (result) => result.payment.amount ?? null,
-  currency: (result) => result.payment.currency ?? null,
+  entityId: (result: any) => result.payment.id,
+  beforeState: (result: any) => result.ledgerEntry.previousStatus,
+  afterState: (result: any) => result.payment.status,
+  subjectUserId: (result: any) => result.payment.userId,
+  amount: (result: any) => result.payment.amount ?? null,
+  currency: (result: any) => result.payment.currency ?? null,
   source: 'derived',
 });
 
@@ -483,7 +484,7 @@ export function paymentReconcileRequestContext(headers: any = {}) {
   };
 }
 
-export async function listReconciliationLedger(config, { paymentId, limit = 50 }: any = {}) {
+export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: any = {}) {
   const store = await readJsonStore(config);
   let items = store.reconciliationLedger || [];
   if (paymentId) {

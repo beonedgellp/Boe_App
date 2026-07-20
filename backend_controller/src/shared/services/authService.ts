@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { createAccessToken } from '#security/tokens.js';
@@ -22,11 +23,11 @@ const REFRESH_TOKEN_TTL_DAYS = 365;
 const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
 const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
 
-function normalizeEmail(value) {
+function normalizeEmail(value: any) {
   return String(value || '').trim().toLowerCase();
 }
 
-function normalizePhone(value) {
+function normalizePhone(value: any) {
   const raw = String(value || '').trim();
   if (!raw) return '';
 
@@ -48,11 +49,11 @@ function normalizePhone(value) {
   return `+${canonicalDigits}`;
 }
 
-function normalizeUsername(value) {
+function normalizeUsername(value: any) {
   return String(value || '').trim().toLowerCase();
 }
 
-function normalizeIdentifier(body) {
+function normalizeIdentifier(body: any) {
   const raw = String(body.identifier || body.email || body.phone || '').trim();
   const email = normalizeEmail(raw);
   const phone = raw.includes('@') ? '' : normalizePhone(raw);
@@ -66,13 +67,13 @@ function normalizeIdentifier(body) {
   };
 }
 
-function safeEqualText(left, right) {
+function safeEqualText(left: any, right: any) {
   const a = Buffer.from(String(left || ''));
   const b = Buffer.from(String(right || ''));
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function assertSignupAllowed(config, headers: any = {}) {
+export function assertSignupAllowed(config: AppConfig, headers: any = {}) {
   const secret = String(config.signupProxySecret || '');
   if (secret) {
     const provided = String(headers['x-signup-key'] || '');
@@ -91,7 +92,7 @@ export function assertSignupAllowed(config, headers: any = {}) {
   }
 }
 
-function envAdminUser(config) {
+function envAdminUser(config: AppConfig) {
   const loginId = String(config.adminLoginId || '').trim();
   if (!loginId) return null;
 
@@ -112,7 +113,7 @@ function envAdminUser(config) {
   };
 }
 
-function isEnvAdminIdentifier(config, identifier) {
+function isEnvAdminIdentifier(config: AppConfig, identifier: any) {
   const loginId = String(config.adminLoginId || '').trim();
   if (!loginId || !identifier.raw) return false;
 
@@ -123,7 +124,7 @@ function isEnvAdminIdentifier(config, identifier) {
   return identifier.raw === loginId || identifier.phone === normalizePhone(loginId);
 }
 
-function splitName(value, email) {
+function splitName(value: any, email: any) {
   const parts = String(value || '')
     .trim()
     .split(/\s+/)
@@ -140,7 +141,7 @@ function splitName(value, email) {
   };
 }
 
-function toApiUser(row) {
+function toApiUser(row: any) {
   return {
     id: row.id,
     firstName: row.first_name,
@@ -156,7 +157,7 @@ function toApiUser(row) {
   };
 }
 
-function jsonUserToRow(user) {
+function jsonUserToRow(user: any) {
   if (!user) return null;
   return {
     id: user.id,
@@ -174,7 +175,7 @@ function jsonUserToRow(user) {
   };
 }
 
-function rowToJsonUser(row) {
+function rowToJsonUser(row: any) {
   return {
     id: row.id,
     firstName: row.first_name,
@@ -194,7 +195,7 @@ function rowToJsonUser(row) {
   };
 }
 
-function hashToken(token) {
+function hashToken(token: any) {
   return createHash('sha256').update(token).digest('hex');
 }
 
@@ -205,7 +206,7 @@ function clientIp(headers: any = {}) {
     .trim() || null;
 }
 
-async function findUserByIdentifier(config, identifier) {
+async function findUserByIdentifier(config: AppConfig, identifier: any) {
   const store = await readJsonStore(config);
   const user = store.users.find((item) => (
     (identifier.email && item.email === identifier.email) ||
@@ -215,7 +216,7 @@ async function findUserByIdentifier(config, identifier) {
   return jsonUserToRow(user);
 }
 
-async function createDeviceSession(config, user, { headers = {}, body = {} }: any = {}) {
+async function createDeviceSession(config: AppConfig, user: any, { headers = {}, body = {} }: any = {}) {
   const refreshToken = randomBytes(32).toString('base64url');
   const refreshTokenHash = hashToken(refreshToken);
   const deviceId = String(body.deviceId || headers['x-device-id'] || randomUUID()).slice(0, 160);
@@ -255,7 +256,7 @@ async function createDeviceSession(config, user, { headers = {}, body = {} }: an
   };
 }
 
-async function rotateRefreshToken(config, refreshToken) {
+async function rotateRefreshToken(config: AppConfig, refreshToken: any) {
   if (!refreshToken) {
     throw new HttpError(400, 'REFRESH_TOKEN_REQUIRED', 'Refresh token is required.');
   }
@@ -312,7 +313,7 @@ async function rotateRefreshToken(config, refreshToken) {
   };
 }
 
-function devLogin(body, config) {
+function devLogin(body: any, config: AppConfig) {
   const identifier = body.identifier || body.email || body.phone;
   if (!identifier || !body.password) {
     throw new HttpError(400, 'LOGIN_FIELDS_REQUIRED', 'Identifier and password are required.');
@@ -333,7 +334,7 @@ function devLogin(body, config) {
   };
 }
 
-function envAdminLogin(body, config) {
+function envAdminLogin(body: any, config: AppConfig) {
   if (!config.adminPassword || !safeEqualText(body.password, config.adminPassword)) {
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email, phone, or password.');
   }
@@ -341,8 +342,8 @@ function envAdminLogin(body, config) {
   const user = envAdminUser(config);
   const deviceSessionId = randomUUID();
   const accessToken = createAccessToken({
-    sub: user.id,
-    role: user.role,
+    sub: user!.id,
+    role: user!.role,
     deviceSessionId,
   }, config);
 
@@ -354,7 +355,7 @@ function envAdminLogin(body, config) {
   };
 }
 
-function envAdminRefresh(config, refreshToken) {
+function envAdminRefresh(config: AppConfig, refreshToken: any) {
   if (!String(refreshToken || '').startsWith(ENV_ADMIN_REFRESH_PREFIX)) return null;
 
   const user = envAdminUser(config);
@@ -364,8 +365,8 @@ function envAdminRefresh(config, refreshToken) {
 
   const deviceSessionId = randomUUID();
   const accessToken = createAccessToken({
-    sub: user.id,
-    role: user.role,
+    sub: user!.id,
+    role: user!.role,
     deviceSessionId,
   }, config);
 
@@ -377,7 +378,7 @@ function envAdminRefresh(config, refreshToken) {
   };
 }
 
-export async function login(body, config, requestContext: any = {}) {
+export async function login(body: any, config: AppConfig, requestContext: any = {}) {
   const identifier = normalizeIdentifier(body);
   if (!identifier.raw || !body.password) {
     throw new HttpError(400, 'LOGIN_FIELDS_REQUIRED', 'Identifier and password are required.');
@@ -427,7 +428,7 @@ export async function login(body, config, requestContext: any = {}) {
   };
 }
 
-export async function signup(body, config, requestContext: any = {}) {
+export async function signup(body: any, config: AppConfig, requestContext: any = {}) {
   assertSignupAllowed(config, requestContext.headers || {});
 
   const email = normalizeEmail(body.email || body.identifier);
@@ -473,7 +474,7 @@ export async function signup(body, config, requestContext: any = {}) {
     `, [firstName, lastName, email, phone, username, passwordHash]);
     user = inserted.rows[0];
   } catch (error) {
-    if (error.code === '23505') {
+    if ((error as any).code === '23505') {
       throw new HttpError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email, phone, or username.');
     }
     throw error;
@@ -498,14 +499,14 @@ export async function signup(body, config, requestContext: any = {}) {
   };
 }
 
-export async function refreshSession(body, config) {
+export async function refreshSession(body: any, config: AppConfig) {
   const envAdmin = envAdminRefresh(config, body.refreshToken);
   if (envAdmin) return envAdmin;
 
   return rotateRefreshToken(config, body.refreshToken);
 }
 
-export function session(actor) {
+export function session(actor: Actor) {
   if (!actor) return { authenticated: false };
   return {
     authenticated: true,
@@ -518,7 +519,7 @@ export function session(actor) {
   };
 }
 
-export async function logout(actor, config) {
+export async function logout(actor: Actor, config: AppConfig) {
   if (actor?.deviceSessionId) {
     await updateJsonStore(config, (store) => {
       const session = store.deviceSessions.find((item) => item.id === actor.deviceSessionId && !item.revokedAt);

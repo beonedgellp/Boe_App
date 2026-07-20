@@ -3,10 +3,10 @@ import { describe, test } from 'node:test';
 import { handleListenError } from './server.js';
 
 function createLogger() {
-  const errors = [];
+  const errors: any[] = [];
   return {
     errors,
-    error(message) {
+    error(message: any) {
       errors.push(message);
     },
   };
@@ -15,16 +15,16 @@ function createLogger() {
 describe('handleListenError', () => {
   test('logs a clear message and exits when the configured port is already in use', () => {
     const logger = createLogger();
-    const exits = [];
+    const exits: any[] = [];
 
     handleListenError({
       error: { code: 'EADDRINUSE' },
       config: { host: '127.0.0.1', port: 47502 },
       logger,
-      exit(code) {
+      exit(code: any) {
         exits.push(code);
       },
-    });
+    } as any);
 
     assert.deepEqual(exits, [1]);
     assert.deepEqual(logger.errors, [
@@ -40,7 +40,7 @@ describe('handleListenError', () => {
         error: new Error('permission denied'),
         config: { host: '127.0.0.1', port: 47502 },
         logger: createLogger(),
-      }),
+      } as any),
       /permission denied/,
     );
   });

@@ -1,7 +1,8 @@
+import type { Router } from '#http/router.js';
 import { Routes } from './constants.js';
 import { health, reachability } from '../services/healthService.js';
 
-export function registerHealthRoutes(router) {
+export function registerHealthRoutes(router: Router) {
   router.get(Routes.GET_HEALTH, {
     group: 'public',
     auth: false,

@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
@@ -8,24 +10,24 @@ import { notifyUserApproved, notifyUserRejected } from './notificationComposerSe
 
 const PENDING_APPROVAL_STATUSES = new Set(['draft', 'pending_review', 'kyc_pending']);
 
-function visibleTransactionType(type) {
+function visibleTransactionType(type: any) {
   const value = String(type || '').toLowerCase();
   if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
   if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
   return value;
 }
 
-function transactionTypeMatches(actual, expected) {
+function transactionTypeMatches(actual: any, expected: any) {
   const normalizedExpected = visibleTransactionType(expected);
   if (!normalizedExpected || normalizedExpected === 'all') return true;
   return visibleTransactionType(actual) === normalizedExpected;
 }
 
-function displayName(user) {
+function displayName(user: any) {
   return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Client';
 }
 
-function userPayload(user) {
+function userPayload(user: any) {
   return {
     id: user.id,
     name: displayName(user),
@@ -41,7 +43,7 @@ function userPayload(user) {
   };
 }
 
-function collection(items, source = 'json') {
+function collection(items: any, source = 'json') {
   return {
     items,
     count: items.length,
@@ -49,18 +51,18 @@ function collection(items, source = 'json') {
   };
 }
 
-function emptyForActiveStore(config) {
+function emptyForActiveStore(config: AppConfig) {
   return emptyCollection({ source: `${config.dataStore}_pending` });
 }
 
-function computeAutopaySuccess(mandates) {
+function computeAutopaySuccess(mandates: any) {
   if (!Array.isArray(mandates) || mandates.length === 0) return 'N/A';
   const successStatuses = new Set(['active', 'success', 'confirmed']);
   const successCount = mandates.filter((m) => successStatuses.has(m.status)).length;
   return `${Math.round((successCount / mandates.length) * 100)}%`;
 }
 
-function rowUserPayload(row) {
+function rowUserPayload(row: any) {
   return userPayload({
     id: row.id,
     firstName: row.first_name,
@@ -76,7 +78,7 @@ function rowUserPayload(row) {
   });
 }
 
-async function postgresUsers(config, whereSql = '', params = []) {
+async function postgresUsers(config: AppConfig, whereSql = '', params: any[] = []) {
   const result = await query(config, `
     SELECT id, first_name, last_name, email, phone, role::text, status::text,
            risk_profile_status::text, kyc_status::text, created_at, approved_at
@@ -87,21 +89,21 @@ async function postgresUsers(config, whereSql = '', params = []) {
   return result.rows.map(rowUserPayload);
 }
 
-function pendingApproval(user) {
+function pendingApproval(user: any) {
   return (user.role || 'client') === 'client' && PENDING_APPROVAL_STATUSES.has(user.status);
 }
 
-async function jsonCollection(config, key) {
+async function jsonCollection(config: AppConfig, key: any) {
   const store = await readJsonStore(config);
   return collection(Array.isArray(store[key]) ? store[key] : []);
 }
 
-function todayCount(items, dateKey) {
+function todayCount(items: any, dateKey: any) {
   const today = new Date().toISOString().slice(0, 10);
-  return items.filter((item) => String(item[dateKey] || item.createdAt || '').startsWith(today)).length;
+  return items.filter((item: any) => String(item[dateKey] || item.createdAt || '').startsWith(today)).length;
 }
 
-export async function adminOverview(config) {
+export async function adminOverview(config: AppConfig) {
   const result = await query(config, `
     SELECT role::text, status::text, kyc_status::text
     FROM users
@@ -146,10 +148,10 @@ export async function adminOverview(config) {
   };
 }
 
-export async function adminUsers(config, { status = 'approved', q, page = 1, limit = 25 }: any = {}) {
+export async function adminUsers(config: AppConfig, { status = 'approved', q, page = 1, limit = 25 }: any = {}) {
   let users;
   let whereSql = "WHERE role = 'client'";
-  const params = [];
+  const params: any[] = [];
   if (status) {
     params.push(status);
     whereSql += ` AND status = $${params.length}::user_status`;
@@ -175,11 +177,11 @@ export async function adminUsers(config, { status = 'approved', q, page = 1, lim
   };
 }
 
-export async function adminTransactions(config, { fundId, status, type, userId, q, page = 1, limit = 25 }: any = {}) {
+export async function adminTransactions(config: AppConfig, { fundId, status, type, userId, q, page = 1, limit = 25 }: any = {}) {
   let transactions = [];
 
   let whereSql = 'WHERE 1=1';
-  const params = [];
+  const params: any[] = [];
   if (fundId) {
     params.push(fundId);
     whereSql += ` AND product_id = $${params.length}`;
@@ -266,12 +268,12 @@ export async function adminTransactions(config, { fundId, status, type, userId, 
   };
 }
 
-export async function adminApprovals(config, status = 'pending') {
+export async function adminApprovals(config: AppConfig, status = 'pending') {
   const pendingStatuses = ['draft', 'pending_review', 'kyc_pending'];
   let users;
 
   let whereSql = "WHERE role = 'client'";
-  const params = [];
+  const params: any[] = [];
 
   if (status === 'pending') {
     whereSql += ` AND status IN ('draft', 'pending_review', 'kyc_pending')`;
@@ -287,7 +289,7 @@ export async function adminApprovals(config, status = 'pending') {
   return collection(users);
 }
 
-function kycReviewPayload(user, kycProfile) {
+function kycReviewPayload(user: any, kycProfile: any) {
   return {
     ...userPayload(user),
     panLast4: kycProfile?.pan_last4 || kycProfile?.panLast4 || '',
@@ -301,7 +303,7 @@ function kycReviewPayload(user, kycProfile) {
   };
 }
 
-async function postgresKycReview(config) {
+async function postgresKycReview(config: AppConfig) {
   const result = await query(config, `
     SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.role::text, u.status::text,
            u.risk_profile_status::text, u.kyc_status::text, u.created_at, u.approved_at,
@@ -328,11 +330,11 @@ async function postgresKycReview(config) {
   });
 }
 
-export async function adminKycReview(config) {
+export async function adminKycReview(config: AppConfig) {
   return collection(await postgresKycReview(config), 'postgres');
 }
 
-function riskProfilePayload(user, riskProfile) {
+function riskProfilePayload(user: any, riskProfile: any) {
   return {
     ...userPayload(user),
     ageBand: riskProfile?.age_band || riskProfile?.ageBand || '',
@@ -345,7 +347,7 @@ function riskProfilePayload(user, riskProfile) {
   };
 }
 
-async function postgresRiskProfiles(config) {
+async function postgresRiskProfiles(config: AppConfig) {
   const result = await query(config, `
     SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.role::text, u.status::text,
            u.risk_profile_status::text, u.kyc_status::text, u.created_at, u.approved_at,
@@ -371,11 +373,11 @@ async function postgresRiskProfiles(config) {
   });
 }
 
-export async function adminRiskProfiles(config) {
+export async function adminRiskProfiles(config: AppConfig) {
   return collection(await postgresRiskProfiles(config), 'postgres');
 }
 
-export async function adminStrategies(config) {
+export async function adminStrategies(config: AppConfig) {
   try {
     const appConfig = await getPublishedAppConfig(config);
     return collection(appConfig.config?.mobile?.products || [], appConfig.source || config.dataStore);
@@ -384,43 +386,43 @@ export async function adminStrategies(config) {
   }
 }
 
-function paymentTimestamp(payment) {
+function paymentTimestamp(payment: any) {
   return payment.time || payment.createdAt || payment.confirmedAt || payment.reconciledAt || payment.updatedAt || '';
 }
 
-function findPaymentPlan(store, payment, transaction) {
+function findPaymentPlan(store: any, payment: any, transaction: any) {
   const plans = store.investmentPlans || store.orders || [];
   if (transaction?.investmentPlanId) {
-    const byTransaction = plans.find((plan) => plan.id === transaction.investmentPlanId);
+    const byTransaction = plans.find((plan: any) => plan.id === transaction.investmentPlanId);
     if (byTransaction) return byTransaction;
   }
   if (payment.investmentPlanId) {
-    const byPaymentPlanId = plans.find((plan) => plan.id === payment.investmentPlanId);
+    const byPaymentPlanId = plans.find((plan: any) => plan.id === payment.investmentPlanId);
     if (byPaymentPlanId) return byPaymentPlanId;
   }
   if (payment.id) {
-    const byPaymentId = plans.find((plan) => plan.paymentId === payment.id);
+    const byPaymentId = plans.find((plan: any) => plan.paymentId === payment.id);
     if (byPaymentId) return byPaymentId;
   }
   return null;
 }
 
-function resolvePaymentFund(store, payment, transaction, plan) {
+function resolvePaymentFund(store: any, payment: any, transaction: any, plan: any) {
   const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  const fund = fundId ? (store.funds || []).find((item) => item.id === fundId) : null;
+  const fund = fundId ? (store.funds || []).find((item: any) => item.id === fundId) : null;
   return { fundId, fund };
 }
 
-function userName(user, fallback = '') {
+function userName(user: any, fallback = '') {
   if (!user) return fallback;
   return displayName(user);
 }
 
-function enrichPaymentRow(store, payment) {
-  const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId) || null;
+function enrichPaymentRow(store: any, payment: any) {
+  const transaction = (store.transactions || []).find((item: any) => item.id === payment.transactionId) || null;
   const plan = findPaymentPlan(store, payment, transaction);
   const { fundId, fund } = resolvePaymentFund(store, payment, transaction, plan);
-  const user = (store.users || []).find((item) => item.id === payment.userId) || null;
+  const user = (store.users || []).find((item: any) => item.id === payment.userId) || null;
   const name = userName(user, payment.user || payment.userId || 'Client');
   const time = paymentTimestamp(payment);
   const amount = Number(payment.amount || transaction?.amount || plan?.amount || 0);
@@ -460,7 +462,7 @@ function enrichPaymentRow(store, payment) {
   };
 }
 
-function matchesDateRange(row, from, to) {
+function matchesDateRange(row: any, from: any, to: any) {
   const value = row.time || row.createdAt || '';
   if (!value) return !(from || to);
   const ts = new Date(value).getTime();
@@ -476,7 +478,7 @@ function matchesDateRange(row, from, to) {
   return true;
 }
 
-export async function adminPayments(config, filters: any = {}) {
+export async function adminPayments(config: AppConfig, filters: any = {}) {
   const store = await readJsonStore(config);
   const queryText = String(filters.q || '').trim().toLowerCase();
   const status = String(filters.status || '').trim();
@@ -523,11 +525,11 @@ export async function adminPayments(config, filters: any = {}) {
   };
 }
 
-export async function adminMandates(config) {
+export async function adminMandates(config: AppConfig) {
   return jsonCollection(config, 'mandates');
 }
 
-export async function adminSipControlRequests(config) {
+export async function adminSipControlRequests(config: AppConfig) {
   const store = await readJsonStore(config);
   const users = store.users || [];
   const plans = store.investmentPlans || store.orders || [];
@@ -549,20 +551,20 @@ export async function adminSipControlRequests(config) {
   return collection(items);
 }
 
-export async function adminSupportTickets(config) {
+export async function adminSupportTickets(config: AppConfig) {
   return jsonCollection(config, 'supportTickets');
 }
 
-export async function adminFunds(config) {
+export async function adminFunds(config: AppConfig) {
   return jsonCollection(config, 'funds');
 }
 
-export async function adminAuditLogs(config) {
+export async function adminAuditLogs(config: AppConfig) {
   const store = await readJsonStore(config);
   return collection(store.adminAuditLogs);
 }
 
-export async function adminPendingStats(config) {
+export async function adminPendingStats(config: AppConfig) {
   const result = await query(config, `
     SELECT COUNT(*) as count
     FROM users
@@ -571,7 +573,7 @@ export async function adminPendingStats(config) {
   return { pendingCount: Number(result.rows[0]?.count || 0), source: 'postgres' };
 }
 
-export async function updateUserStatus(config, actor, userId, body: any = {}, metadata: any = {}) {
+export async function updateUserStatus(config: AppConfig, actor: Actor, userId: string, body: any = {}, metadata: any = {}) {
   const nextStatus = String(body.status || '').trim();
   if (!['pending_review', 'approved', 'rejected', 'suspended', 'closed'].includes(nextStatus)) {
     throw new HttpError(400, 'INVALID_USER_STATUS', 'Unsupported user status.');
@@ -583,7 +585,7 @@ export async function updateUserStatus(config, actor, userId, body: any = {}, me
     throw new HttpError(400, 'REASON_REQUIRED', 'A rejection reason is required.');
   }
 
-  const updated = await transaction(config, async (client) => {
+  const updated = await transaction(config, async (client: PoolClient) => {
     const found = await client.query(`
       SELECT id, first_name, last_name, email, phone, role::text, status::text,
              risk_profile_status::text, kyc_status::text, created_at, approved_at

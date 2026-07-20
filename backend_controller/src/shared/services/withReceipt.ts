@@ -1,6 +1,6 @@
 import { emitReceipt } from './receiptService.js';
 
-async function resolveOption(value, result, args) {
+async function resolveOption(value: any, result: any, args: any) {
   if (typeof value === 'function') {
     const r = value(result, args);
     return r instanceof Promise ? await r : r;
@@ -16,8 +16,8 @@ async function resolveOption(value, result, args) {
  * @param {string|Function} receiptKind - Static kind or (result, args) => kind.
  * @param {Object} options - Mappers for receipt fields.
  */
-export function withReceipt(serviceFn, receiptKind, options: any = {}) {
-  return async function wrapped(...args) {
+export function withReceipt(serviceFn: any, receiptKind: any, options: any = {}) {
+  return async function wrapped(...args: any[]) {
     const config = args[0];
     const rawActor = args[1];
     const actor = (rawActor && typeof rawActor === 'object' && rawActor.userId)

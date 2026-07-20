@@ -13,6 +13,7 @@
     "#db/*": "./src/db/*",
     "#http/*": "./src/http/*",
     "#security/*": "./src/security/*",
+    "#types/*": "./src/types/*",
     "#shared/*": "./src/shared/*",
     "#client/*": "./src/client/*",
     "#admin/*": "./src/admin/*",

@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
@@ -7,7 +8,7 @@ import { getPaymentProvider } from './payments/providerFactory.js';
 const NOT_FOUND = Symbol('NOT_FOUND');
 const WEBHOOK_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
-function verifyHmacSignature(body, signature, secret) {
+function verifyHmacSignature(body: any, signature: any, secret: any) {
   const expected = createHmac('sha256', secret).update(body).digest('hex');
   const sig = String(signature || '').trim();
   if (sig.length !== expected.length) return false;
@@ -18,14 +19,14 @@ function verifyHmacSignature(body, signature, secret) {
   }
 }
 
-function normalizeTimestamp(ts) {
+function normalizeTimestamp(ts: any) {
   const n = Number(ts);
   if (!n || Number.isNaN(n)) return null;
   // Razorpay sends created_at in seconds; detect by magnitude (< 1e12 is seconds)
   return n < 1_000_000_000_000 ? n * 1000 : n;
 }
 
-function checkReplay(eventId, timestamp, store) {
+function checkReplay(eventId: any, timestamp: any, store: any) {
   if (!eventId) {
     throw new HttpError(400, 'MISSING_EVENT_ID', 'Provider event id is required.');
   }
@@ -37,14 +38,14 @@ function checkReplay(eventId, timestamp, store) {
   if (Math.abs(now - eventTime) > WEBHOOK_WINDOW_MS) {
     throw new HttpError(409, 'REPLAY_DETECTED', 'Webhook event is outside the acceptable time window.');
   }
-  const existingEvent = (store.webhookEvents || []).find((e) => e.eventId === eventId);
+  const existingEvent = (store.webhookEvents || []).find((e: any) => e.eventId === eventId);
   if (existingEvent) {
     return { duplicate: true, existingEvent };
   }
   return { duplicate: false };
 }
 
-async function _processPaymentWebhook(config, provider, rawBody, headers) {
+async function _processPaymentWebhook(config: AppConfig, provider: any, rawBody: any, headers: any) {
   // `rawBody` may be the exact UTF-8 bytes (preferred for HMAC) or an
   // already-parsed object. Use the string for signature verification and
   // a parsed object for payload field extraction.
@@ -118,7 +119,7 @@ async function _processPaymentWebhook(config, provider, rawBody, headers) {
       status: normalizedStatus,
       entityId: payment.id,
       payload: rawBody,
-      timestamp: new Date(timestamp).toISOString(),
+      timestamp: new Date(timestamp as any).toISOString(),
       processedAt: now,
       createdAt: now,
     };
@@ -197,23 +198,23 @@ async function _processPaymentWebhook(config, provider, rawBody, headers) {
   };
 }
 
-export const processPaymentWebhook = withReceipt(_processPaymentWebhook, (result) => {
+export const processPaymentWebhook = withReceipt(_processPaymentWebhook, (result: any) => {
   return result.newStatus === 'success' ? 'payment_confirmed' : 'payment_failed';
 }, {
   entityType: 'payment',
-  entityId: (result) => result.paymentId,
-  afterState: (result) => result.newStatus,
-  subjectUserId: async (result, args) => {
+  entityId: (result: any) => result.paymentId,
+  afterState: (result: any) => result.newStatus,
+  subjectUserId: async (result: any, args: any) => {
     const store = await readJsonStore(args[0]);
     const payment = store.payments.find((p) => p.id === result.paymentId);
     return payment?.userId || 'system';
   },
-  amount: async (result, args) => {
+  amount: async (result: any, args: any) => {
     const store = await readJsonStore(args[0]);
     const payment = store.payments.find((p) => p.id === result.paymentId);
     return payment?.amount ?? null;
   },
-  currency: async (result, args) => {
+  currency: async (result: any, args: any) => {
     const store = await readJsonStore(args[0]);
     const payment = store.payments.find((p) => p.id === result.paymentId);
     return payment?.currency ?? null;
@@ -221,7 +222,7 @@ export const processPaymentWebhook = withReceipt(_processPaymentWebhook, (result
   source: 'live',
 });
 
-export async function processMandateWebhook(config, provider, rawBody, headers) {
+export async function processMandateWebhook(config: AppConfig, provider: any, rawBody: any, headers: any) {
   const body = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
   let payload;
   if (rawBody && typeof rawBody === 'object') {
@@ -292,7 +293,7 @@ export async function processMandateWebhook(config, provider, rawBody, headers) 
       status: normalizedStatus,
       entityId: mandate.id,
       payload: rawBody,
-      timestamp: new Date(timestamp).toISOString(),
+      timestamp: new Date(timestamp as any).toISOString(),
       processedAt: now,
       createdAt: now,
     };

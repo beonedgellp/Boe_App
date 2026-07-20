@@ -1,16 +1,17 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { TAX_REGIMES, getTaxRegimeForDate } from '#shared/config/taxConfig.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function getExitLoadRate(fund, holdingPeriodMonths) {
+function getExitLoadRate(fund: any, holdingPeriodMonths: any) {
   const schedule = Array.isArray(fund.exitLoadSchedule) ? fund.exitLoadSchedule : [];
   if (schedule.length === 0) {
     // Default: 1% if redeemed within 12 months
@@ -25,7 +26,7 @@ function getExitLoadRate(fund, holdingPeriodMonths) {
   return 0;
 }
 
-function monthsBetween(startIso, endIso) {
+function monthsBetween(startIso: any, endIso: any) {
   const start = new Date(startIso);
   const end = endIso ? new Date(endIso) : new Date();
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
@@ -34,29 +35,29 @@ function monthsBetween(startIso, endIso) {
   return Math.max(0, yearDiff * 12 + monthDiff);
 }
 
-function findHolding(store, userId, holdingId) {
+function findHolding(store: any, userId: string, holdingId: string) {
   const portfolio = store[`portfolio_${userId}`];
   if (!portfolio || !Array.isArray(portfolio.holdings)) return null;
-  return portfolio.holdings.find((h) => (h.id || h.fundId) === holdingId) || null;
+  return portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
 }
 
-function findHoldingAllottedAt(store, userId, fundId) {
+function findHoldingAllottedAt(store: any, userId: string, fundId: string) {
   const portfolio = store[`portfolio_${userId}`];
   if (portfolio?.holdings) {
-    const h = portfolio.holdings.find((h) => h.fundId === fundId || h.id === fundId);
+    const h = portfolio.holdings.find((h: any) => h.fundId === fundId || h.id === fundId);
     if (h?.allottedAt) return h.allottedAt;
     if (h?.createdAt) return h.createdAt;
   }
   const txs = (store.transactions || [])
-    .filter((t) => t.userId === userId && t.fundId === fundId)
-    .sort((a, b) => new Date(a.date || a.createdAt || 0).getTime() - new Date(b.date || b.createdAt || 0).getTime());
+    .filter((t: any) => t.userId === userId && t.fundId === fundId)
+    .sort((a: any, b: any) => new Date(a.date || a.createdAt || 0).getTime() - new Date(b.date || b.createdAt || 0).getTime());
   if (txs.length > 0) {
     return txs[0].date || txs[0].createdAt || null;
   }
   return null;
 }
 
-export async function previewWithdrawal(config, actor, holdingId, amount, previewDate) {
+export async function previewWithdrawal(config: AppConfig, actor: Actor, holdingId: string, amount: any, previewDate: any) {
   const amt = toNumber(amount, 0);
   if (amt <= 0) throw new HttpError(400, 'INVALID_AMOUNT', 'Amount must be greater than 0.');
 
@@ -73,7 +74,7 @@ export async function previewWithdrawal(config, actor, holdingId, amount, previe
   if (!fund) throw new HttpError(404, 'FUND_NOT_FOUND', 'Fund not found.');
 
   const nav = toNumber(fund.nav, holding.currentNav || 0) || null;
-  const units = nav > 0 ? amt / nav : null;
+  const units = nav && nav > 0 ? amt / nav : null;
 
   const holdingUnits = toNumber(holding.units, 0);
   const holdingValue = toNumber(holding.currentValue, 0);
@@ -100,7 +101,7 @@ export async function previewWithdrawal(config, actor, holdingId, amount, previe
   const sttAmount = Math.round(amt * STT_RATE * 100) / 100;
 
   const avgCost = toNumber(holding.avgCost, 0);
-  const costBasis = units * avgCost;
+  const costBasis = (units || 0) * avgCost;
   const gainAmount = Math.max(0, amt - costBasis);
 
   const isSTCG = holdingPeriodMonths < regime.holdingPeriodCutoffMonths;
@@ -184,7 +185,7 @@ export async function previewWithdrawal(config, actor, holdingId, amount, previe
 
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
-async function _createRedemption(config, actor, previewId) {
+async function _createRedemption(config: AppConfig, actor: Actor, previewId: any) {
   if (!previewId) throw new HttpError(400, 'INVALID_REQUEST', 'Preview ID is required.');
 
   const request = await updateJsonStore(config, (store) => {
@@ -251,9 +252,9 @@ async function _createRedemption(config, actor, previewId) {
 
 export const createRedemption = withReceipt(_createRedemption, 'withdrawal_submitted', {
   entityType: 'redemption',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
-  amount: (result) => result.amount ?? null,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
+  amount: (result: any) => result.amount ?? null,
   currency: () => 'INR',
   source: 'derived',
 });

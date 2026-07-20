@@ -4,8 +4,11 @@
 // for backward compatibility with existing `getStore(config)` callers.
 
 import * as pgAdapter from './pgAdapter.js';
+import type { AppConfig } from '#types/index.js';
 
-export function getStore(/* config */) {
+export type Store = typeof pgAdapter;
+
+export function getStore(_config?: AppConfig): Store {
   return pgAdapter;
 }
 

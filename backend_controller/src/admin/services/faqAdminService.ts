@@ -1,14 +1,15 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 
-export async function listAdminFaqs(config) {
+export async function listAdminFaqs(config: AppConfig) {
   const store = await readJsonStore(config);
   const items = Array.isArray(store.faqs) ? store.faqs : [];
   return { items, count: items.length };
 }
 
-export async function createFaq(config, actor, body) {
+export async function createFaq(config: AppConfig, actor: Actor, body: any) {
   const question = String(body?.question || '').trim();
   const answer = String(body?.answer || '').trim();
   const category = String(body?.category || 'general').trim();
@@ -38,7 +39,7 @@ export async function createFaq(config, actor, body) {
   return faq;
 }
 
-export async function updateFaq(config, actor, faqId, body) {
+export async function updateFaq(config: AppConfig, actor: Actor, faqId: any, body: any) {
   const now = new Date().toISOString();
 
   return updateJsonStore(config, (store) => {
@@ -64,7 +65,7 @@ export async function updateFaq(config, actor, faqId, body) {
   });
 }
 
-export async function deleteFaq(config, actor, faqId) {
+export async function deleteFaq(config: AppConfig, actor: Actor, faqId: any) {
   return updateJsonStore(config, (store) => {
     const idx = (store.faqs || []).findIndex((f) => f.id === faqId);
     if (idx === -1) throw new HttpError(404, 'FAQ_NOT_FOUND', 'FAQ not found.');

@@ -9,13 +9,13 @@ const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed'
 
 const PERFORMANCE_PERIOD_KEYS = new Set(['1M', '3M', '6M', '1Y', '3Y', '5Y', 'ALL']);
 
-function toFiniteNumber(value) {
+function toFiniteNumber(value: any) {
   if (value === null || value === undefined || value === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
 
-function isIsoDateLike(value) {
+function isIsoDateLike(value: any) {
   if (typeof value !== 'string' || value.trim() === '') return false;
   // Require a leading ISO calendar date (YYYY-MM-DD) before trusting Date parse.
   if (!/^\d{4}-\d{2}-\d{2}/.test(value.trim())) return false;
@@ -27,7 +27,7 @@ function isIsoDateLike(value) {
 // strict hex / rgb(a) / named-color allowlist to remove any injection surface.
 const SAFE_COLOR_RE = /^#[0-9a-fA-F]{3,8}$|^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*(?:0|1|0?\.\d+)\s*)?\)$|^[a-zA-Z]{1,20}$/;
 
-function safeColor(value) {
+function safeColor(value: any) {
   return typeof value === 'string' && SAFE_COLOR_RE.test(value.trim()) ? value.trim() : '';
 }
 
@@ -35,7 +35,7 @@ function safeColor(value) {
 /* Fund age + analytics (shared by admin internals and the client view)       */
 /* -------------------------------------------------------------------------- */
 
-export function computeFundAge(launchDate) {
+export function computeFundAge(launchDate: any) {
   if (!launchDate) return null;
   const start = new Date(launchDate);
   if (Number.isNaN(start.getTime())) return null;
@@ -59,13 +59,13 @@ export function computeFundAge(launchDate) {
 
 // Full analytics — includes admin-only rupee figures. Never send directly to
 // clients; use `toClientAnalytics` for the client payload.
-export function computeFundAnalytics(fund) {
+export function computeFundAnalytics(fund: any) {
   if (!fund) return null;
 
   const sectors = Array.isArray(fund.sectors) ? fund.sectors : [];
   const investments = Array.isArray(fund.investments) ? fund.investments : [];
-  const totalInvested = investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-  const sectorTotal = sectors.reduce((sum, s) => sum + (s.percentage || 0), 0);
+  const totalInvested = investments.reduce((sum: any, i: any) => sum + (Number(i.amount) || 0), 0);
+  const sectorTotal = sectors.reduce((sum: any, s: any) => sum + (s.percentage || 0), 0);
   const sectorValid = Math.abs(sectorTotal - 100) < 0.1;
   const fundAge = computeFundAge(fund.launchDate);
   const initialInvestment = toFiniteNumber(fund.initialInvestment) ?? 0;
@@ -82,7 +82,7 @@ export function computeFundAnalytics(fund) {
 }
 
 // Client-safe analytics: everything except the raw rupee figures.
-export function toClientAnalytics(fund): any {
+export function toClientAnalytics(fund: any): any {
   const full = computeFundAnalytics(fund);
   if (!full) return null;
   const { totalInvested, initialInvestment, ...safe } = full;
@@ -93,7 +93,7 @@ export function toClientAnalytics(fund): any {
 /* Display-field sanitizers (used by admin create/update before persistence)  */
 /* -------------------------------------------------------------------------- */
 
-export function normalizePerformanceSeries(series) {
+export function normalizePerformanceSeries(series: any) {
   if (!Array.isArray(series)) return [];
   return series
     .map((point) => {
@@ -104,10 +104,10 @@ export function normalizePerformanceSeries(series) {
       return { date: point.date, fund, nifty };
     })
     .filter(Boolean)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-export function sanitizePerformancePeriods(periods) {
+export function sanitizePerformancePeriods(periods: any) {
   if (!Array.isArray(periods)) return [];
   return periods
     .map((period) => {
@@ -125,7 +125,7 @@ export function sanitizePerformancePeriods(periods) {
     .filter(Boolean);
 }
 
-export function sanitizePerformanceSummary(summary) {
+export function sanitizePerformanceSummary(summary: any) {
   if (!summary || typeof summary !== 'object') return null;
   const selectedPeriod = PERFORMANCE_PERIOD_KEYS.has(summary.selectedPeriod) ? summary.selectedPeriod : null;
   return {
@@ -137,7 +137,7 @@ export function sanitizePerformanceSummary(summary) {
   };
 }
 
-export function sanitizeAssetAllocation(allocation) {
+export function sanitizeAssetAllocation(allocation: any) {
   if (!Array.isArray(allocation)) return [];
   return allocation
     .map((slice) => {
@@ -155,9 +155,9 @@ export function sanitizeAssetAllocation(allocation) {
 
 const ADVANCED_RATIO_KEYS = ['pe', 'pb', 'beta', 'alpha', 'sharpe', 'sortino'];
 
-export function sanitizeAdvancedRatios(ratios): any {
+export function sanitizeAdvancedRatios(ratios: any): any {
   if (!ratios || typeof ratios !== 'object') return {};
-  const out = {};
+  const out: Record<string, any> = {};
   for (const key of ADVANCED_RATIO_KEYS) {
     const value = toFiniteNumber(ratios[key]);
     if (value !== null) out[key] = value;
@@ -165,14 +165,14 @@ export function sanitizeAdvancedRatios(ratios): any {
   return out;
 }
 
-export function sanitizeNav(nav) {
+export function sanitizeNav(nav: any) {
   if (!nav || typeof nav !== 'object') return null;
   const value = toFiniteNumber(nav.value);
   if (value === null) return null;
   return { value, asOf: isIsoDateLike(nav.asOf) ? nav.asOf : '' };
 }
 
-export function sanitizeRating(rating) {
+export function sanitizeRating(rating: any) {
   if (!rating || typeof rating !== 'object') return null;
   const value = toFiniteNumber(rating.value);
   if (value === null || value < 0) return null;
@@ -185,10 +185,10 @@ export function sanitizeRating(rating) {
 /* Client view                                                                */
 /* -------------------------------------------------------------------------- */
 
-function buildClientInvestments(fund, cfg) {
+function buildClientInvestments(fund: any, cfg: any) {
   if (cfg.showInvestmentBreakdown === false || !Array.isArray(fund.investments)) return [];
-  const totalInvested = fund.investments.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-  return fund.investments.map((i) => ({
+  const totalInvested = fund.investments.reduce((sum: any, i: any) => sum + (Number(i.amount) || 0), 0);
+  return fund.investments.map((i: any) => ({
     id: i.id,
     companyName: cfg.showCompanyNames !== false ? i.companyName : `Company ${String(i.id || '').slice(-4)}`,
     sectorId: i.sectorId,
@@ -196,7 +196,7 @@ function buildClientInvestments(fund, cfg) {
   }));
 }
 
-export function toClientFund(fund): any {
+export function toClientFund(fund: any): any {
   if (!fund) return null;
   if (!CLIENT_VISIBLE_STAGES.has(fund.lifecycleStage)) return null;
 
@@ -204,10 +204,10 @@ export function toClientFund(fund): any {
   const sectors = cfg.showSectorDistribution !== false ? (Array.isArray(fund.sectors) ? fund.sectors : []) : [];
   const investments = buildClientInvestments(fund, cfg);
 
-  const allocation = sectors.map((s) => ({ label: s.name, pct: s.percentage }));
+  const allocation = sectors.map((s: any) => ({ label: s.name, pct: s.percentage }));
   const topHoldings = investments
-    .map((i) => ({ name: i.companyName, pct: i.percentage }))
-    .sort((a, b) => b.pct - a.pct);
+    .map((i: any) => ({ name: i.companyName, pct: i.percentage }))
+    .sort((a: any, b: any) => b.pct - a.pct);
 
   // Strip admin-only / raw fields, then re-add display-safe ones under gates.
   const {
@@ -260,6 +260,6 @@ export function toClientFund(fund): any {
   return client;
 }
 
-export function toClientFunds(funds) {
+export function toClientFunds(funds: any) {
   return (funds || []).map(toClientFund).filter(Boolean);
 }

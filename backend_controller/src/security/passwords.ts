@@ -7,7 +7,7 @@ const SCRYPT_COST = 16384;
 const SCRYPT_BLOCK_SIZE = 8;
 const SCRYPT_PARALLELIZATION = 1;
 
-export async function hashPassword(password) {
+export async function hashPassword(password: any) {
   const salt = randomBytes(16).toString('base64url');
   const derived = await scryptAsync(password, salt, KEY_LENGTH, {
     N: SCRYPT_COST,
@@ -25,7 +25,7 @@ export async function hashPassword(password) {
   ].join('$');
 }
 
-export async function verifyPassword(password, storedHash) {
+export async function verifyPassword(password: any, storedHash: any) {
   if (!password || !storedHash) return false;
 
   const [scheme, cost, blockSize, parallelization, salt, hash] = storedHash.split('$');

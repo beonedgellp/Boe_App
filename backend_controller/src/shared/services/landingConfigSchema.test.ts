@@ -51,7 +51,7 @@ const VALID_CONFIG = {
   },
 };
 
-function assertHttpError(error, status, code) {
+function assertHttpError(error: any, status: any, code: any) {
   assert.equal(error.status, status);
   assert.equal(error.code, code);
   return true;
@@ -77,9 +77,9 @@ describe('validateLandingConfig', () => {
   });
 
   test('rejects non-object input', () => {
-    assert.throws(() => validateLandingConfig('nope'), (error) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
-    assert.throws(() => validateLandingConfig([1, 2]), (error) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
-    assert.throws(() => validateLandingConfig(null), (error) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
+    assert.throws(() => validateLandingConfig('nope'), (error: any) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
+    assert.throws(() => validateLandingConfig([1, 2]), (error: any) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
+    assert.throws(() => validateLandingConfig(null), (error: any) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
   });
 
   test('strips unknown top-level and nested keys', () => {
@@ -93,9 +93,9 @@ describe('validateLandingConfig', () => {
   });
 
   test('rejects a present section missing required fields', () => {
-    assert.throws(() => validateLandingConfig({ hero: { lead: 'No title here' } }), (error) => {
+    assert.throws(() => validateLandingConfig({ hero: { lead: 'No title here' } }), (error: any) => {
       assertHttpError(error, 400, 'INVALID_LANDING_CONFIG');
-      assert.ok(error.details.errors.some((item) => item.path === 'hero.title'));
+      assert.ok(error.details.errors.some((item: any) => item.path === 'hero.title'));
       return true;
     });
   });
@@ -103,18 +103,18 @@ describe('validateLandingConfig', () => {
   test('rejects hrefs that are not /, #, or https://', () => {
     assert.throws(() => validateLandingConfig({
       nav: { links: [{ label: 'Bad', href: 'javascript:alert(1)' }] },
-    }), (error) => {
+    }), (error: any) => {
       assertHttpError(error, 400, 'INVALID_LANDING_CONFIG');
-      assert.ok(error.details.errors.some((item) => item.path === 'nav.links[0].href'));
+      assert.ok(error.details.errors.some((item: any) => item.path === 'nav.links[0].href'));
       return true;
     });
   });
 
   test('rejects over-limit arrays', () => {
     const tiles = Array.from({ length: 9 }, (_, index) => ({ id: `t${index}`, title: `Tile ${index}` }));
-    assert.throws(() => validateLandingConfig({ explore: { tiles } }), (error) => {
+    assert.throws(() => validateLandingConfig({ explore: { tiles } }), (error: any) => {
       assertHttpError(error, 400, 'INVALID_LANDING_CONFIG');
-      assert.ok(error.details.errors.some((item) => item.path === 'explore.tiles'));
+      assert.ok(error.details.errors.some((item: any) => item.path === 'explore.tiles'));
       return true;
     });
   });
@@ -122,16 +122,16 @@ describe('validateLandingConfig', () => {
   test('rejects invalid enum and integer values', () => {
     assert.throws(() => validateLandingConfig({
       explore: { tiles: [{ id: 'x', title: 'X', size: 'giant' }] },
-    }), (error) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
+    }), (error: any) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
 
     assert.throws(() => validateLandingConfig({
       learningMethod: { steps: [{ step: 0, title: 'Zero' }] },
-    }), (error) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
+    }), (error: any) => assertHttpError(error, 400, 'INVALID_LANDING_CONFIG'));
   });
 
   test('rejects oversize payloads', () => {
     const huge = { hero: { title: 'Hero', lead: 'x'.repeat(300 * 1024) } };
-    assert.throws(() => validateLandingConfig(huge), (error) => assertHttpError(error, 413, 'LANDING_CONFIG_TOO_LARGE'));
+    assert.throws(() => validateLandingConfig(huge), (error: any) => assertHttpError(error, 413, 'LANDING_CONFIG_TOO_LARGE'));
   });
 
   test('exposes the section list', () => {

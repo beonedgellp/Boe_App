@@ -1,17 +1,18 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
 
-function normalizeEmail(value) {
+function normalizeEmail(value: any) {
   if (!value || typeof value !== 'string') return '';
   return value.trim().toLowerCase();
 }
 
-function isValidEmail(email) {
+function isValidEmail(email: any) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function computeRiskCategory(answers) {
+function computeRiskCategory(answers: any) {
   if (!answers || typeof answers !== 'object') {
     return 'conservative';
   }
@@ -19,7 +20,7 @@ function computeRiskCategory(answers) {
   let hasAggressive = false;
   let hasModerate = false;
 
-  function scan(value) {
+  function scan(value: any) {
     if (typeof value === 'string') {
       const v = value.trim().toLowerCase();
       if (v === 'aggressive' || v === 'high') {
@@ -47,7 +48,7 @@ function computeRiskCategory(answers) {
   return 'conservative';
 }
 
-export async function submitApplication(config, body) {
+export async function submitApplication(config: AppConfig, body: any) {
   const { name, email, phone } = body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -98,7 +99,7 @@ export async function submitApplication(config, body) {
   return result;
 }
 
-export async function submitRiskProfile(config, body) {
+export async function submitRiskProfile(config: AppConfig, body: any) {
   const { email, answers, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {
@@ -147,7 +148,7 @@ export async function submitRiskProfile(config, body) {
   return profile;
 }
 
-export async function submitKycDocuments(config, body) {
+export async function submitKycDocuments(config: AppConfig, body: any) {
   const { email, documentType, documentRef, onboardingSessionId } = body || {};
 
   if (!onboardingSessionId || typeof onboardingSessionId !== 'string' || onboardingSessionId.trim().length === 0) {

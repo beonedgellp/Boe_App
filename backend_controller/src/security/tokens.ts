@@ -1,20 +1,25 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { AppConfig, TokenClaims } from '#types/index.js';
 
-function encode(value) {
+function encode(value: unknown): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
 
-function decode(value) {
-  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+function decode(value: string): Record<string, unknown> {
+  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Record<string, unknown>;
 }
 
-function sign(input, secret) {
+function sign(input: string, secret: string): string {
   return createHmac('sha256', secret).update(input).digest('base64url');
 }
 
 const ACCESS_TOKEN_TTL_SECONDS = 24 * 60 * 60;
 
-export function createAccessToken(claims, config, ttlSeconds = ACCESS_TOKEN_TTL_SECONDS) {
+export function createAccessToken(
+  claims: Record<string, unknown>,
+  config: AppConfig,
+  ttlSeconds: number = ACCESS_TOKEN_TTL_SECONDS,
+): string {
   const now = Math.floor(Date.now() / 1000);
   const { status: _status, ...safeClaims } = claims || {};
   const header = encode({ alg: 'HS256', typ: 'JWT' });
@@ -29,7 +34,7 @@ export function createAccessToken(claims, config, ttlSeconds = ACCESS_TOKEN_TTL_
   return `${input}.${sign(input, config.accessTokenSecret)}`;
 }
 
-export function verifyAccessToken(token, config) {
+export function verifyAccessToken(token: string, config: AppConfig): TokenClaims | null {
   if (!token || !config.accessTokenSecret) return null;
 
   const parts = token.split('.');
@@ -45,7 +50,7 @@ export function verifyAccessToken(token, config) {
     const right = Buffer.from(expected);
     if (left.length !== right.length || !timingSafeEqual(left, right)) return null;
 
-    const claims = decode(payload);
+    const claims = decode(payload) as TokenClaims;
     const now = Math.floor(Date.now() / 1000);
     if (claims.iss !== 'beonedge-backend' || claims.aud !== 'beonedge-client') return null;
     if (!claims.sub || !claims.role || !claims.exp || claims.exp < now) return null;

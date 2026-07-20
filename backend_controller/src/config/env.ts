@@ -1,33 +1,34 @@
 import { loadEnvFile } from './dotenv.js';
+import type { AppConfig, ProviderMode } from '#types/index.js';
 
 loadEnvFile();
 
 const DEFAULT_PORT = 47500;
-const PROVIDER_MODES = new Set(['development', 'staging', 'live', 'razorpay', 'mock']);
+const PROVIDER_MODES = new Set<ProviderMode>(['development', 'staging', 'live', 'razorpay', 'mock']);
 
-function readBoolean(value, fallback = false) {
+function readBoolean(value: string | undefined, fallback = false): boolean {
   if (value == null || value === '') return fallback;
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
-function readPort(value) {
+function readPort(value: string | undefined): number {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_PORT;
 }
 
-function readPositiveInt(value, fallback) {
+function readPositiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function readCsv(value) {
+function readCsv(value: string | undefined): string[] {
   return String(value || '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-function unsafeSecret(value) {
+function unsafeSecret(value: string | undefined): boolean {
   const text = String(value || '');
   return (
     text.length < 32 ||
@@ -38,12 +39,15 @@ function unsafeSecret(value) {
   );
 }
 
-export function loadConfig(env = process.env) {
-  const providerMode = PROVIDER_MODES.has(env.PROVIDER_MODE) ? env.PROVIDER_MODE : 'development';
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const providerMode: ProviderMode =
+    env.PROVIDER_MODE && PROVIDER_MODES.has(env.PROVIDER_MODE as ProviderMode)
+      ? (env.PROVIDER_MODE as ProviderMode)
+      : 'development';
 
   // dbDriver selects the store implementation. Postgres is the only supported driver.
   const rawDbDriver = (env.DB_DRIVER || '').toLowerCase();
-  let dbDriver = 'pg';
+  let dbDriver: 'pg' = 'pg';
   if (rawDbDriver === 'pg' || rawDbDriver === 'postgres' || rawDbDriver === 'postgresql') {
     dbDriver = 'pg';
   }
@@ -52,7 +56,7 @@ export function loadConfig(env = process.env) {
     nodeEnv: env.NODE_ENV || 'development',
     host: env.HOST || '127.0.0.1',
     port: readPort(env.PORT),
-    logLevel: env.LOG_LEVEL || 'info',
+    logLevel: (env.LOG_LEVEL || 'info') as AppConfig['logLevel'],
     databaseUrl: env.DATABASE_URL || '',
     databaseHost: env.DATABASE_HOST || env.PGHOST || '',
     databasePort: readPositiveInt(env.DATABASE_PORT || env.PGPORT, 5432),
@@ -87,8 +91,8 @@ export function loadConfig(env = process.env) {
   };
 }
 
-export function assertRuntimeConfig(config) {
-  const warnings = [];
+export function assertRuntimeConfig(config: AppConfig): string[] {
+  const warnings: string[] = [];
   const hasDiscreteDatabaseConfig = Boolean(config.databaseHost && config.databaseName && config.databaseUser);
 
   if (!config.databaseUrl && !hasDiscreteDatabaseConfig) {
@@ -108,8 +112,8 @@ export function assertRuntimeConfig(config) {
   return warnings;
 }
 
-export function assertProductionConfig(config) {
-  const errors = [];
+export function assertProductionConfig(config: AppConfig): string[] {
+  const errors: string[] = [];
   const isSharedRuntime = config.nodeEnv === 'production' || config.providerMode === 'live';
 
   if (!isSharedRuntime) return errors;

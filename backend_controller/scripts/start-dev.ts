@@ -12,15 +12,15 @@ const __dirname = path.dirname(__filename);
 const WITH_FRONTEND = process.argv.includes('--with-frontend');
 const FRONTEND_DIR = path.resolve(__dirname, '..', '..', 'frontend_stack', 'app');
 
-let backendServer = null;
-let frontendProc = null;
+let backendServer: any = null;
+let frontendProc: any = null;
 let shuttingDown = false;
 
-function log(msg) {
+function log(msg: any) {
   console.log(`[start-dev] ${msg}`);
 }
 
-function shutdown(signal) {
+function shutdown(signal: any) {
   if (shuttingDown) return;
   shuttingDown = true;
   log(`Received ${signal}. Shutting down gracefully...`);
@@ -66,11 +66,11 @@ async function startFrontend() {
     shell: process.platform === 'win32',
   });
 
-  proc.on('error', (err) => {
+  proc.on('error', (err: any) => {
     log(`Frontend failed to start: ${err.message}`);
   });
 
-  proc.on('exit', (code) => {
+  proc.on('exit', (code: any) => {
     if (!shuttingDown) {
       log(`Frontend dev server exited with code ${code}.`);
     }
@@ -79,7 +79,7 @@ async function startFrontend() {
   return proc;
 }
 
-function isPortInUse(port, host) {
+function isPortInUse(port: any, host: any) {
   return new Promise<boolean>((resolve) => {
     const conn = createConnection(port, host);
     conn.once('connect', () => { conn.destroy(); resolve(true); });

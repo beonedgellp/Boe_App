@@ -1,3 +1,4 @@
+import type { Router } from '#http/router.js';
 import { Routes } from './constants.js';
 import { login, logout, refreshSession, session, signup } from '../services/authService.js';
 import { validateBody } from '#http/validate.js';
@@ -5,7 +6,7 @@ import { validateBody } from '#http/validate.js';
 const ACCESS_COOKIE_MAX_AGE_SECONDS = 24 * 60 * 60;
 const REFRESH_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 
-export function registerAuthRoutes(router) {
+export function registerAuthRoutes(router: Router) {
   router.post(Routes.POST_V1_AUTH_LOGIN, {
     group: 'auth',
     auth: false,
@@ -55,7 +56,7 @@ export function registerAuthRoutes(router) {
     allowDisabledAccount: true,
     description: 'Revoke the active device session.',
   }, ({ actor, config }) => {
-    logout(actor, config);
+    logout(actor!, config);
     return {
       status: 200,
       body: { ok: true },
@@ -71,7 +72,7 @@ export function registerAuthRoutes(router) {
     auth: false,
     description: 'Rotate a refresh token and return a fresh access token.',
   }, async ({ body, config, headers }) => {
-    const cookieHeader = headers?.cookie || '';
+    const cookieHeader = String(headers?.cookie || '');
     const cookieMatch = cookieHeader.match(/(?:^|;\s*)refresh_token=([^;]+)/);
     const cookieRefreshToken = cookieMatch ? decodeURIComponent(cookieMatch[1]) : '';
     const refreshToken = body?.refreshToken || cookieRefreshToken;
@@ -91,5 +92,5 @@ export function registerAuthRoutes(router) {
     group: 'auth',
     auth: false,
     description: 'Return current session status when a bearer token is present.',
-  }, ({ actor }) => session(actor));
+  }, ({ actor }) => session(actor!));
 }

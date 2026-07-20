@@ -21,7 +21,7 @@ const link = (options: any = {}) => ({
   fields: { label: text({ required: true }), href: href({ required: true }) },
   ...options,
 });
-const list = (item, maxItems, options: any = {}) => ({ kind: 'array', item, maxItems, ...options });
+const list = (item: any, maxItems: any, options: any = {}) => ({ kind: 'array', item, maxItems, ...options });
 
 const SECTION_SPECS = {
   meta: {
@@ -151,11 +151,11 @@ const SECTION_SPECS = {
 
 export const LANDING_SECTIONS = Object.freeze(Object.keys(SECTION_SPECS));
 
-function isPlainObject(value) {
+function isPlainObject(value: any) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function validateString(value, spec, path, errors) {
+function validateString(value: any, spec: any, path: any, errors: any) {
   if (typeof value !== 'string') {
     errors.push({ path, message: 'must be a string' });
     return undefined;
@@ -179,7 +179,7 @@ function validateString(value, spec, path, errors) {
   return value;
 }
 
-function validateInteger(value, spec, path, errors) {
+function validateInteger(value: any, spec: any, path: any, errors: any) {
   if (!Number.isInteger(value)) {
     errors.push({ path, message: 'must be an integer' });
     return undefined;
@@ -191,7 +191,7 @@ function validateInteger(value, spec, path, errors) {
   return value;
 }
 
-function validateArray(value, spec, path, errors) {
+function validateArray(value: any, spec: any, path: any, errors: any): any {
   if (!Array.isArray(value)) {
     errors.push({ path, message: 'must be an array' });
     return undefined;
@@ -203,7 +203,7 @@ function validateArray(value, spec, path, errors) {
   return value.map((item, index) => validateNode(item, spec.item, `${path}[${index}]`, errors));
 }
 
-function validateObject(value, spec, path, errors) {
+function validateObject(value: any, spec: any, path: any, errors: any): any {
   if (!isPlainObject(value)) {
     errors.push({ path, message: 'must be an object' });
     return undefined;
@@ -227,14 +227,14 @@ function validateObject(value, spec, path, errors) {
   return out;
 }
 
-function validateNode(value, spec, path, errors) {
+function validateNode(value: any, spec: any, path: any, errors: any): any {
   if (spec.kind === 'string') return validateString(value, spec, path, errors);
   if (spec.kind === 'integer') return validateInteger(value, spec, path, errors);
   if (spec.kind === 'array') return validateArray(value, spec, path, errors);
   return validateObject(value, spec, path, errors);
 }
 
-export function validateLandingConfig(input): any {
+export function validateLandingConfig(input: any): any {
   if (!isPlainObject(input)) {
     throw new HttpError(400, 'INVALID_LANDING_CONFIG', 'Landing configuration must be a JSON object.');
   }
@@ -244,8 +244,8 @@ export function validateLandingConfig(input): any {
     throw new HttpError(413, 'LANDING_CONFIG_TOO_LARGE', 'Landing configuration is larger than the supported limit.');
   }
 
-  const errors = [];
-  const sanitized = {};
+  const errors: any[] = [];
+  const sanitized: Record<string, any> = {};
 
   for (const [section, spec] of Object.entries(SECTION_SPECS)) {
     const value = input[section];

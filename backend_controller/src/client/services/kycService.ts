@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -6,7 +7,7 @@ import { withReceipt } from '#shared/services/withReceipt.js';
 const FATCA_STATUSES = new Set(['not_started', 'pending', 'completed', 'exempt']);
 const REKYC_TRIGGERS = new Set(['annual_review', 'address_change', 'pan_update', 'nominee_change', 'other']);
 
-function isMinor(dateOfBirth) {
+function isMinor(dateOfBirth: any) {
   if (!dateOfBirth) return false;
   const dob = new Date(dateOfBirth);
   if (Number.isNaN(dob.getTime())) return false;
@@ -17,7 +18,7 @@ function isMinor(dateOfBirth) {
   return age < 18;
 }
 
-function validateNominees(nominees) {
+function validateNominees(nominees: any) {
   if (!Array.isArray(nominees)) {
     throw new HttpError(400, 'INVALID_NOMINEES', 'Nominees must be an array.');
   }
@@ -51,7 +52,7 @@ function validateNominees(nominees) {
   }
 }
 
-function defaultKycProfile(userId) {
+function defaultKycProfile(userId: string) {
   const now = new Date().toISOString();
   return {
     id: randomUUID(),
@@ -75,7 +76,7 @@ function defaultKycProfile(userId) {
   };
 }
 
-function toApiKycProfile(profile, user) {
+function toApiKycProfile(profile: any, user: any) {
   return {
     id: profile.id,
     userId: profile.userId,
@@ -105,7 +106,7 @@ function toApiKycProfile(profile, user) {
   };
 }
 
-export async function getKycStatus(config, actor) {
+export async function getKycStatus(config: AppConfig, actor: Actor) {
   const store = await readJsonStore(config);
   let profile = store.kycProfiles.find((p) => p.userId === actor.userId);
   let user = store.users.find((u) => u.id === actor.userId);
@@ -123,7 +124,7 @@ export async function getKycStatus(config, actor) {
   return toApiKycProfile(profile, user);
 }
 
-async function _updateKycDepth(config, actor, body) {
+async function _updateKycDepth(config: AppConfig, actor: Actor, body: any) {
   const fatcaStatus = body.fatcaStatus;
   const fatcaDeclaration = body.fatcaDeclaration;
   const nominees = body.nominees;
@@ -183,7 +184,7 @@ async function _updateKycDepth(config, actor, body) {
       }
     }
     if (nominees !== undefined) {
-      profile.nominees = nominees.map((n) => ({
+      profile.nominees = nominees.map((n: any) => ({
         name: String(n.name).trim(),
         relationship: String(n.relationship).trim(),
         dateOfBirth: String(n.dateOfBirth).trim(),
@@ -209,7 +210,7 @@ async function _updateKycDepth(config, actor, body) {
 
 export const updateKycDepth = withReceipt(_updateKycDepth, 'kyc_updated', {
   entityType: 'kyc_profile',
-  entityId: (result) => result.id,
-  afterState: (result) => result.reviewStatus,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.reviewStatus,
   source: 'derived',
 });

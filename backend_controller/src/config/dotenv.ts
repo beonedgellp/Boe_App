@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const backendRoot = resolve(here, '../..');
 
-function parseLine(line) {
+function parseLine(line: string): [string, string] | null {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith('#')) return null;
 
@@ -25,7 +25,7 @@ function parseLine(line) {
   return key ? [key, value] : null;
 }
 
-export function loadEnvFile(path = resolve(backendRoot, '.env')) {
+export function loadEnvFile(path: string = resolve(backendRoot, '.env')): boolean {
   if (!existsSync(path)) return false;
 
   const body = readFileSync(path, 'utf8');

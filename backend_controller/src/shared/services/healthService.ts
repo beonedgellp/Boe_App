@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { assertRuntimeConfig } from '#config/env.js';
 import { databaseStatus, hasDatabaseConfig } from '#db/client.js';
 
-export async function health(config) {
+export async function health(config: AppConfig) {
   const database = await databaseStatus(config);
 
   return {
@@ -17,7 +18,7 @@ export async function health(config) {
   };
 }
 
-export function reachability(config) {
+export function reachability(config: AppConfig) {
   return {
     ok: true,
     minVersion: '1.0.0',

@@ -1,3 +1,5 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
+import type { Router } from '#http/router.js';
 import { Routes } from './constants.js';
 import { processPaymentWebhook, processMandateWebhook } from '../services/webhookService.js';
 import { HttpError } from '#http/errors.js';
@@ -13,7 +15,7 @@ const SUPPORTED_PROVIDERS = new Set(['mock', 'razorpay']);
  *   It is forced off in production by `assertProductionConfig`.
  * - Anything else is rejected with 404.
  */
-function assertProviderAccepted(provider, config) {
+function assertProviderAccepted(provider: any, config: AppConfig) {
   if (!SUPPORTED_PROVIDERS.has(provider)) {
     throw new HttpError(404, 'UNKNOWN_PROVIDER', `Webhook provider '${provider}' is not supported.`);
   }
@@ -22,7 +24,7 @@ function assertProviderAccepted(provider, config) {
   }
 }
 
-export function registerWebhookRoutes(router) {
+export function registerWebhookRoutes(router: Router) {
   router.post(Routes.POST_V1_WEBHOOKS_PAYMENTS_PROVIDER, {
     group: 'provider-webhook',
     auth: false,

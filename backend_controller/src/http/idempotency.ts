@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 // Idempotency-Key middleware for client POST routes.
 //
 // Wraps a route handler so that, when the client sends an `Idempotency-Key`
@@ -11,13 +12,22 @@
 // Storage: `request_idempotency` table in PostgreSQL.
 
 import { createHash } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
 import { HttpError } from './errors.js';
+import type { RouteContext, RouteHandler } from '#types/index.js';
 import {
   findRecord,
   insertJsonRecord,
   updateJsonRecord,
   deleteJsonRecord,
 } from '#db/pgAdapter.js';
+
+interface StoredResult {
+  status: number;
+  body: unknown;
+  requestHash?: string;
+  replayed?: boolean;
+}
 
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 const IN_FLIGHT_TIMEOUT_MS = 30_000;
@@ -26,11 +36,11 @@ const IN_FLIGHT_TIMEOUT_MS = 30_000;
 // Prevents two concurrent requests with the same key from both running the
 // handler. Survives only within a single Node process; persistence layer
 // catches cross-process duplicates after the first one commits.
-const inFlight = new Map();
+const inFlight = new Map<string, Promise<StoredResult>>();
 
 const HEADER_NAME = 'idempotency-key';
 
-function readHeader(headers) {
+function readHeader(headers: IncomingMessage['headers'] | undefined): string | null {
   if (!headers) return null;
   const raw = headers[HEADER_NAME] ?? headers[HEADER_NAME.toUpperCase()];
   if (raw == null) return null;
@@ -39,7 +49,7 @@ function readHeader(headers) {
   return trimmed.length === 0 ? null : trimmed;
 }
 
-function hashBody(req, body) {
+function hashBody(req: IncomingMessage | undefined, body: unknown): string {
   const raw = req?.rawBody;
   let canonical;
   if (typeof raw === 'string' && raw.length > 0) {
@@ -52,19 +62,20 @@ function hashBody(req, body) {
   return createHash('sha256').update(canonical).digest('hex');
 }
 
-function dedupKey(userId, routePath, key) {
+function dedupKey(userId: string | null, routePath: string, key: string): string {
   return `${userId || 'anon'}:${routePath}:${key}`;
 }
 
-function normalizeHandlerResult(result) {
+function normalizeHandlerResult(result: unknown): { status: number; body: unknown } {
   if (result == null) return { status: 204, body: null };
-  if (typeof result === 'object' && typeof result.status === 'number' && 'body' in result) {
-    return { status: result.status, body: result.body };
+  const maybe = result as { status?: unknown; body?: unknown };
+  if (typeof result === 'object' && typeof maybe.status === 'number' && 'body' in result) {
+    return { status: maybe.status, body: maybe.body };
   }
   return { status: 200, body: result };
 }
 
-function withReplayHeader(stored) {
+function withReplayHeader(stored: { status: number; body: unknown }) {
   return {
     status: stored.status,
     body: stored.body,
@@ -79,8 +90,8 @@ function withReplayHeader(stored) {
  * @param {(ctx: object) => any} handler
  * @returns {(ctx: object) => Promise<any>}
  */
-export function withIdempotency(routePath, handler) {
-  return async function idempotencyWrapped(context) {
+export function withIdempotency(routePath: string, handler: RouteHandler): RouteHandler {
+  return async function idempotencyWrapped(context: RouteContext) {
     const { headers, actor, body, req, config } = context;
     const key = readHeader(headers);
 
@@ -121,13 +132,14 @@ export function withIdempotency(routePath, handler) {
       };
     }
 
-    const runHandler = (async () => {
+    const runHandler: Promise<StoredResult> = (async (): Promise<StoredResult> => {
       // Persisted lookup
-      const { item: existing } = await findRecord(
+      const found = await findRecord(
         config,
         'requestIdempotency',
         (r) => r.key === dk,
       );
+      const existing = found.item as Record<string, any> | null;
 
       if (existing) {
         if (existing.requestHash !== requestHash) {

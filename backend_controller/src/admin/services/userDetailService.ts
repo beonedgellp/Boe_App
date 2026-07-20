@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
 import { query } from '#db/client.js';
 
-function computeBlockingReasons(user, kycProfile) {
+function computeBlockingReasons(user: any, kycProfile: any) {
   const reasons = [];
   if (user.kycStatus === 'rejected' || (kycProfile && kycProfile.reviewStatus === 'rejected')) {
     reasons.push({ code: 'kyc_rejected', label: 'KYC rejected' });
@@ -25,9 +26,9 @@ function computeBlockingReasons(user, kycProfile) {
   return reasons;
 }
 
-function toCamelCase(obj) {
+function toCamelCase(obj: any) {
   if (!obj || typeof obj !== 'object') return obj;
-  const result = {};
+  const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
     result[camelKey] = value;
@@ -35,7 +36,7 @@ function toCamelCase(obj) {
   return result;
 }
 
-export async function getUserDetail(config, actor, userId) {
+export async function getUserDetail(config: AppConfig, actor: Actor, userId: string) {
   const userResult = await query(config, `
     SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.role::text, u.status::text,
            u.risk_profile_status::text, u.kyc_status::text, u.created_at, u.approved_at,

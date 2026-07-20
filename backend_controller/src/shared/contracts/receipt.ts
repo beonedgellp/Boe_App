@@ -33,11 +33,11 @@ const VALID_ENTITY_TYPES = new Set([
   'kyc_profile',
 ]);
 
-export function isValidReceiptKind(value) {
+export function isValidReceiptKind(value: any) {
   return typeof value === 'string' && ALL_KINDS.includes(value);
 }
 
-export function validateReceipt(receipt) {
+export function validateReceipt(receipt: any) {
   const errors = [];
 
   if (!receipt.id || typeof receipt.id !== 'string') {

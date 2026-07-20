@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { createMockProvider } from './mockProvider.js';
 import { createRazorpayProvider } from './razorpayProvider.js';
 
@@ -20,7 +21,7 @@ const KNOWN_PROVIDERS = new Set(['mock', 'razorpay']);
  * Razorpay requires `razorpayKeyId` and `razorpayKeySecret`. A descriptive
  * error is thrown when the caller explicitly requests razorpay without keys.
  */
-export function getPaymentProvider(config, preferredProvider = null) {
+export function getPaymentProvider(config: AppConfig, preferredProvider: string | null = null) {
   let providerName;
   if (preferredProvider) {
     if (!KNOWN_PROVIDERS.has(preferredProvider)) {

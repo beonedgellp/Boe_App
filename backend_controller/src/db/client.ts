@@ -1,12 +1,14 @@
 import pg from 'pg';
+import type { Pool as PgPool, PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
+import type { AppConfig, DatabaseStatus } from '#types/index.js';
 
 const { Pool } = pg;
 
-let pool = null;
+let pool: PgPool | null = null;
 let poolKey = '';
 
-function poolConfig(config) {
-  const common = {
+function poolConfig(config: AppConfig): PoolConfig {
+  const common: PoolConfig = {
     max: config.dbPoolMax,
     idleTimeoutMillis: config.dbIdleTimeoutMs,
     connectionTimeoutMillis: config.dbConnectionTimeoutMs,
@@ -30,11 +32,11 @@ function poolConfig(config) {
   };
 }
 
-export function hasDatabaseConfig(config) {
+export function hasDatabaseConfig(config: AppConfig): boolean {
   return Boolean(config.databaseUrl || (config.databaseHost && config.databaseName && config.databaseUser));
 }
 
-export function redactDatabaseUrl(databaseUrl) {
+export function redactDatabaseUrl(databaseUrl: string): string {
   if (!databaseUrl) return '';
 
   try {
@@ -47,7 +49,7 @@ export function redactDatabaseUrl(databaseUrl) {
   }
 }
 
-export function getPool(config) {
+export function getPool(config: AppConfig): PgPool {
   if (!hasDatabaseConfig(config)) {
     throw new Error('Database connection is not configured.');
   }
@@ -74,11 +76,18 @@ export function getPool(config) {
   return pool;
 }
 
-export async function query(config, text, params = []) {
-  return getPool(config).query(text, params);
+export async function query<R extends QueryResultRow = QueryResultRow>(
+  config: AppConfig,
+  text: string,
+  params: readonly unknown[] = [],
+): Promise<QueryResult<R>> {
+  return getPool(config).query<R>(text, params);
 }
 
-export async function transaction(config, callback) {
+export async function transaction<T>(
+  config: AppConfig,
+  callback: (client: PoolClient) => Promise<T>,
+): Promise<T> {
   const client = await getPool(config).connect();
 
   try {
@@ -94,14 +103,14 @@ export async function transaction(config, callback) {
   }
 }
 
-export async function closePool() {
+export async function closePool(): Promise<void> {
   if (!pool) return;
   await pool.end();
   pool = null;
   poolKey = '';
 }
 
-export async function databaseStatus(config) {
+export async function databaseStatus(config: AppConfig): Promise<DatabaseStatus> {
   if (!hasDatabaseConfig(config)) {
     return {
       configured: false,
@@ -122,10 +131,10 @@ export async function databaseStatus(config) {
     return {
       configured: true,
       ok: true,
-      database: row.database,
-      user: row.user,
-      host: row.host,
-      port: row.port,
+      database: row?.database,
+      user: row?.user,
+      host: row?.host,
+      port: row?.port,
       latencyMs: Date.now() - startedAt,
     };
   } catch (error) {
@@ -137,7 +146,7 @@ export async function databaseStatus(config) {
       port: config.databaseHost ? config.databasePort : undefined,
       database: config.databaseName || undefined,
       user: config.databaseUser || undefined,
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
       latencyMs: Date.now() - startedAt,
     };
   }

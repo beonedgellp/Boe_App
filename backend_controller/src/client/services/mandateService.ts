@@ -1,21 +1,22 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { findRecord, updateMandate } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
-export async function getMandate(config, actor, mandateId) {
+export async function getMandate(config: AppConfig, actor: Actor, mandateId: string) {
   const { item: mandate } = await findRecord(config, 'mandates', (m) => m.id === mandateId);
   if (!mandate) throw new HttpError(404, 'MANDATE_NOT_FOUND', 'Mandate not found.');
   if (mandate.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Mandate does not belong to you.');
   return mandate;
 }
 
-async function _authorizeMandate(config, actor, mandateId) {
+async function _authorizeMandate(config: AppConfig, actor: Actor, mandateId: string) {
   const result = await updateMandate(config, mandateId, (mandate, store) => {
     if (mandate.userId !== actor?.userId) {
       throw new HttpError(403, 'FORBIDDEN', 'Mandate does not belong to you.');
     }
-    const owner = store.users.find((user) => user.id === mandate.userId);
+    const owner = store.users.find((user: any) => user.id === mandate.userId);
     if (!owner || owner.status !== 'approved') {
       throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to authorize a mandate.', {
         status: owner?.status || 'missing',
@@ -54,7 +55,7 @@ async function _authorizeMandate(config, actor, mandateId) {
 
 export const authorizeMandate = withReceipt(_authorizeMandate, 'mandate_authorized', {
   entityType: 'mandate',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
   source: 'mock',
 });

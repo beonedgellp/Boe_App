@@ -1,3 +1,5 @@
+import type { Role } from '#types/index.js';
+import type { Router } from '#http/router.js';
 import { Routes } from '#shared/routes/constants.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
@@ -51,9 +53,9 @@ import {
   listReconciliationLedger,
 } from '../services/paymentReconcileService.js';
 
-const ADMIN_ROLES = ['admin'];
+const ADMIN_ROLES: Role[] = ['admin'];
 
-export function registerAdminRoutes(router) {
+export function registerAdminRoutes(router: Router) {
   // Admin-only receipts/timeline + internal route metadata belong to the admin surface
   // so a client-only server doesn't expose them.
   registerAdminReceiptRoutes(router);
@@ -151,7 +153,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Reply to a support ticket.',
-  }, ({ config, actor, params, body }) => replyToTicket(config, actor, params.ticket_id, body));
+  }, ({ config, actor, params, body }) => replyToTicket(config, actor!, params.ticket_id, body));
 
   router.get(Routes.GET_V1_ADMIN_APP_CONFIG, {
     group: 'admin',
@@ -163,7 +165,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Publish mobile app component and content configuration.',
-  }, ({ actor, body, config, headers }) => publishAppConfig(config, actor, body, {
+  }, ({ actor, body, config, headers }) => publishAppConfig(config, actor!, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));
@@ -178,7 +180,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Publish landing page content configuration.',
-  }, ({ actor, body, config, headers }) => publishLandingConfig(config, actor, body, {
+  }, ({ actor, body, config, headers }) => publishLandingConfig(config, actor!, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));
@@ -193,7 +195,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Send notification to users.',
-  }, ({ config, actor, body }) => sendNotification(config, actor, body));
+  }, ({ config, actor, body }) => sendNotification(config, actor!, body));
 
   router.get(Routes.GET_V1_ADMIN_FAQS, {
     group: 'admin',
@@ -205,19 +207,19 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Create a new FAQ.',
-  }, ({ config, actor, body }) => createFaq(config, actor, body));
+  }, ({ config, actor, body }) => createFaq(config, actor!, body));
 
   router.patch(Routes.PATCH_V1_ADMIN_FAQS_FAQ_ID, {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Update an FAQ.',
-  }, ({ config, actor, params, body }) => updateFaq(config, actor, params.faq_id, body));
+  }, ({ config, actor, params, body }) => updateFaq(config, actor!, params.faq_id, body));
 
   router.delete(Routes.DELETE_V1_ADMIN_FAQS_FAQ_ID, {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Delete an FAQ.',
-  }, ({ config, actor, params }) => deleteFaq(config, actor, params.faq_id));
+  }, ({ config, actor, params }) => deleteFaq(config, actor!, params.faq_id));
 
   /* ----- Courses & Plans ----- */
 
@@ -273,13 +275,13 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Get comprehensive user detail.',
-  }, ({ config, actor, params }) => getUserDetail(config, actor, params.user_id));
+  }, ({ config, actor, params }) => getUserDetail(config, actor!, params.user_id));
 
   router.patch(Routes.PATCH_V1_ADMIN_USERS_USER_ID_STATUS, {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Change user approval/status.',
-  }, ({ actor, body, config, headers, params }) => updateUserStatus(config, actor, params.user_id, body, {
+  }, ({ actor, body, config, headers, params }) => updateUserStatus(config, actor!, params.user_id, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));
@@ -294,7 +296,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Create strategy draft.',
-  }, ({ actor, body, config, headers }) => createFund(config, actor, body, {
+  }, ({ actor, body, config, headers }) => createFund(config, actor!, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));
@@ -320,7 +322,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Create fund record.',
-  }, ({ actor, body, config, headers }) => createFund(config, actor, body, {
+  }, ({ actor, body, config, headers }) => createFund(config, actor!, body, {
     ipAddress: String(headers['x-forwarded-for'] || '').split(',')[0].trim() || null,
     userAgent: headers['user-agent'] || null,
   }));
@@ -329,7 +331,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Update fund pool.',
-  }, ({ config, actor, params, body }) => updateFund(config, actor, params.fund_id, body, {
+  }, ({ config, actor, params, body }) => updateFund(config, actor!, params.fund_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -338,7 +340,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Delete fund pool.',
-  }, ({ config, actor, params }) => deleteFund(config, actor, params.fund_id, {
+  }, ({ config, actor, params }) => deleteFund(config, actor!, params.fund_id, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -349,7 +351,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Allocate cash to an investment.',
-  }, ({ config, actor, params, body }) => allocateFunds(config, actor, params.fund_id, body, {
+  }, ({ config, actor, params, body }) => allocateFunds(config, actor!, params.fund_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -358,7 +360,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Unallocate funds from an investment back to cash.',
-  }, ({ config, actor, params, body }) => unallocateFunds(config, actor, params.fund_id, body, {
+  }, ({ config, actor, params, body }) => unallocateFunds(config, actor!, params.fund_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -367,7 +369,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Withdraw funds from the pool (external outflow).',
-  }, ({ config, actor, params, body }) => adminOutflow(config, actor, params.fund_id, body, {
+  }, ({ config, actor, params, body }) => adminOutflow(config, actor!, params.fund_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -376,7 +378,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Add capital to the fund pool.',
-  }, ({ config, actor, params, body }) => adminInflow(config, actor, params.fund_id, body, {
+  }, ({ config, actor, params, body }) => adminInflow(config, actor!, params.fund_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -415,7 +417,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Update strategy draft or status.',
-  }, ({ config, actor, params, body }) => updateFund(config, actor, params.product_id, body, {
+  }, ({ config, actor, params, body }) => updateFund(config, actor!, params.product_id, body, {
     ipAddress: null,
     userAgent: null,
   }));
@@ -532,7 +534,7 @@ export function registerAdminRoutes(router) {
     description: 'Approve a settled payment and post it into the fund pool.',
   }, ({ config, actor, params, body, headers }) => approvePayment(
     config,
-    actor,
+    actor!,
     params.payment_id,
     body,
     paymentReconcileRequestContext(headers),
@@ -544,7 +546,7 @@ export function registerAdminRoutes(router) {
     description: 'Reject a payment after admin review.',
   }, ({ config, actor, params, body, headers }) => rejectPayment(
     config,
-    actor,
+    actor!,
     params.payment_id,
     body,
     paymentReconcileRequestContext(headers),
@@ -572,7 +574,7 @@ export function registerAdminRoutes(router) {
     group: 'admin',
     roles: ADMIN_ROLES,
     description: 'Review SIP control request.',
-  }, ({ config, actor, params, body }) => reviewSipControlRequest(config, actor, params.request_id, body));
+  }, ({ config, actor, params, body }) => reviewSipControlRequest(config, actor!, params.request_id, body));
 
   router.get(Routes.GET_V1_ADMIN_TRANSACTIONS, {
     group: 'admin',

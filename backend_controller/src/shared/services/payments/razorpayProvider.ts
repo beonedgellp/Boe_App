@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import Razorpay from 'razorpay';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-export function createRazorpayProvider(config) {
+export function createRazorpayProvider(config: AppConfig) {
   const keyId = config.razorpayKeyId;
   const keySecret = config.razorpayKeySecret;
 
@@ -15,7 +16,7 @@ export function createRazorpayProvider(config) {
     name: 'razorpay',
     client,
 
-    async createPaymentOrder({ amount, currency = 'INR', receipt, notes }) {
+    async createPaymentOrder({ amount, currency = 'INR', receipt, notes }: any) {
       const order = await client.orders.create({
         amount: Math.round(amount * 100), // paise
         currency,
@@ -32,7 +33,7 @@ export function createRazorpayProvider(config) {
       };
     },
 
-    async createMandate({ amount, frequency, customerId, notes }) {
+    async createMandate({ amount, frequency, customerId, notes }: any) {
       // Razorpay mandates are created via customer + token APIs
       // For test mode, we simulate the token creation
       const token = await client.tokens.create({
@@ -50,7 +51,7 @@ export function createRazorpayProvider(config) {
       };
     },
 
-    async fetchPayment(paymentId) {
+    async fetchPayment(paymentId: any) {
       const payment = await client.payments.fetch(paymentId);
       return {
         id: payment.id,
@@ -62,7 +63,7 @@ export function createRazorpayProvider(config) {
       };
     },
 
-    async fetchMandate(mandateId) {
+    async fetchMandate(mandateId: any) {
       const token = await client.tokens.fetch(mandateId);
       return {
         id: token.id,
@@ -73,7 +74,7 @@ export function createRazorpayProvider(config) {
       };
     },
 
-    async verifyWebhookSignature(body, signature, secret) {
+    async verifyWebhookSignature(body: any, signature: any, secret: any) {
       const expected = createHmac('sha256', secret || keySecret)
         .update(body)
         .digest('hex');

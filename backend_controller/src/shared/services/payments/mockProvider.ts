@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 export function createMockProvider() {
   return {
     name: 'mock',
-    async createPaymentOrder({ amount, currency, receipt, notes }) {
+    async createPaymentOrder({ amount, currency, receipt, notes }: any) {
       return {
         id: `mock_order_${randomUUID()}`,
         amount,
@@ -13,7 +13,7 @@ export function createMockProvider() {
         notes: notes || {},
       };
     },
-    async createMandate({ amount, frequency, customerId, notes }) {
+    async createMandate({ amount, frequency, customerId, notes }: any) {
       return {
         id: `mock_mandate_${randomUUID()}`,
         status: 'created',
@@ -23,7 +23,7 @@ export function createMockProvider() {
         notes: notes || {},
       };
     },
-    async fetchPayment(paymentId) {
+    async fetchPayment(paymentId: any) {
       return {
         id: paymentId,
         status: 'captured',
@@ -31,7 +31,7 @@ export function createMockProvider() {
         currency: 'INR',
       };
     },
-    async fetchMandate(mandateId) {
+    async fetchMandate(mandateId: any) {
       return {
         id: mandateId,
         status: 'active',
@@ -39,7 +39,7 @@ export function createMockProvider() {
         frequency: 'monthly',
       };
     },
-    async verifyWebhookSignature(body, signature, secret) {
+    async verifyWebhookSignature(body: any, signature: any, secret: any) {
       return true;
     },
   };

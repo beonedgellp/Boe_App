@@ -1,9 +1,9 @@
-function formatToParts(date, options) {
+function formatToParts(date: any, options: any) {
   return new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', ...options }).formatToParts(date);
 }
 
-function partValue(parts, type) {
-  return parts.find((p) => p.type === type)?.value;
+function partValue(parts: any, type: any) {
+  return parts.find((p: any) => p.type === type)?.value;
 }
 
 export function dateInIst(date = new Date()) {

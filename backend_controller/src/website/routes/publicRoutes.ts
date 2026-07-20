@@ -1,3 +1,4 @@
+import type { Router } from '#http/router.js';
 import { Routes } from '#shared/routes/constants.js';
 import { emptyCollection, placeholder } from '#shared/services/placeholderService.js';
 import { getPublishedAppConfig } from '#shared/services/appConfigService.js';
@@ -9,7 +10,7 @@ import { getDisclosures, getInvestorCharter, getGrievanceContent } from '../serv
 import { submitApplication, submitRiskProfile, submitKycDocuments } from '../services/onboardingService.js';
 import { validateBody } from '#http/validate.js';
 
-export function registerPublicRoutes(router) {
+export function registerPublicRoutes(router: Router) {
   router.post(Routes.POST_V1_ONBOARDING_APPLICATIONS, {
     group: 'public',
     auth: false,
@@ -57,7 +58,7 @@ export function registerPublicRoutes(router) {
   }, async ({ config }) => {
     const { items } = await listFunds(config);
     const clientItems = toClientFunds(items)
-      .filter((f) => f.lifecycleStage === 'active' || f.lifecycleStage === 'published');
+      .filter((f: any) => f.lifecycleStage === 'active' || f.lifecycleStage === 'published');
     return { items: clientItems, count: clientItems.length };
   });
 

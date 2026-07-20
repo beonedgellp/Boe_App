@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 // Disclosure content service — SEBI/AMFI mandated blocks
 import { readJsonStore } from '#db/pgAdapter.js';
 
@@ -24,9 +25,9 @@ const RISKOMETER_CONFIG = {
   },
 };
 
-export async function getDisclosures(config) {
+export async function getDisclosures(config: AppConfig & Record<string, any>) {
   const riskLevel = config?.riskLevel || 'moderate';
-  const riskometer = RISKOMETER_CONFIG[riskLevel] || RISKOMETER_CONFIG.moderate;
+  const riskometer = RISKOMETER_CONFIG[riskLevel as keyof typeof RISKOMETER_CONFIG] || RISKOMETER_CONFIG.moderate;
 
   let publishedDisclosure = null;
   const store = await readJsonStore(config);
@@ -55,7 +56,7 @@ export async function getDisclosures(config) {
   };
 }
 
-export async function getInvestorCharter(config) {
+export async function getInvestorCharter(config: AppConfig & Record<string, any>) {
   let page = null;
   const store = await readJsonStore(config);
   if (store.staticPages) {
@@ -119,7 +120,7 @@ export async function getInvestorCharter(config) {
   };
 }
 
-export async function getGrievanceContent(config) {
+export async function getGrievanceContent(config: AppConfig & Record<string, any>) {
   let page = null;
   const store = await readJsonStore(config);
   if (store.staticPages) {

@@ -1,7 +1,8 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { emptyCollection } from '#shared/services/placeholderService.js';
 import { readJsonStore } from '#db/pgAdapter.js';
 
-function userPortfolioKey(userId) {
+function userPortfolioKey(userId: string) {
   return `portfolio_${userId}`;
 }
 
@@ -9,18 +10,18 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function fundName(store, fundId) {
-  const fund = (store.funds || []).find((item) => item.id === fundId);
+function fundName(store: any, fundId: string) {
+  const fund = (store.funds || []).find((item: any) => item.id === fundId);
   return fund?.name || fund?.title || fundId || 'BeOnEdge Strategy';
 }
 
-function fundTrackingId(fund) {
+function fundTrackingId(fund: any) {
   if (!fund?.id) return '';
   return fund.trackingId || fund.fundCode || `FP-${String(fund.id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
 }
 
-function fundSnapshot(store, fundId) {
-  const fund = (store.funds || []).find((item) => item.id === fundId);
+function fundSnapshot(store: any, fundId: string) {
+  const fund = (store.funds || []).find((item: any) => item.id === fundId);
   if (!fund) {
     return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
   }
@@ -40,28 +41,28 @@ function fundSnapshot(store, fundId) {
   };
 }
 
-function findPaymentForTransaction(store, transaction) {
+function findPaymentForTransaction(store: any, transaction: any) {
   if (!transaction) return null;
   return (store.payments || [])
-    .filter((payment) => payment.transactionId === transaction.id)
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0] || null;
+    .filter((payment: any) => payment.transactionId === transaction.id)
+    .sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0] || null;
 }
 
-function visibleTransactionType(type) {
+function visibleTransactionType(type: any) {
   const value = String(type || '').toLowerCase();
   if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
   if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
   return value;
 }
 
-function paymentTypeFrom(mode, type) {
+function paymentTypeFrom(mode: any, type: any) {
   const value = String(mode || '').toLowerCase();
   if (value.includes('autopay') || value.includes('mandate')) return 'autopay';
   if (visibleTransactionType(type) === 'sip' && !value) return 'autopay';
   return 'manual';
 }
 
-function clientTransactionStatus(transaction, payment) {
+function clientTransactionStatus(transaction: any, payment: any) {
   if (payment?.status === 'approved') return 'approved';
   if (payment?.status === 'rejected') return 'approval_rejected';
   if (payment?.status === 'success' || payment?.status === 'confirmed' || payment?.status === 'reconciled') {
@@ -75,7 +76,7 @@ function clientTransactionStatus(transaction, payment) {
   return transaction?.status || 'submitted';
 }
 
-function enrichTransaction(store, transaction) {
+function enrichTransaction(store: any, transaction: any) {
   const payment = findPaymentForTransaction(store, transaction);
   const plan = findPlanForPayment(store, payment || {}, transaction);
   const productId = transaction.productId || transaction.fundId || payment?.fundId || payment?.productId || plan?.productId || plan?.fundId || '';
@@ -133,28 +134,28 @@ function enrichTransaction(store, transaction) {
   };
 }
 
-function findTransactionForPayment(store, payment) {
-  return (store.transactions || []).find((transaction) => transaction.id === payment.transactionId) || null;
+function findTransactionForPayment(store: any, payment: any) {
+  return (store.transactions || []).find((transaction: any) => transaction.id === payment.transactionId) || null;
 }
 
-function findPlanForPayment(store, payment, transaction) {
+function findPlanForPayment(store: any, payment: any, transaction: any) {
   const plans = store.investmentPlans || store.orders || [];
   if (transaction?.investmentPlanId) {
-    const byTransaction = plans.find((plan) => plan.id === transaction.investmentPlanId);
+    const byTransaction = plans.find((plan: any) => plan.id === transaction.investmentPlanId);
     if (byTransaction) return byTransaction;
   }
   if (payment?.investmentPlanId) {
-    const byPayment = plans.find((plan) => plan.id === payment.investmentPlanId);
+    const byPayment = plans.find((plan: any) => plan.id === payment.investmentPlanId);
     if (byPayment) return byPayment;
   }
   if (payment?.id) {
-    const byPaymentId = plans.find((plan) => plan.paymentId === payment.id);
+    const byPaymentId = plans.find((plan: any) => plan.paymentId === payment.id);
     if (byPaymentId) return byPaymentId;
   }
   return null;
 }
 
-function enrichPayment(store, payment) {
+function enrichPayment(store: any, payment: any) {
   const transaction = findTransactionForPayment(store, payment);
   const plan = findPlanForPayment(store, payment, transaction);
   const productId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || '';
@@ -204,7 +205,7 @@ function enrichPayment(store, payment) {
   };
 }
 
-export async function clientDashboard(config, userId) {
+export async function clientDashboard(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const user = store.users.find((u) => u.id === userId);
   const portfolio = store[userPortfolioKey(userId)] || {
@@ -231,7 +232,7 @@ export async function clientDashboard(config, userId) {
   };
 }
 
-export async function clientPortfolio(config, userId) {
+export async function clientPortfolio(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const portfolio = store[userPortfolioKey(userId)] || {
     invested: 0,
@@ -242,13 +243,13 @@ export async function clientPortfolio(config, userId) {
   return { source: 'json', ...portfolio };
 }
 
-export async function clientOrders(config, userId) {
+export async function clientOrders(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const items = (store.investmentPlans || store.orders || []).filter((o) => o.userId === userId);
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientTransactions(config, userId) {
+export async function clientTransactions(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const items = (store.transactions || [])
     .filter((t) => t.userId === userId)
@@ -257,7 +258,7 @@ export async function clientTransactions(config, userId) {
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientPayments(config, userId, filters: any = {}) {
+export async function clientPayments(config: AppConfig, userId: string, filters: any = {}) {
   const store = await readJsonStore(config);
   const status = String(filters.status || '').trim();
   const statuses = status
@@ -271,13 +272,13 @@ export async function clientPayments(config, userId, filters: any = {}) {
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientMandates(config, userId) {
+export async function clientMandates(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const items = (store.mandates || []).filter((m) => m.userId === userId);
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientNotifications(config, userId) {
+export async function clientNotifications(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const items = (store.notifications || [])
     .filter((n) => n.userId === userId)
@@ -285,7 +286,7 @@ export async function clientNotifications(config, userId) {
   return { items, count: items.length, source: 'json' };
 }
 
-export async function clientSupportTickets(config, userId) {
+export async function clientSupportTickets(config: AppConfig, userId: string) {
   const store = await readJsonStore(config);
   const items = (store.supportTickets || [])
     .filter((t) => t.userId === userId)

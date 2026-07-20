@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { query } from '#db/client.js';
@@ -5,18 +6,18 @@ import { query } from '#db/client.js';
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const VALID_CADENCES = new Set(['one_time', 'monthly', 'yearly']);
 
-function toTrimmedString(value, fallback = '') {
+function toTrimmedString(value: any, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-function validateSlug(slug) {
+function validateSlug(slug: any) {
   if (!SLUG_PATTERN.test(slug)) {
     throw new HttpError(400, 'INVALID_SLUG', 'Slug must be lowercase alphanumeric with hyphens.');
   }
 }
 
-function rowToPlan(row) {
+function rowToPlan(row: any) {
   if (!row) return null;
   return {
     id: row.id,
@@ -35,15 +36,15 @@ function rowToPlan(row) {
   };
 }
 
-function sortPlans(items) {
-  return items.sort((a, b) => {
+function sortPlans(items: any) {
+  return items.sort((a: any, b: any) => {
     const sortDiff = (a.sortOrder || 0) - (b.sortOrder || 0);
     if (sortDiff !== 0) return sortDiff;
     return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 }
 
-export async function listPlans(config, opts: any = {}) {
+export async function listPlans(config: AppConfig, opts: any = {}) {
   const result = await query(config, `
     SELECT * FROM plans
     WHERE status = 'published'
@@ -53,7 +54,7 @@ export async function listPlans(config, opts: any = {}) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function listAdminPlans(config) {
+export async function listAdminPlans(config: AppConfig) {
   const result = await query(config, `
     SELECT * FROM plans
     ORDER BY sort_order ASC, created_at DESC
@@ -62,7 +63,7 @@ export async function listAdminPlans(config) {
   return { items, count: items.length, source: 'postgres' };
 }
 
-export async function createPlan(config, body) {
+export async function createPlan(config: AppConfig, body: any) {
   const payload = body && typeof body === 'object' ? body : {};
   const slug = toTrimmedString(payload.slug);
   const name = toTrimmedString(payload.name);
@@ -112,7 +113,7 @@ export async function createPlan(config, body) {
   return rowToPlan(result.rows[0]);
 }
 
-export async function updatePlan(config, id, body) {
+export async function updatePlan(config: AppConfig, id: string, body: any) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Plan ID is required.');
   const payload = body && typeof body === 'object' ? body : {};
 
@@ -156,7 +157,7 @@ export async function updatePlan(config, id, body) {
   return rowToPlan(result.rows[0]);
 }
 
-export async function deletePlan(config, id) {
+export async function deletePlan(config: AppConfig, id: string) {
   if (!id) throw new HttpError(400, 'ID_REQUIRED', 'Plan ID is required.');
 
   const result = await query(config, `

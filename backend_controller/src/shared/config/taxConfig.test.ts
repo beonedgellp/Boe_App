@@ -1,12 +1,12 @@
 import { TAX_REGIMES, getTaxRegimeForDate } from './taxConfig.js';
 import { strict as assert } from 'node:assert';
 
-function test(name, fn) {
+function test(name: any, fn: any) {
   try {
     fn();
     console.log(`✓ ${name}`);
   } catch (err) {
-    console.error(`✗ ${name}: ${err.message}`);
+    console.error(`✗ ${name}: ${(err as Error).message}`);
     process.exit(1);
   }
 }

@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, atomicCompositeWrite } from '#db/pgAdapter.js';
@@ -6,21 +7,21 @@ import { getPaymentProvider } from '#shared/services/payments/providerFactory.js
 
 const CLIENT_VISIBLE_STAGES = new Set(['published', 'active', 'paused', 'closed']);
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function hashDisclosureText(text) {
+function hashDisclosureText(text: any) {
   if (!text) return null;
   return createHash('sha256').update(text).digest('hex').slice(0, 16);
 }
 
-function shortReceipt(prefix, id) {
+function shortReceipt(prefix: any, id: string) {
   return `${prefix}_${String(id).replace(/-/g, '').slice(0, 32)}`;
 }
 
-async function _createSip(config, actor, body, requestContext: any = {}) {
+async function _createSip(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
   if (!actor || actor.status !== 'approved') {
     throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to create a SIP.');
   }
@@ -257,9 +258,9 @@ async function _createSip(config, actor, body, requestContext: any = {}) {
 
 export const createSip = withReceipt(_createSip, 'sip_created', {
   entityType: 'investment_plan',
-  entityId: (result) => result.planId,
-  afterState: (result) => result.status,
-  amount: (result, args) => {
+  entityId: (result: any) => result.planId,
+  afterState: (result: any) => result.status,
+  amount: (result: any, args: any) => {
     const body = args[2] || {};
     const n = Number(body.amount);
     return Number.isFinite(n) ? n : null;

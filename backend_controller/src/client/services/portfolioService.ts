@@ -1,15 +1,16 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore } from '#db/pgAdapter.js';
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-export async function getHolding(config, actor, fundId) {
+export async function getHolding(config: AppConfig, actor: Actor, fundId: string) {
   const store = await readJsonStore(config);
-  const portfolio = store[`portfolio_${actor.userId}`] || { holdings: [] };
-  const holding = (portfolio.holdings || []).find((h) => h.fundId === fundId);
+  const portfolio: any = store[`portfolio_${actor.userId}`] || { holdings: [] };
+  const holding = (portfolio.holdings || []).find((h: any) => h.fundId === fundId);
 
   if (!holding) {
     throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');

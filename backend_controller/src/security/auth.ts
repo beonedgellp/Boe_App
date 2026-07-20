@@ -1,18 +1,20 @@
+import type { IncomingMessage } from 'node:http';
 import { HttpError } from '#http/errors.js';
 import { verifyAccessToken } from './tokens.js';
 import { hasDatabaseConfig, query } from '#db/client.js';
+import type { Actor, AppConfig, Role, RouteDefinition, TokenClaims } from '#types/index.js';
 
-function bearerToken(req) {
-  const header = req.headers.authorization || '';
+function bearerToken(req: IncomingMessage): string {
+  const header = (req.headers.authorization as string | undefined) || '';
   const [scheme, token] = header.split(' ');
   if (scheme?.toLowerCase() === 'bearer' && token) return token;
   // Fallback to cookie
-  const cookieHeader = req.headers.cookie || '';
+  const cookieHeader = (req.headers.cookie as string | undefined) || '';
   const match = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : '';
 }
 
-async function activeSessionActor(claims, config) {
+async function activeSessionActor(claims: TokenClaims, config: AppConfig): Promise<Actor | null> {
   // Environment-backed admin: tokens issued by envAdminLogin reference a
   // deviceSessionId that has no device_sessions row. The actor is derived
   // from config, not the database (same contract as the env-admin login).
@@ -41,7 +43,7 @@ async function activeSessionActor(claims, config) {
 
     return {
       userId: row.id,
-      role: row.role,
+      role: row.role as Role,
       status: row.status,
       deviceSessionId: claims.deviceSessionId,
     };
@@ -62,13 +64,13 @@ async function activeSessionActor(claims, config) {
 
   return {
     userId: row.id,
-    role: row.role,
+    role: row.role as Role,
     status: row.status,
     deviceSessionId: row.device_session_id,
   };
 }
 
-export async function authenticateRequest(req, config) {
+export async function authenticateRequest(req: IncomingMessage, config: AppConfig): Promise<Actor | null> {
   const token = bearerToken(req);
   const claims = verifyAccessToken(token, config);
   if (!claims) return null;
@@ -76,7 +78,7 @@ export async function authenticateRequest(req, config) {
   return activeSessionActor(claims, config);
 }
 
-export function authorizeRoute(route, actor) {
+export function authorizeRoute(route: RouteDefinition, actor: Actor | null): void {
   if (route.auth === false) return;
 
   if (!actor) {

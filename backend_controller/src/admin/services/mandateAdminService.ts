@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore } from '#db/pgAdapter.js';
@@ -18,16 +19,16 @@ const ADMIN_TRANSITIONS = {
   cancel: { from: new Set(['setup_required', 'pending_user_auth', 'active', 'paused', 'failed']), to: 'cancelled' },
 };
 
-function toTrimmedString(value, fallback = '') {
+function toTrimmedString(value: any, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-async function _updateMandateStatus(config, actor, mandateId, body, requestContext: any = {}) {
+async function _updateMandateStatus(config: AppConfig, actor: Actor, mandateId: string, body: any, requestContext: any = {}) {
   const action = toTrimmedString(body?.action).toLowerCase();
   const reason = toTrimmedString(body?.reason);
 
-  const transition = ADMIN_TRANSITIONS[action];
+  const transition = ADMIN_TRANSITIONS[action as keyof typeof ADMIN_TRANSITIONS];
   if (!transition) {
     throw new HttpError(400, 'INVALID_ACTION', 'Action must be one of: pause, resume, cancel.');
   }
@@ -96,8 +97,8 @@ async function _updateMandateStatus(config, actor, mandateId, body, requestConte
 
 export const updateMandateStatus = withReceipt(_updateMandateStatus, 'mandate_updated', {
   entityType: 'mandate',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
-  subjectUserId: (result) => result.userId,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
+  subjectUserId: (result: any) => result.userId,
   source: 'derived',
 });

@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
@@ -21,18 +22,18 @@ import {
 // existing public contract of this module.
 export { computeFundAge, computeFundAnalytics, toClientFund, toClientFunds };
 
-function toNumber(value, fallback = 0) {
+function toNumber(value: any, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-function toTrimmedString(value, fallback = '') {
+function toTrimmedString(value: any, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value).trim();
 }
 
-function plainObject(value) {
+function plainObject(value: any) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -53,8 +54,8 @@ function buildChartConfig(incoming: any = {}, existing: any = {}) {
 // Sanitize the optional Groww-style display fields. Patch semantics: a key is
 // only replaced when present in the payload, otherwise the existing value wins.
 // All fields are optional so legacy fund records remain valid.
-function buildFundDisplayFields(payload, existing: any = {}) {
-  const has = (key) => payload[key] !== undefined;
+function buildFundDisplayFields(payload: any, existing: any = {}) {
+  const has = (key: any) => payload[key] !== undefined;
   return {
     category: has('category') ? toTrimmedString(payload.category) : (existing.category ?? ''),
     subCategory: has('subCategory') ? toTrimmedString(payload.subCategory) : (existing.subCategory ?? ''),
@@ -80,24 +81,24 @@ function buildFundDisplayFields(payload, existing: any = {}) {
   };
 }
 
-function fundTrackingId(id) {
+function fundTrackingId(id: string) {
   return `FP-${String(id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
 }
 
 const DUAL_APPROVAL_THRESHOLD = 500000;
 
-function enrichFundWithAnalytics(fund) {
+function enrichFundWithAnalytics(fund: any) {
   const trackingId = fund.trackingId || fund.fundCode || fundTrackingId(fund.id);
   return { ...fund, trackingId, fundCode: trackingId, analytics: computeFundAnalytics(fund) };
 }
 
-export async function listFunds(config) {
+export async function listFunds(config: AppConfig) {
   const store = await readJsonStore(config);
   const items = Array.isArray(store.funds) ? store.funds : [];
   return { items: items.map(enrichFundWithAnalytics), count: items.length, source: 'json' };
 }
 
-export async function createFund(config, actor, body, requestContext: any = {}) {
+export async function createFund(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
   const payload = body && typeof body === 'object' ? body : {};
   const name = toTrimmedString(payload.name);
 
@@ -160,7 +161,7 @@ export async function createFund(config, actor, body, requestContext: any = {}) 
   return fund;
 }
 
-export async function getFund(config, fundId) {
+export async function getFund(config: AppConfig, fundId: string) {
   const store = await readJsonStore(config);
   const fund = (store.funds || []).find((f) => f.id === fundId);
 
@@ -171,7 +172,7 @@ export async function getFund(config, fundId) {
   return fund;
 }
 
-export async function updateFund(config, actor, fundId, body, requestContext: any = {}) {
+export async function updateFund(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
   const payload = body && typeof body === 'object' ? body : {};
 
   const updated = await updateJsonStore(config, (store) => {
@@ -220,7 +221,7 @@ export async function updateFund(config, actor, fundId, body, requestContext: an
       adminId: actor?.userId || null,
       action: 'fund.update',
       entityType: 'fund',
-      entityId: next.id,
+      entityId: (next as any).id,
       before: existing,
       after: next,
       reason: payload.reason || 'Admin updated fund record.',
@@ -236,7 +237,7 @@ export async function updateFund(config, actor, fundId, body, requestContext: an
   return updated;
 }
 
-export async function deleteFund(config, actor, fundId, requestContext: any = {}) {
+export async function deleteFund(config: AppConfig, actor: Actor, fundId: string, requestContext: any = {}) {
   const deleted = await updateJsonStore(config, (store) => {
     const idx = (store.funds || []).findIndex((f) => f.id === fundId);
     if (idx === -1) return null;
@@ -270,12 +271,12 @@ export async function deleteFund(config, actor, fundId, requestContext: any = {}
 /* Capital Flow & Allocation Management                                       */
 /* -------------------------------------------------------------------------- */
 
-function getFundFromStore(store, fundId) {
-  const idx = (store.funds || []).findIndex((f) => f.id === fundId);
+function getFundFromStore(store: any, fundId: string) {
+  const idx = (store.funds || []).findIndex((f: any) => f.id === fundId);
   return idx >= 0 ? { fund: store.funds[idx], index: idx } : null;
 }
 
-function addCapitalTransaction(store, tx) {
+function addCapitalTransaction(store: any, tx: any) {
   store.capitalTransactions.push({
     id: randomUUID(),
     ...tx,
@@ -283,7 +284,7 @@ function addCapitalTransaction(store, tx) {
   });
 }
 
-function addRedemptionRequestRecord(store, req) {
+function addRedemptionRequestRecord(store: any, req: any) {
   store.redemptionRequests.push({
     id: randomUUID(),
     ...req,
@@ -295,7 +296,7 @@ function addRedemptionRequestRecord(store, req) {
  * Allocate cash to an investment (move from cash to a company/sector).
  * Reduces implicit cash, increases investment amount.
  */
-export async function allocateFunds(config, actor, fundId, body, requestContext: any = {}) {
+export async function allocateFunds(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -307,13 +308,13 @@ export async function allocateFunds(config, actor, fundId, body, requestContext:
     if (!found) return null;
     const { fund } = found;
 
-    const analytics = computeFundAnalytics(fund);
+    const analytics = computeFundAnalytics(fund)!;
     const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
     if (amt > cash) {
       throw new HttpError(400, 'INSUFFICIENT_CASH', 'Not enough unallocated cash for this allocation.');
     }
 
-    const inv = fund.investments.find((i) => i.id === investmentId);
+    const inv = fund.investments.find((i: any) => i.id === investmentId);
     if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
 
     inv.amount = (Number(inv.amount) || 0) + amt;
@@ -354,7 +355,7 @@ export async function allocateFunds(config, actor, fundId, body, requestContext:
  * Unallocate funds from an investment (move back to cash).
  * Reduces investment amount, increases implicit cash.
  */
-export async function unallocateFunds(config, actor, fundId, body, requestContext: any = {}) {
+export async function unallocateFunds(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
   const { investmentId, amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -366,7 +367,7 @@ export async function unallocateFunds(config, actor, fundId, body, requestContex
     if (!found) return null;
     const { fund } = found;
 
-    const inv = fund.investments.find((i) => i.id === investmentId);
+    const inv = fund.investments.find((i: any) => i.id === investmentId);
     if (!inv) throw new HttpError(404, 'INVESTMENT_NOT_FOUND', 'Investment not found.');
 
     const currentAmount = Number(inv.amount) || 0;
@@ -412,7 +413,7 @@ export async function unallocateFunds(config, actor, fundId, body, requestContex
  * Admin external outflow — withdraw funds from the pool entirely.
  * Reduces cash first, then proportionally from investments if needed.
  */
-export async function adminOutflow(config, actor, fundId, body, requestContext: any = {}) {
+export async function adminOutflow(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -424,7 +425,7 @@ export async function adminOutflow(config, actor, fundId, body, requestContext: 
     if (!found) return null;
     const { fund } = found;
 
-    const analytics = computeFundAnalytics(fund);
+    const analytics = computeFundAnalytics(fund)!;
     const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
 
     if (amt > fund.totalPoolSize) {
@@ -490,7 +491,7 @@ export async function adminOutflow(config, actor, fundId, body, requestContext: 
 /**
  * Admin inflow — add capital to the pool.
  */
-export async function adminInflow(config, actor, fundId, body, requestContext: any = {}) {
+export async function adminInflow(config: AppConfig, actor: Actor, fundId: string, body: any, requestContext: any = {}) {
   const { amount, reason } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -539,7 +540,7 @@ export async function adminInflow(config, actor, fundId, body, requestContext: a
 /* Redemption Requests (User withdrawals)                                     */
 /* -------------------------------------------------------------------------- */
 
-export async function createRedemptionRequest(config, userId, body) {
+export async function createRedemptionRequest(config: AppConfig, userId: string, body: any) {
   const { fundId, amount, type, holdingId } = body || {};
   const amt = toNumber(amount, 0);
 
@@ -552,9 +553,9 @@ export async function createRedemptionRequest(config, userId, body) {
 
     // If holdingId provided, look up the holding and resolve fundId
     if (holdingId && !resolvedFundId) {
-      const portfolio = store[`portfolio_${userId}`];
+      const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h) => (h.id || h.fundId) === holdingId) || null;
+        holding = portfolio.holdings.find((h: any) => (h.id || h.fundId) === holdingId) || null;
       }
       if (!holding) throw new HttpError(404, 'HOLDING_NOT_FOUND', 'Holding not found.');
       resolvedFundId = holding.fundId;
@@ -565,9 +566,9 @@ export async function createRedemptionRequest(config, userId, body) {
 
     // Find holding by fundId if not already resolved
     if (!holding) {
-      const portfolio = store[`portfolio_${userId}`];
+      const portfolio: any = store[`portfolio_${userId}`];
       if (portfolio && Array.isArray(portfolio.holdings)) {
-        holding = portfolio.holdings.find((h) => h.fundId === resolvedFundId) || null;
+        holding = portfolio.holdings.find((h: any) => h.fundId === resolvedFundId) || null;
       }
     }
 
@@ -626,7 +627,7 @@ export async function createRedemptionRequest(config, userId, body) {
   return result;
 }
 
-export async function listRedemptionRequests(config, { status, userId, fundId }: any = {}) {
+export async function listRedemptionRequests(config: AppConfig, { status, userId, fundId }: any = {}) {
   const store = await readJsonStore(config);
   let items = store.redemptionRequests || [];
 
@@ -640,7 +641,7 @@ export async function listRedemptionRequests(config, { status, userId, fundId }:
   return { items, count: items.length };
 }
 
-async function _processRedemptionRequest(config, actor, requestId, body, requestContext: any = {}) {
+async function _processRedemptionRequest(config: AppConfig, actor: Actor, requestId: string, body: any, requestContext: any = {}) {
   const { action, reason } = body || {};
   if (!['approved', 'rejected'].includes(action)) {
     throw new HttpError(400, 'INVALID_ACTION', 'Action must be approved or rejected.');
@@ -661,8 +662,8 @@ async function _processRedemptionRequest(config, actor, requestId, body, request
     if (action === 'approved') {
       // Holding was already decremented atomically at creation time; just verify it still exists
       if (req.fundId) {
-        const portfolio = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h) => h.fundId === req.fundId);
+        const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
+        const holding = (portfolio.holdings || []).find((h: any) => h.fundId === req.fundId);
         if (!holding) {
           throw new HttpError(400, 'HOLDING_NOT_FOUND', 'User holding not found for this fund.');
         }
@@ -678,7 +679,7 @@ async function _processRedemptionRequest(config, actor, requestId, body, request
         fund.updatedAt = now;
 
         // Reduce proportionally from investments (cash first, then proportional)
-        const analytics = computeFundAnalytics(fund);
+        const analytics = computeFundAnalytics(fund)!;
         const cash = (Number(fund.totalPoolSize) || 0) - analytics.totalInvested;
         let remaining = req.amount;
         if (cash >= remaining) {
@@ -701,8 +702,8 @@ async function _processRedemptionRequest(config, actor, requestId, body, request
     } else if (action === 'rejected') {
       // Restore user's holding since redemption was rejected
       if (req.fundId) {
-        const portfolio = store[`portfolio_${req.userId}`] || { holdings: [] };
-        const holding = (portfolio.holdings || []).find((h) => h.fundId === req.fundId);
+        const portfolio: any = store[`portfolio_${req.userId}`] || { holdings: [] };
+        const holding = (portfolio.holdings || []).find((h: any) => h.fundId === req.fundId);
         if (holding) {
           const restoreValue = toNumber(req.reservedHoldingValue, req.amount);
           const restoreUnits = toNumber(req.reservedHoldingUnits, 0);
@@ -740,14 +741,14 @@ async function _processRedemptionRequest(config, actor, requestId, body, request
 
 export const processRedemptionRequest = withReceipt(_processRedemptionRequest, 'redemption_processed', {
   entityType: 'redemption',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
-  subjectUserId: (result) => result.userId,
-  amount: (result) => result.amount,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
+  subjectUserId: (result: any) => result.userId,
+  amount: (result: any) => result.amount,
   source: 'derived',
 });
 
-export async function listCapitalTransactions(config, { fundId, type, limit = 50 }: any = {}) {
+export async function listCapitalTransactions(config: AppConfig, { fundId, type, limit = 50 }: any = {}) {
   const store = await readJsonStore(config);
   let items = store.capitalTransactions || [];
 

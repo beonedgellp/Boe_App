@@ -1,9 +1,10 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { validateReceipt } from '../contracts/receipt.js';
 
-export async function emitReceipt(config, receiptData) {
+export async function emitReceipt(config: AppConfig, receiptData: any) {
   const now = new Date().toISOString();
 
   const receipt = {
@@ -40,7 +41,7 @@ export async function emitReceipt(config, receiptData) {
   return receipt;
 }
 
-export async function getReceipts(config, filters: any = {}) {
+export async function getReceipts(config: AppConfig, filters: any = {}) {
   const store = await readJsonStore(config);
   let receipts = Array.isArray(store.receipts) ? [...store.receipts] : [];
 
@@ -60,7 +61,7 @@ export async function getReceipts(config, filters: any = {}) {
   return receipts;
 }
 
-export async function getReceipt(config, receiptId) {
+export async function getReceipt(config: AppConfig, receiptId: any) {
   const store = await readJsonStore(config);
   const receipts = Array.isArray(store.receipts) ? store.receipts : [];
   return receipts.find((r) => r.id === receiptId) || null;

@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { hasDatabaseConfig, query, transaction } from '#db/client.js';
@@ -5,17 +7,17 @@ import { hasDatabaseConfig, query, transaction } from '#db/client.js';
 const CONFIG_KEY = 'mobile_app';
 const MAX_CONFIG_BYTES = 1024 * 1024;
 
-function requireDatabase(config) {
+function requireDatabase(config: AppConfig) {
   if (!hasDatabaseConfig(config)) {
     throw new HttpError(503, 'DATABASE_NOT_CONFIGURED', 'PostgreSQL is required for app configuration.');
   }
 }
 
-function plainObject(value) {
+function plainObject(value: any) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function validateAppConfig(config) {
+function validateAppConfig(config: any) {
   if (!plainObject(config)) {
     throw new HttpError(400, 'INVALID_APP_CONFIG', 'App configuration must be a JSON object.');
   }
@@ -40,7 +42,7 @@ function validateAppConfig(config) {
   return JSON.parse(encoded);
 }
 
-function rowToPayload(row) {
+function rowToPayload(row: any) {
   if (!row) {
     return {
       config: null,
@@ -60,7 +62,7 @@ function rowToPayload(row) {
   };
 }
 
-export async function getPublishedConfigVersion(config, configKey) {
+export async function getPublishedConfigVersion(config: AppConfig, configKey: any) {
   requireDatabase(config);
 
   const result = await query(config, `
@@ -74,7 +76,7 @@ export async function getPublishedConfigVersion(config, configKey) {
   return rowToPayload(result.rows[0]);
 }
 
-export async function publishConfigVersion(config, configKey, actor, configJson, {
+export async function publishConfigVersion(config: AppConfig, configKey: any, actor: Actor, configJson: any, {
   reason,
   defaultReason,
   auditAction,
@@ -83,7 +85,7 @@ export async function publishConfigVersion(config, configKey, actor, configJson,
 }: any = {}) {
   requireDatabase(config);
 
-  return transaction(config, async (client) => {
+  return transaction(config, async (client: PoolClient) => {
     const previous = await client.query(`
       SELECT id, version, config_json
       FROM app_config_versions
@@ -105,7 +107,7 @@ export async function publishConfigVersion(config, configKey, actor, configJson,
       )
       VALUES ($1, $2, $3::jsonb, 'published', $4)
       RETURNING id, version, config_json, published_at, published_by
-    `, [configKey, nextVersion, JSON.stringify(configJson), actor?.id || null]);
+    `, [configKey, nextVersion, JSON.stringify(configJson), actor?.userId || null]);
 
     await client.query(`
       INSERT INTO admin_audit_logs (
@@ -121,7 +123,7 @@ export async function publishConfigVersion(config, configKey, actor, configJson,
       )
       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
     `, [
-      actor?.id || null,
+      actor?.userId || null,
       auditAction,
       entityType,
       inserted.rows[0].id,
@@ -136,11 +138,11 @@ export async function publishConfigVersion(config, configKey, actor, configJson,
   });
 }
 
-export async function getPublishedAppConfig(config): Promise<any> {
+export async function getPublishedAppConfig(config: AppConfig): Promise<any> {
   return getPublishedConfigVersion(config, CONFIG_KEY);
 }
 
-export async function publishAppConfig(config, actor, body, requestContext: any = {}) {
+export async function publishAppConfig(config: AppConfig, actor: Actor, body: any, requestContext: any = {}) {
   const incoming = validateAppConfig(body?.config ?? body);
 
   return publishConfigVersion(config, CONFIG_KEY, actor, incoming, {
@@ -152,7 +154,7 @@ export async function publishAppConfig(config, actor, body, requestContext: any 
   });
 }
 
-export async function listPublishedStrategiesFromAppConfig(config) {
+export async function listPublishedStrategiesFromAppConfig(config: AppConfig) {
   const payload = await getPublishedAppConfig(config);
   return {
     items: payload.config?.mobile?.products || [],
@@ -162,9 +164,9 @@ export async function listPublishedStrategiesFromAppConfig(config) {
   };
 }
 
-export async function getPublishedStrategyFromAppConfig(config, productId) {
+export async function getPublishedStrategyFromAppConfig(config: AppConfig, productId: any) {
   const payload = await getPublishedAppConfig(config);
-  const strategy = payload.config?.mobile?.products?.find((item) => item.id === productId);
+  const strategy = payload.config?.mobile?.products?.find((item: any) => item.id === productId);
 
   if (!strategy) {
     throw new HttpError(404, 'STRATEGY_NOT_FOUND', `Strategy ${productId} is not published in app configuration.`);
@@ -173,7 +175,7 @@ export async function getPublishedStrategyFromAppConfig(config, productId) {
   return strategy;
 }
 
-export async function listResearchContextFromAppConfig(config) {
+export async function listResearchContextFromAppConfig(config: AppConfig) {
   const payload = await getPublishedAppConfig(config);
   return {
     items: payload.config?.mobile?.researchContext || [],

@@ -1,3 +1,4 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { updateJsonStore, readJsonStore } from '#db/pgAdapter.js';
@@ -78,7 +79,7 @@ const STATIC_FAQS = [
   },
 ];
 
-export async function createTicket(config, actor, body) {
+export async function createTicket(config: AppConfig, actor: Actor, body: any) {
   const { title, description, category = 'general', priority = 'medium', subject, body: bodyText } = body || {};
   const resolvedTitle = title || subject;
   const resolvedDescription = description || bodyText;
@@ -124,7 +125,7 @@ export async function createTicket(config, actor, body) {
   return ticket;
 }
 
-export async function listFaqs(config) {
+export async function listFaqs(config: AppConfig) {
   const store = await readJsonStore(config);
   const publishedFaqs = (store.faqs || [])
     .filter((f) => f.status === 'published')

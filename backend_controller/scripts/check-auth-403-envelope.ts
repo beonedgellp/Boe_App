@@ -2,23 +2,23 @@ import assert from 'node:assert/strict';
 import { authorizeRoute } from '#security/auth.js';
 import { sendError } from '#http/response.js';
 
-function captureError(error) {
+function captureError(error: any) {
   let statusCode = null;
   let payload = '';
   const res = {
-    writeHead(status) {
+    writeHead(status: any) {
       statusCode = status;
     },
-    end(body) {
+    end(body: any) {
       payload = body;
     },
   };
 
-  sendError(res, error, { requestId: 'req_authz_smoke' });
+  sendError(res as any, error, { requestId: 'req_authz_smoke' });
   return { statusCode, body: JSON.parse(payload) };
 }
 
-function assertEnvelope(error, expectedCode, expectedDetails) {
+function assertEnvelope(error: any, expectedCode: any, expectedDetails: any) {
   const { statusCode, body } = captureError(error);
   assert.equal(statusCode, 403);
   assert.equal(body.ok, false);
@@ -37,24 +37,24 @@ const baseRoute = {
 };
 
 assert.throws(
-  () => authorizeRoute(baseRoute, { userId: 'u1', role: 'client', status: 'suspended' }),
-  (error) => {
+  () => authorizeRoute(baseRoute as any, { userId: 'u1', role: 'client', status: 'suspended' }),
+  (error: any) => {
     assertEnvelope(error, 'ACCOUNT_DISABLED', { status: 'suspended' });
     return true;
   },
 );
 
 assert.throws(
-  () => authorizeRoute({ ...baseRoute, roles: ['admin'] }, { userId: 'u1', role: 'client', status: 'approved' }),
-  (error) => {
+  () => authorizeRoute({ ...baseRoute, roles: ['admin'] } as any, { userId: 'u1', role: 'client', status: 'approved' }),
+  (error: any) => {
     assertEnvelope(error, 'ROLE_FORBIDDEN', { allowedRoles: ['admin'] });
     return true;
   },
 );
 
 assert.throws(
-  () => authorizeRoute(baseRoute, { userId: 'u1', role: 'client', status: 'pending_review' }),
-  (error) => {
+  () => authorizeRoute(baseRoute as any, { userId: 'u1', role: 'client', status: 'pending_review' }),
+  (error: any) => {
     assertEnvelope(error, 'USER_NOT_APPROVED', { status: 'pending_review' });
     return true;
   },

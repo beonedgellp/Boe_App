@@ -1,10 +1,11 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { readJsonStore, updateJsonStore } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 import { getPaymentProvider } from '#shared/services/payments/providerFactory.js';
 
-async function _reconcilePayment(config, actor, paymentId, body, requestContext: any = {}) {
+async function _reconcilePayment(config: AppConfig, actor: Actor, paymentId: string, body: any, requestContext: any = {}) {
   const reason = String(body?.reason || '').trim();
   if (!reason) {
     throw new HttpError(400, 'REASON_REQUIRED', 'Reconciliation reason is required.');
@@ -80,14 +81,14 @@ async function _reconcilePayment(config, actor, paymentId, body, requestContext:
 
 export const reconcilePayment = withReceipt(_reconcilePayment, 'payment_reconciled', {
   entityType: 'payment',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
-  amount: (result) => result.amount ?? null,
-  currency: (result) => result.currency ?? null,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
+  amount: (result: any) => result.amount ?? null,
+  currency: (result: any) => result.currency ?? null,
   source: 'derived',
 });
 
-export async function listReconciliationLedger(config, { paymentId, limit = 50 }: any = {}) {
+export async function listReconciliationLedger(config: AppConfig, { paymentId, limit = 50 }: any = {}) {
   const store = await readJsonStore(config);
   let items = store.reconciliationLedger || [];
   if (paymentId) {

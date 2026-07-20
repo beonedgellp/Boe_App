@@ -1,9 +1,10 @@
+import type { AppConfig, Actor, UnknownRecord, StoreRecord } from '#types/index.js';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError } from '#http/errors.js';
 import { findRecord, updateJsonStore, updatePayment } from '#db/pgAdapter.js';
 import { withReceipt } from '#shared/services/withReceipt.js';
 
-function verifyRazorpayCheckoutSignature(orderId, paymentId, signature, secret) {
+function verifyRazorpayCheckoutSignature(orderId: string, paymentId: string, signature: any, secret: any) {
   const expected = createHmac('sha256', secret)
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
@@ -16,19 +17,19 @@ function verifyRazorpayCheckoutSignature(orderId, paymentId, signature, secret) 
   }
 }
 
-function visibleTransactionType(type) {
+function visibleTransactionType(type: any) {
   const value = String(type || '').toLowerCase();
   if (value === 'sip' || value === 'sip_installment' || value === 'installment') return 'sip';
   if (value === 'lumpsum' || value === 'one_time' || value === 'one-time') return 'lumpsum';
   return value;
 }
 
-function fundTrackingId(fund) {
+function fundTrackingId(fund: any) {
   if (!fund?.id) return '';
   return fund.trackingId || fund.fundCode || `FP-${String(fund.id).replace(/-/g, '').slice(0, 10).toUpperCase()}`;
 }
 
-function fundSnapshot(fund, fundId) {
+function fundSnapshot(fund: any, fundId: string) {
   if (!fund) {
     return fundId ? { id: fundId, name: fundId, title: fundId, trackingId: fundId, fundCode: fundId } : null;
   }
@@ -48,21 +49,21 @@ function fundSnapshot(fund, fundId) {
   };
 }
 
-function paymentTypeFrom(mode, type) {
+function paymentTypeFrom(mode: any, type: any) {
   const value = String(mode || '').toLowerCase();
   if (value.includes('autopay') || value.includes('mandate')) return 'autopay';
   if (visibleTransactionType(type) === 'sip' && !value) return 'autopay';
   return 'manual';
 }
 
-function paymentResponse(payment, store, config) {
-  const transaction = (store.transactions || []).find((item) => item.id === payment.transactionId) || null;
+function paymentResponse(payment: any, store: any, config: AppConfig) {
+  const transaction = (store.transactions || []).find((item: any) => item.id === payment.transactionId) || null;
   const plans = store.investmentPlans || store.orders || [];
   const plan = transaction
-    ? plans.find((item) => item.id === transaction.investmentPlanId)
-    : plans.find((item) => item.paymentId === payment.id || item.id === payment.orderId) || null;
+    ? plans.find((item: any) => item.id === transaction.investmentPlanId)
+    : plans.find((item: any) => item.paymentId === payment.id || item.id === payment.orderId) || null;
   const fundId = payment.fundId || payment.productId || transaction?.productId || plan?.productId || plan?.fundId || null;
-  const fund = fundId ? (store.funds || []).find((item) => item.id === fundId) : null;
+  const fund = fundId ? (store.funds || []).find((item: any) => item.id === fundId) : null;
   const type = visibleTransactionType(transaction?.type || plan?.type);
   const mode = payment.mode || transaction?.mode || '';
   return {
@@ -95,7 +96,7 @@ function paymentResponse(payment, store, config) {
   };
 }
 
-export async function getPayment(config, actor, paymentId) {
+export async function getPayment(config: AppConfig, actor: Actor, paymentId: string) {
   let { item: payment, store } = await findRecord(config, 'payments', (p) => p.id === paymentId);
   if (!payment) throw new HttpError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
   if (payment.userId !== actor?.userId) throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
@@ -110,7 +111,7 @@ export async function getPayment(config, actor, paymentId) {
       current.confirmedAt = current.confirmedAt || now;
       current.updatedAt = now;
 
-      const transaction = (store.transactions || []).find((t) => t.id === current.transactionId);
+      const transaction = (store.transactions || []).find((t: any) => t.id === current.transactionId);
       if (transaction) {
         transaction.status = 'awaiting_approval';
         transaction.paymentConfirmedAt = transaction.paymentConfirmedAt || now;
@@ -118,8 +119,8 @@ export async function getPayment(config, actor, paymentId) {
       }
 
       const plan = transaction
-        ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
-        : (store.investmentPlans || []).find((p) => p.paymentId === current.id);
+        ? (store.investmentPlans || []).find((p: any) => p.id === transaction.investmentPlanId)
+        : (store.investmentPlans || []).find((p: any) => p.paymentId === current.id);
       if (plan) {
         plan.status = 'pending_admin_approval';
         plan.updatedAt = now;
@@ -133,7 +134,7 @@ export async function getPayment(config, actor, paymentId) {
   return paymentResponse(payment, store, config);
 }
 
-export async function confirmRazorpayPayment(config, actor, paymentId, body) {
+export async function confirmRazorpayPayment(config: AppConfig, actor: Actor, paymentId: string, body: any) {
   const razorpayPaymentId = String(body?.razorpay_payment_id || '').trim();
   const razorpayOrderId = String(body?.razorpay_order_id || '').trim();
   const razorpaySignature = String(body?.razorpay_signature || '').trim();
@@ -204,7 +205,7 @@ export async function confirmRazorpayPayment(config, actor, paymentId, body) {
   return result;
 }
 
-async function _retryPayment(config, actor, paymentId, options: any = {}) {
+async function _retryPayment(config: AppConfig, actor: Actor, paymentId: string, options: any = {}) {
   // options.idempotencyKey is the route-level Idempotency-Key, used by the
   // outer middleware in src/http/idempotency.js. Accepted here for forward
   // compatibility / call-site symmetry; the existing payment row's own
@@ -214,14 +215,14 @@ async function _retryPayment(config, actor, paymentId, options: any = {}) {
     if (payment.userId !== actor?.userId) {
       throw new HttpError(403, 'FORBIDDEN', 'Payment does not belong to you.');
     }
-    const owner = (store.users || []).find((user) => user.id === payment.userId);
+    const owner = (store.users || []).find((user: any) => user.id === payment.userId);
     if (!owner || owner.status !== 'approved') {
       throw new HttpError(403, 'USER_NOT_APPROVED', 'User must be approved to retry a payment.', {
         status: owner?.status || 'missing',
       });
     }
     const duplicate = store.payments.find(
-      (p) => p.idempotencyKey === payment.idempotencyKey && p.id !== payment.id
+      (p: any) => p.idempotencyKey === payment.idempotencyKey && p.id !== payment.id
     );
     if (duplicate) {
       throw new HttpError(409, 'DUPLICATE_IDEMPOTENCY_KEY', 'Duplicate idempotency key detected.');
@@ -240,7 +241,7 @@ async function _retryPayment(config, actor, paymentId, options: any = {}) {
     payment.failureReason = null;
     payment.updatedAt = now;
 
-    const transaction = (store.transactions || []).find((t) => t.id === payment.transactionId);
+    const transaction = (store.transactions || []).find((t: any) => t.id === payment.transactionId);
     if (transaction) {
       transaction.status = 'payment_pending';
       transaction.failureReason = null;
@@ -248,8 +249,8 @@ async function _retryPayment(config, actor, paymentId, options: any = {}) {
     }
 
     const plan = transaction
-      ? (store.investmentPlans || []).find((p) => p.id === transaction.investmentPlanId)
-      : (store.investmentPlans || []).find((p) => p.paymentId === payment.id);
+      ? (store.investmentPlans || []).find((p: any) => p.id === transaction.investmentPlanId)
+      : (store.investmentPlans || []).find((p: any) => p.paymentId === payment.id);
     if (plan) {
       plan.status = plan.type === 'sip' ? 'pending_first_payment' : 'pending_payment';
       plan.updatedAt = now;
@@ -282,9 +283,9 @@ async function _retryPayment(config, actor, paymentId, options: any = {}) {
 
 export const retryPayment = withReceipt(_retryPayment, 'payment_retried', {
   entityType: 'payment',
-  entityId: (result) => result.id,
-  afterState: (result) => result.status,
-  amount: (result) => result.amount ?? null,
-  currency: (result) => result.currency ?? null,
+  entityId: (result: any) => result.id,
+  afterState: (result: any) => result.status,
+  amount: (result: any) => result.amount ?? null,
+  currency: (result: any) => result.currency ?? null,
   source: 'mock',
 });
