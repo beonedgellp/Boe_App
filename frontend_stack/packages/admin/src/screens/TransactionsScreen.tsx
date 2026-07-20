@@ -74,8 +74,8 @@ function TransactionsScreen({ funds = [] }: any) {
 
   const stats = useMemo(() => {
     const totalAmount = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const confirmed = rows.filter((r) => r.status === 'payment_confirmed' || r.status === 'approved').length;
-    const failed = rows.filter((r) => r.status === 'payment_failed' || r.status === 'approval_rejected').length;
+    const confirmed = rows.filter((r) => (r as any).status === 'payment_confirmed' || (r as any).status === 'approved').length;
+    const failed = rows.filter((r) => (r as any).status === 'payment_failed' || (r as any).status === 'approval_rejected').length;
     return { totalAmount, confirmed, failed };
   }, [rows]);
 
@@ -154,7 +154,7 @@ function TransactionsScreen({ funds = [] }: any) {
                 <td>{r.fundName || '—'}</td>
                 <td>{TXN_TYPES[r.type] || r.type || '—'}</td>
                 <td className="be-money">₹{fmtMoney(r.amount)}</td>
-                <td>{TXN_STATUS_BADGES[r.status] || r.status || '—'}</td>
+                <td>{TXN_STATUS_BADGES[(r as any).status] || (r as any).status || '—'}</td>
                 <td className="be-num adm-cell-meta">{String(r.createdAt || '').slice(0, 19).replace('T', ' ')}</td>
               </tr>
             ))}

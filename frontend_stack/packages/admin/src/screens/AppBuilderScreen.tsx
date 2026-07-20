@@ -53,7 +53,7 @@ function AppBuilderScreen() {
       setSelectedProductId(remoteConfig.mobile.products[0]?.id || '');
       setSaved('Loaded backend-published app configuration.');
     }).catch((error) => {
-      if (!cancelled) setSaved(`Using local draft config. Backend read failed: ${error.message}`);
+      if (!cancelled) setSaved(`Using local draft config. Backend read failed: ${(error as any).message}`);
     }).finally(() => {
       if (!cancelled) setLoadingConfig(false);
     });
@@ -78,7 +78,7 @@ function AppBuilderScreen() {
       setSelectedProductId(next.mobile.products.find((product) => product.id === selectedProductId)?.id || next.mobile.products[0]?.id || '');
       setSaved('Published to active data store.');
     } catch (error) {
-      setSaved(`Publish failed: ${error.message}`);
+      setSaved(`Publish failed: ${(error as any).message}`);
     }
   }
 
@@ -413,7 +413,7 @@ function AppBuilderScreen() {
 
           <div className="adm-form-grid adm-form-grid-3">
             <label className="adm-field"><span>Name</span><input value={selectedProduct.name} onChange={(event) => updateProduct('name', event.target.value)} /></label>
-            <label className="adm-field"><span>Status</span><select value={selectedProduct.status} onChange={(event) => updateProduct('status', event.target.value)}><option value="open">open</option><option value="coming_soon">coming_soon</option><option value="paused">paused</option><option value="closed">closed</option></select></label>
+            <label className="adm-field"><span>Status</span><select value={(selectedProduct as any).status} onChange={(event) => updateProduct('status', event.target.value)}><option value="open">open</option><option value="coming_soon">coming_soon</option><option value="paused">paused</option><option value="closed">closed</option></select></label>
             <label className="adm-field"><span>Risk</span><select value={selectedProduct.riskLabel} onChange={(event) => updateProduct('riskLabel', event.target.value)}><option value="low">low</option><option value="low_moderate">low_moderate</option><option value="moderate">moderate</option><option value="moderate_high">moderate_high</option><option value="high">high</option></select></label>
             <label className="adm-field adm-field-wide"><span>Tagline</span><input value={selectedProduct.tagline} onChange={(event) => updateProduct('tagline', event.target.value)} /></label>
             <label className="adm-field adm-field-wide"><span>Objective</span><textarea value={selectedProduct.objective} onChange={(event) => updateProduct('objective', event.target.value)} /></label>

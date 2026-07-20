@@ -105,7 +105,7 @@ export default function Security() {
       await refreshState();
       showToast(state?.pinSet ? 'App PIN changed.' : 'App PIN set.');
     } catch (err) {
-      setError(err?.message || 'Could not update PIN.');
+      setError((err as any)?.message || 'Could not update PIN.');
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export default function Security() {
       }
       await refreshState();
     } catch (err) {
-      setError(err?.message || 'Could not update biometric unlock.');
+      setError((err as any)?.message || 'Could not update biometric unlock.');
     } finally {
       setBusy(false);
     }

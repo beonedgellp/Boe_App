@@ -144,7 +144,7 @@ function ApprovalsScreen({ rows = [], stats = {}, loading = false, onReview, onA
                     <span className="adm-cell-meta">{r.createdAt || 'Not recorded'}</span>
                   </td>
                   <td className="adm-col-status">
-                    <ApprovalStatusBadge status={r.status} />
+                    <ApprovalStatusBadge status={(r as any).status} />
                   </td>
                   <td className="adm-col-role">{displayRole(r)}</td>
                   <td className="adm-col-actions">

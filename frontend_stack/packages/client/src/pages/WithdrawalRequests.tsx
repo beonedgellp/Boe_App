@@ -54,7 +54,7 @@ export default function WithdrawalRequests() {
       )}
 
       {!loading && requests.map((req) => {
-        const cfg = statusConfig[req.status] || statusConfig.pending;
+        const cfg = statusConfig[(req as any).status] || statusConfig.pending;
         const Icon = cfg.icon;
         return (
           <div key={req.id} className="be-card apk-withdrawal-card">
@@ -63,7 +63,7 @@ export default function WithdrawalRequests() {
                 <div className="apk-withdrawal-fund">{req.fundName || 'Fund'}</div>
                 <div className="apk-withdrawal-date">{fmtDate(req.requestedAt)}</div>
               </div>
-              <span className={`apk-status-pill apk-status-pill--${req.status || 'pending'}`}>
+              <span className={`apk-status-pill apk-status-pill--${(req as any).status || 'pending'}`}>
                 <Icon size={12} strokeWidth={2} />
                 {cfg.label}
               </span>

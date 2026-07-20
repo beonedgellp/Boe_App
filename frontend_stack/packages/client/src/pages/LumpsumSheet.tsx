@@ -69,7 +69,7 @@ export default function LumpsumSheet() {
         navigate(`/app/payment/${order.paymentId}`);
       }
     } catch (e) {
-      const message = e?.message || e?.code || "Couldn't start investment. Try again.";
+      const message = (e as any)?.message || (e as any)?.code || "Couldn't start investment. Try again.";
       setErr(message);
       setSubmitting(false);
     }

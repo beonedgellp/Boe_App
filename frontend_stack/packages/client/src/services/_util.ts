@@ -99,9 +99,9 @@ export async function apiRequest(path, { method = 'GET', body, auth = true, scop
 
   if (!response.ok || payload?.ok === false) {
     const error = new Error(payload?.error?.message || `Request failed: ${method} ${path}`);
-    error.status = response.status;
-    error.code = payload?.error?.code;
-    error.details = payload?.error?.details;
+    (error as any).status = response.status;
+    (error as any).code = payload?.error?.code;
+    (error as any).details = payload?.error?.details;
     if (response.status === 401) {
       clearSessionTokens(scope);
       if (typeof window !== 'undefined') {

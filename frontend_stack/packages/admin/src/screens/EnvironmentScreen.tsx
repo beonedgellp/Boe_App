@@ -18,7 +18,7 @@ function EnvironmentScreen() {
         if (!cancelled) setConfig(data?.data ?? data ?? null);
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message || 'Failed to load config.');
+        if (!cancelled) setError((err as any)?.message || 'Failed to load config.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

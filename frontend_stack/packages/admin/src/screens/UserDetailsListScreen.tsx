@@ -33,7 +33,7 @@ export default function UserDetailsListScreen({ onUserDetail }: any) {
       setUsers(items);
       setTotal(payloadTotal);
     } catch (err) {
-      setError(err?.message || 'Failed to load users.');
+      setError((err as any)?.message || 'Failed to load users.');
     } finally {
       setLoading(false);
     }

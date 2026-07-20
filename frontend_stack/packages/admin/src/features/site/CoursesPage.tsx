@@ -81,7 +81,7 @@ export default function CoursesPage() {
               className: 'ash-cell-num',
               render: (course) => course.sortOrder ?? 0,
             },
-            { key: 'status', title: 'Status', render: (course) => <StatusBadge status={course.status} /> },
+            { key: 'status', title: 'Status', render: (course) => <StatusBadge status={(course as any).status} /> },
             {
               key: 'updated',
               title: 'Updated',

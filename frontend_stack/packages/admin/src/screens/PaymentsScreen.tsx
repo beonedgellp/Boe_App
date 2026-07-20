@@ -211,7 +211,7 @@ function PaymentsScreen({
     const q = normalizeText(filters.q);
     return rows.filter((row) => {
       if (filters.fundId && row.fundId !== filters.fundId) return false;
-      if (filters.status && row.status !== filters.status) return false;
+      if (filters.status && row.status !== (filters as any).status) return false;
       if (!isWithinDate(row, filters.from, filters.to)) return false;
       if (!q) return true;
       return [
@@ -287,7 +287,7 @@ function PaymentsScreen({
             </select>
           </label>
           <label className="adm-filter">
-            <select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}>
+            <select value={(filters as any).status} onChange={(event) => updateFilter('status', event.target.value)}>
               <option value="">All statuses</option>
               <option value="success">Success</option>
               <option value="confirmed">Confirmed</option>

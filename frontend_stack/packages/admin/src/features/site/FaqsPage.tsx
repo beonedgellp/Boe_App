@@ -85,7 +85,7 @@ export default function FaqsPage() {
                   </td>
                   <td>{faq.category}</td>
                   <td className="ash-cell-num">{faq.order ?? 0}</td>
-                  <td><StatusBadge status={faq.status} /></td>
+                  <td><StatusBadge status={(faq as any).status} /></td>
                 </tr>
               ))}
             </tbody>

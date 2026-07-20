@@ -99,7 +99,7 @@ export default function PlansPage() {
                   <td>{CADENCE_LABELS[plan.cadence] || plan.cadence}</td>
                   <td className="ash-cell-num">{Array.isArray(plan.features) ? plan.features.length : 0}</td>
                   <td className="ash-cell-num">{plan.sortOrder ?? 0}</td>
-                  <td><StatusBadge status={plan.status} /></td>
+                  <td><StatusBadge status={(plan as any).status} /></td>
                 </tr>
               ))}
             </tbody>

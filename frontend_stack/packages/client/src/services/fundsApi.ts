@@ -6,7 +6,7 @@ export async function listFunds() {
     try {
       return listFromPayload(await apiRequest('/v1/products'));
     } catch (error) {
-      if (error?.code !== 'USER_NOT_APPROVED') throw error;
+      if ((error as any)?.code !== 'USER_NOT_APPROVED') throw error;
       return clone(loadAppConfig().mobile.products);
     }
   }
@@ -20,7 +20,7 @@ export async function getFund(fundId) {
     try {
       return await apiRequest(`/v1/products/${encodeURIComponent(fundId)}`);
     } catch (error) {
-      if (error?.code !== 'USER_NOT_APPROVED') throw error;
+      if ((error as any)?.code !== 'USER_NOT_APPROVED') throw error;
       return clone(strategyById(loadAppConfig(), fundId));
     }
   }

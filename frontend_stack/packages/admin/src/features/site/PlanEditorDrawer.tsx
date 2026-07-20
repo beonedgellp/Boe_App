@@ -55,7 +55,7 @@ function formToPayload(form) {
 export default function PlanEditorDrawer({ open, plan, plans, onClose, onSaved }: any) {
   const isNew = !plan?.id;
   const [form, setForm] = useState(planToForm(plan));
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, any>>({});
   const [busy, setBusy] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const { addToast } = useToast();
@@ -83,7 +83,7 @@ export default function PlanEditorDrawer({ open, plan, plans, onClose, onSaved }
       onSaved();
       if (!keepOpen) onClose();
     } catch (error) {
-      addToast(error?.message || 'Action failed.', 'error');
+      addToast((error as any)?.message || 'Action failed.', 'error');
     } finally {
       setBusy(false);
     }
@@ -129,25 +129,25 @@ export default function PlanEditorDrawer({ open, plan, plans, onClose, onSaved }
 
   const footer = (
     <>
-      {!isNew && plan.status !== 'archived' && (
+      {!isNew && (plan as any).status !== 'archived' && (
         <button type="button" className="ash-btn ash-btn-danger ash-btn-sm" onClick={handleArchive} disabled={busy}>
           {confirmArchive ? 'Confirm archive' : 'Archive'}
         </button>
       )}
       <span className="ash-drawer-foot-note">
-        {!isNew && <StatusBadge status={plan.status} />}
+        {!isNew && <StatusBadge status={(plan as any).status} />}
       </span>
-      {!isNew && plan.status === 'draft' && (
+      {!isNew && (plan as any).status === 'draft' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('published')} disabled={busy}>
           Publish
         </button>
       )}
-      {!isNew && plan.status === 'published' && (
+      {!isNew && (plan as any).status === 'published' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('draft')} disabled={busy}>
           Move to draft
         </button>
       )}
-      {!isNew && plan.status === 'archived' && (
+      {!isNew && (plan as any).status === 'archived' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('draft')} disabled={busy}>
           Restore as draft
         </button>

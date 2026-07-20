@@ -3,7 +3,7 @@ import Toast from './Toast';
 
 const MAX_TOASTS = 5;
 
-const ToastContext = createContext({ addToast: () => {}, dismissToast: () => {} });
+const ToastContext = createContext({ addToast: (..._args: any[]) => {}, dismissToast: (..._args: any[]) => {} });
 
 export function useToast() {
   return useContext(ToastContext);

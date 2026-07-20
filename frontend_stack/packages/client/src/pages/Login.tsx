@@ -53,7 +53,7 @@ export default function Login() {
       await login({ identifier, password });
       navigate(postLoginPath(params.get('from')), { replace: true });
     } catch (error) {
-      setErr(error?.code === 'ADMIN_LOGIN_REQUIRED'
+      setErr((error as any)?.code === 'ADMIN_LOGIN_REQUIRED'
         ? 'Use the admin login page for admin access.'
         : "Couldn't sign in. Check your email, phone, or password.");
     } finally {

@@ -111,12 +111,12 @@ export function hasRole(user, role) {
 function assertScopeUser(user, scope) {
   if (scope === 'admin' && !hasRole(user, 'admin')) {
     const error = new Error('Admin access is required.');
-    error.code = 'ADMIN_REQUIRED';
+    (error as any).code = 'ADMIN_REQUIRED';
     throw error;
   }
   if (scope === 'client' && hasRole(user, 'admin')) {
     const error = new Error('Use the admin login for admin access.');
-    error.code = 'ADMIN_LOGIN_REQUIRED';
+    (error as any).code = 'ADMIN_LOGIN_REQUIRED';
     throw error;
   }
   return user;

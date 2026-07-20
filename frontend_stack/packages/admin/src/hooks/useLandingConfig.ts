@@ -56,7 +56,7 @@ export default function useLandingConfig() {
       setLoading(false);
     } catch (requestError) {
       if (reqId !== reqRef.current) return;
-      setError(requestError?.message || 'Could not load the landing configuration.');
+      setError((requestError as any)?.message || 'Could not load the landing configuration.');
       setLoading(false);
     }
   }, []);

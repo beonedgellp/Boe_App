@@ -70,7 +70,7 @@ function AumCapitalTab({ funds }: any) {
       const r = await apiRequest('/v1/admin/capital-transactions', { scope: 'admin' });
       setTransactions(r.items || []);
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to process capital flow.' });
+      setMessage({ type: 'error', text: (err as any).message || 'Failed to process capital flow.' });
     } finally {
       setSubmitting(false);
     }

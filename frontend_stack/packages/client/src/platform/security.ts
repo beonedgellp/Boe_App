@@ -94,12 +94,12 @@ function availabilityReason(result) {
 
 function platformError(code, message) {
   const err = new Error(message);
-  err.code = code;
+  (err as any).code = code;
   return err;
 }
 
 function normalizeBiometricError(error) {
-  const code = authErrorCode(error?.code);
+  const code = authErrorCode((error as any)?.code);
   if (code === BiometricAuthError.USER_CANCEL || code === BiometricAuthError.SYSTEM_CANCEL || code === BiometricAuthError.APP_CANCEL) {
     return platformError('BIOMETRIC_CANCELLED', 'Biometric unlock was cancelled.');
   }
@@ -112,7 +112,7 @@ function normalizeBiometricError(error) {
   if (code === BiometricAuthError.AUTHENTICATION_FAILED || code === BiometricAuthError.USER_LOCKOUT || code === BiometricAuthError.USER_TEMPORARY_LOCKOUT) {
     return platformError('BIOMETRIC_FAILED', 'Biometric unlock failed.');
   }
-  return platformError('BIOMETRIC_FAILED', error?.message || 'Biometric unlock failed.');
+  return platformError('BIOMETRIC_FAILED', (error as any)?.message || 'Biometric unlock failed.');
 }
 
 async function biometricAvailability() {
@@ -142,7 +142,7 @@ async function biometricAvailability() {
       enrolled: null,
       type: 'native-biometric',
       label: 'Fingerprint or face unlock',
-      reason: availabilityReason({ errorCode: error?.code }),
+      reason: availabilityReason({ errorCode: (error as any)?.code }),
     };
   }
 }

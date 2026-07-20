@@ -16,8 +16,8 @@ function test(name, fn) {
     passed += 1;
     console.log(`✓ ${name}`);
   } catch (err) {
-    console.error(`✗ ${name}: ${err.message}`);
-    process.exitCode = 1;
+    console.error(`✗ ${name}: ${(err as any).message}`);
+    (process as any).exitCode = 1;
   }
 }
 

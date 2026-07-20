@@ -21,7 +21,7 @@ export default function useAdminCollection(path) {
       setLoading(false);
     } catch (requestError) {
       if (reqId !== reqRef.current) return;
-      setError(requestError?.message || 'Could not load data.');
+      setError((requestError as any)?.message || 'Could not load data.');
       setLoading(false);
     }
   }, [path]);

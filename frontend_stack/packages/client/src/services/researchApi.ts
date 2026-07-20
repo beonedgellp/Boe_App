@@ -6,7 +6,7 @@ export async function getResearchContext() {
     try {
       return listFromPayload(await apiRequest('/v1/client/research-context'));
     } catch (error) {
-      if (error?.code !== 'USER_NOT_APPROVED') throw error;
+      if ((error as any)?.code !== 'USER_NOT_APPROVED') throw error;
       return clone(loadAppConfig().mobile.researchContext);
     }
   }

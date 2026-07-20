@@ -86,7 +86,7 @@ export default function Support() {
           ) : tickets.map((t) => (
             <div key={t.id} className="apk-list-row">
               <div><div className="apk-list-l">{t.subject}</div><div className="apk-list-meta">Updated {fmtDate(t.updatedAt)}</div></div>
-              <span className={'be-badge ' + (t.status === 'open' ? 'be-badge-paused' : 'be-badge-active')}><span className="be-badge-dot" />{t.status}</span>
+              <span className={'be-badge ' + (t.status === 'open' ? 'be-badge-paused' : 'be-badge-active')}><span className="be-badge-dot" />{(t as any).status}</span>
             </div>
           ))}
         </div>

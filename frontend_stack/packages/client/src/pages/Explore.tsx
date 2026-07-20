@@ -191,7 +191,7 @@ export default function Explore() {
     }
     if (statusFilter !== 'All') {
       const map = { Active: 'active', 'Coming Soon': 'coming_soon' };
-      result = result.filter((f) => f.status === map[statusFilter]);
+      result = result.filter((f) => (f as any).status === map[statusFilter]);
     }
     if (riskFilter !== 'All') {
       const reverseMap = { Growth: ['high', 'moderate_high'], Balanced: ['moderate', 'low_moderate'], Conservative: ['low'] };
@@ -213,8 +213,8 @@ export default function Explore() {
       case 'trending':
       default:
         sorted.sort((a, b) => {
-          const aActive = a.status === 'active' ? 1 : 0;
-          const bActive = b.status === 'active' ? 1 : 0;
+          const aActive = (a as any).status === 'active' ? 1 : 0;
+          const bActive = (b as any).status === 'active' ? 1 : 0;
           if (aActive !== bActive) return bActive - aActive;
           return (b.totalPoolSize ?? 0) - (a.totalPoolSize ?? 0);
         });
@@ -226,7 +226,7 @@ export default function Explore() {
   const trending = useMemo(() => {
     if (!funds) return [];
     return funds
-      .filter((f) => f.status === 'active')
+      .filter((f) => (f as any).status === 'active')
       .slice()
       .sort((a, b) => (b.totalPoolSize ?? 0) - (a.totalPoolSize ?? 0))
       .slice(0, 3);
@@ -236,7 +236,7 @@ export default function Explore() {
     if (!funds) return null;
     const totalFunds = funds.length;
     const totalAum = funds.reduce((s, f) => s + (Number(f.totalPoolSize) || 0), 0);
-    const activeFunds = funds.filter((f) => f.status === 'active').length;
+    const activeFunds = funds.filter((f) => (f as any).status === 'active').length;
     return { totalFunds, totalAum, activeFunds };
   }, [funds]);
 

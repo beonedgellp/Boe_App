@@ -284,7 +284,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
         name: form.name.trim(),
         tagline: form.tagline.trim() || undefined,
         lifecycleStage: form.lifecycleStage,
-        status: form.status,
+        status: (form as any).status,
         totalPoolSize: form.totalPoolSize === '' ? undefined : Number(form.totalPoolSize),
         minSip: form.minSip === '' ? undefined : Number(form.minSip),
         minLumpsum: form.minLumpsum === '' ? undefined : Number(form.minLumpsum),
@@ -314,7 +314,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
       }
       closeEditor();
     } catch (err) {
-      setFormError(err?.message || `Failed to ${editorMode === 'create' ? 'create' : 'update'} fund pool.`);
+      setFormError((err as any)?.message || `Failed to ${editorMode === 'create' ? 'create' : 'update'} fund pool.`);
     } finally {
       setSubmitting(false);
     }
@@ -327,7 +327,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
       await onDelete?.(deleteConfirm.id);
       if (selectedFundId === deleteConfirm.id) closeEditor();
     } catch (err) {
-      setFormError(err?.message || 'Failed to delete fund pool.');
+      setFormError((err as any)?.message || 'Failed to delete fund pool.');
     } finally {
       setSubmitting(false);
       setDeleteConfirm(null);
@@ -430,7 +430,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   </label>
                   <label className="adm-field">
                     <span>User Status</span>
-                    <select value={form.status} onChange={updateField('status')} disabled>
+                    <select value={(form as any).status} onChange={updateField('status')} disabled>
                       <option value="active">Active</option>
                       <option value="coming_soon">Coming Soon</option>
                     </select>
@@ -672,16 +672,16 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                   This is how clients will see your fund card:
                 </div>
                 {(() => {
-                  const isActive = form.status === 'active';
-                  const perf = form.performanceSummary || {};
+                  const isActive = (form as any).status === 'active';
+                  const perf = form.performanceSummary || ({} as Record<string, any>);
                   const series = Array.isArray(form.performanceSeries) ? form.performanceSeries : [];
                   const hasChart = series.length >= 2;
                   const headline = (() => { const n = Number(perf.annualizedReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
                   const oneDay = (() => { const n = Number(perf.oneDayReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
                   const niftyPct = (() => { const n = Number(perf.niftyReturnPct); return Number.isFinite(n) ? `${n.toFixed(2)}%` : null; })();
                   const metaBits = [form.riskText, form.category, form.subCategory].filter(Boolean);
-                  const nav = form.nav || {};
-                  const rating = form.rating || {};
+                  const nav = form.nav || ({} as Record<string, any>);
+                  const rating = form.rating || ({} as Record<string, any>);
                   const poolSize = form.totalPoolSize === '' ? 0 : Number(form.totalPoolSize);
                   const minSip = form.minSip === '' ? 0 : Number(form.minSip);
                   const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };
@@ -780,7 +780,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                             <tr key={idx}>
                               <td><span className="adm-code">{log.action || '—'}</span></td>
                               <td className="adm-cell-meta">{log.timestamp || log.createdAt || '—'}</td>
-                              <td className="adm-cell-meta">{log.changesSummary || log.details || '—'}</td>
+                              <td className="adm-cell-meta">{log.changesSummary || (log as any).details || '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -943,7 +943,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                         <td><span className="adm-code">{log.action || '—'}</span></td>
                         <td>{log.entityName || log.entityId || '—'}</td>
                         <td className="adm-cell-meta">{log.timestamp || log.createdAt || '—'}</td>
-                        <td className="adm-cell-meta">{log.changesSummary || log.details || '—'}</td>
+                        <td className="adm-cell-meta">{log.changesSummary || (log as any).details || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1012,7 +1012,7 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
                         </div>
                       </td>
                       <td><LifecycleBadge stage={f.lifecycleStage} size="sm" /></td>
-                      <td><StatusBadge status={f.status} size="sm" /></td>
+                      <td><StatusBadge status={(f as any).status} size="sm" /></td>
                       <td className="be-money">{f.totalPoolSize ?? f.aum ?? 0}</td>
                       <td className="be-num">{f.analytics?.sectorCount ?? f.sectors?.length ?? 0}</td>
                       <td className="be-num">{f.analytics?.investmentCount ?? f.investments?.length ?? 0}</td>
@@ -1107,16 +1107,16 @@ function AumScreen({ funds = [], auditLogs = [], onCreate, onUpdate, onDelete, o
             </div>
             <div className="adm-detail-panel-stack">
               {(() => {
-                const isActive = previewFund.status === 'active';
-                const perf = previewFund.performanceSummary || {};
+                const isActive = (previewFund as any).status === 'active';
+                const perf = previewFund.performanceSummary || ({} as Record<string, any>);
                 const series = Array.isArray(previewFund.performanceSeries) ? previewFund.performanceSeries : [];
                 const hasChart = series.length >= 2;
                 const headline = (() => { const n = Number(perf.annualizedReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
                 const oneDay = (() => { const n = Number(perf.oneDayReturnPct); return Number.isFinite(n) ? `${n > 0 ? '+' : ''}${n.toFixed(2)}%` : null; })();
                 const niftyPct = (() => { const n = Number(perf.niftyReturnPct); return Number.isFinite(n) ? `${n.toFixed(2)}%` : null; })();
                 const metaBits = [previewFund.riskText, previewFund.category, previewFund.subCategory].filter(Boolean);
-                const nav = previewFund.nav || {};
-                const rating = previewFund.rating || {};
+                const nav = previewFund.nav || ({} as Record<string, any>);
+                const rating = previewFund.rating || ({} as Record<string, any>);
                 const poolSize = previewFund.totalPoolSize ?? 0;
                 const minSip = previewFund.minSip ?? 0;
                 const fmtMoneyPreview = (v) => { const n = Number(v) || 0; if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)}Cr`; if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)}L`; return `₹${n.toLocaleString()}`; };

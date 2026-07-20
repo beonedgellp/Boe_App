@@ -56,7 +56,7 @@ export default function SipControlScreen() {
       const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
       setRows(items);
     } catch (err) {
-      setError(err?.message || 'Failed to load SIP control requests.');
+      setError((err as any)?.message || 'Failed to load SIP control requests.');
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function SipControlScreen() {
       });
       setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status, reviewedAt: new Date().toISOString() } : r)));
     } catch (err) {
-      setError(err?.message || `Failed to ${status} request.`);
+      setError((err as any)?.message || `Failed to ${status} request.`);
     } finally {
       setActionBusyId(null);
     }
@@ -92,9 +92,9 @@ export default function SipControlScreen() {
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = rows.filter((r) => r.status === 'pending').length;
-  const approvedCount = rows.filter((r) => r.status === 'approved').length;
-  const rejectedCount = rows.filter((r) => r.status === 'rejected').length;
+  const pendingCount = rows.filter((r) => (r as any).status === 'pending').length;
+  const approvedCount = rows.filter((r) => (r as any).status === 'approved').length;
+  const rejectedCount = rows.filter((r) => (r as any).status === 'rejected').length;
 
   return (
     <div className="adm-screen">
@@ -187,10 +187,10 @@ export default function SipControlScreen() {
                   <td>{r.fundName || '—'}</td>
                   <td><RequestTypeBadge type={r.action || r.requestType} /></td>
                   <td>{r.amount != null ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '—'}</td>
-                  <td><SipControlStatusBadge status={r.status} /></td>
+                  <td><SipControlStatusBadge status={(r as any).status} /></td>
                   <td className="adm-cell-meta">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
                   <td className="adm-col-actions">
-                    {r.status === 'pending' && (
+                    {(r as any).status === 'pending' && (
                       <>
                         <button
                           className="be-btn be-btn-primary be-btn-sm"
@@ -208,7 +208,7 @@ export default function SipControlScreen() {
                         </button>
                       </>
                     )}
-                    {r.status !== 'pending' && (
+                    {(r as any).status !== 'pending' && (
                       <span className="adm-cell-meta">{r.reviewedAt ? new Date(r.reviewedAt).toLocaleDateString() : '—'}</span>
                     )}
                   </td>

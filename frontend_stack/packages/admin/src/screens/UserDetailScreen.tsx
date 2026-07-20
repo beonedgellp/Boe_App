@@ -25,7 +25,7 @@ function UserDetailScreen({ userId, onClose }: any) {
         if (!cancelled) setData(r);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || 'Failed to load user details.');
+        if (!cancelled) setError((err as any).message || 'Failed to load user details.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -308,7 +308,7 @@ function UserDetailScreen({ userId, onClose }: any) {
                   {renderList('Notifications (Last 20)', Bell, notifications, (n, i) => (
                     <div key={i} className="adm-list-item">
                       <div className="adm-list-item__title">{n.title || 'Notification'}</div>
-                      <div className="adm-list-item__body">{n.body || n.message || '—'}</div>
+                      <div className="adm-list-item__body">{n.body || (n as any).message || '—'}</div>
                       <div className="adm-list-item__meta adm-cell-meta">{n.createdAt ? new Date(n.createdAt).toLocaleString() : '—'}</div>
                     </div>
                   ), 'No notifications.')}
@@ -319,7 +319,7 @@ function UserDetailScreen({ userId, onClose }: any) {
                         <span className="adm-code adm-text-xs">{log.action || '—'}</span>
                         <span className="adm-cell-meta">{log.timestamp || log.createdAt || '—'}</span>
                       </div>
-                      <div className="adm-list-item__body">{log.changesSummary || log.details || '—'}</div>
+                      <div className="adm-list-item__body">{log.changesSummary || (log as any).details || '—'}</div>
                     </div>
                   ), 'No audit logs.')}
                 </div>

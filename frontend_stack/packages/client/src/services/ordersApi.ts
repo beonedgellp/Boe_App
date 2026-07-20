@@ -116,9 +116,9 @@ export async function listOrders({ filter = 'all' }: any = {}) {
 
   await delay();
   let out = orders;
-  if (filter === 'active') out = out.filter((o) => o.status === 'active' || o.status === 'pending_first_payment');
-  if (filter === 'paused') out = out.filter((o) => o.status === 'paused');
-  if (filter === 'cancelled') out = out.filter((o) => o.status === 'cancelled' || o.status === 'closed');
+  if (filter === 'active') out = out.filter((o) => (o as any).status === 'active' || (o as any).status === 'pending_first_payment');
+  if (filter === 'paused') out = out.filter((o) => (o as any).status === 'paused');
+  if (filter === 'cancelled') out = out.filter((o) => (o as any).status === 'cancelled' || (o as any).status === 'closed');
   return clone(out);
 }
 
@@ -205,7 +205,7 @@ export async function confirmRazorpayPayment(paymentId, response) {
 
   const found = payments.get(paymentId);
   if (found) {
-    found.status = 'success';
+    (found as any).status = 'success';
     found.confirmedAt = new Date().toISOString();
   }
   return clone(found);
@@ -222,7 +222,7 @@ export async function pollPaymentStatus(paymentId) {
   const tick = (_pollState.get(paymentId) || 0) + 1;
   _pollState.set(paymentId, tick);
   const path = ['gateway_initiated', 'pending', 'pending', 'success'];
-  p.status = path[Math.min(tick - 1, path.length - 1)];
+  (p as any).status = path[Math.min(tick - 1, path.length - 1)];
   if (p.status === 'success') p.confirmedAt = new Date().toISOString();
   return clone(p);
 }
@@ -243,11 +243,11 @@ export async function authorizeMandate(mandateId) {
 
   await delay(900);
   const m = mandates.find((x) => x.id === mandateId);
-  if (m) m.status = 'active';
+  if (m) (m as any).status = 'active';
   // Also flip the linked order to active.
   if (m) {
     const ord = orders.find((o) => o.mandateId === mandateId);
-    if (ord) ord.status = 'active';
+    if (ord) (ord as any).status = 'active';
   }
   return clone(m);
 }

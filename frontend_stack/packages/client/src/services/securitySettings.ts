@@ -123,7 +123,7 @@ export function validatePin(pin) {
 export async function setPin(user, pin) {
   if (!validatePin(pin)) {
     const error = new Error('Use a 4 to 6 digit PIN.');
-    error.code = 'INVALID_PIN';
+    (error as any).code = 'INVALID_PIN';
     throw error;
   }
   const saltBytes = platformSecurity.crypto.randomBytes(32);
@@ -158,7 +158,7 @@ export async function clearPin(user, currentPin) {
   const ok = await verifyPin(user, currentPin);
   if (!ok) {
     const error = new Error('Current PIN is incorrect.');
-    error.code = 'BAD_PIN';
+    (error as any).code = 'BAD_PIN';
     throw error;
   }
   const current = await readRaw(user);
@@ -189,13 +189,13 @@ export async function enableBiometric(user) {
   const current = await readRaw(user);
   if (!current.pinHash) {
     const error = new Error('Set an app PIN first.');
-    error.code = 'PIN_REQUIRED';
+    (error as any).code = 'PIN_REQUIRED';
     throw error;
   }
   const availability = await platformSecurity.biometric.availability();
   if (!availability.available) {
     const error = new Error('Device biometric unlock is not available on this device.');
-    error.code = 'BIOMETRIC_UNAVAILABLE';
+    (error as any).code = 'BIOMETRIC_UNAVAILABLE';
     throw error;
   }
 

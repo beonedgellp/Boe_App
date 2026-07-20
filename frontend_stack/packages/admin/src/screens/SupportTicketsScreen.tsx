@@ -27,7 +27,7 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }: any)
   const [replyError, setReplyError] = useState('');
 
   const statuses = useMemo(() => {
-    const set = new Set(rows.map((r) => r.status).filter(Boolean));
+    const set = new Set(rows.map((r) => (r as any).status).filter(Boolean));
     return ['all', ...Array.from(set).sort()];
   }, [rows]);
 
@@ -38,15 +38,15 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }: any)
         String(r.subject || '').toLowerCase().includes(q) ||
         String(r.category || '').toLowerCase().includes(q) ||
         String(r.userId || '').toLowerCase().includes(q);
-      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || (r as any).status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [rows, searchQuery, statusFilter]);
 
   const stats = useMemo(() => ({
-    open: rows.filter((r) => r.status === 'open').length,
-    inProgress: rows.filter((r) => r.status === 'in_progress').length,
-    closed: rows.filter((r) => r.status === 'closed').length,
+    open: rows.filter((r) => (r as any).status === 'open').length,
+    inProgress: rows.filter((r) => (r as any).status === 'in_progress').length,
+    closed: rows.filter((r) => (r as any).status === 'closed').length,
   }), [rows]);
 
   async function handleReply(ticketId) {
@@ -64,7 +64,7 @@ function SupportTicketsScreen({ rows = [], loading = false, onUserDetail }: any)
       setSelectedTicket(null);
       // Let the parent route refetch instead of reloading the whole page.
     } catch (err) {
-      setReplyError(err?.message || 'Reply failed.');
+      setReplyError((err as any)?.message || 'Reply failed.');
     } finally {
       setReplyBusy(false);
     }

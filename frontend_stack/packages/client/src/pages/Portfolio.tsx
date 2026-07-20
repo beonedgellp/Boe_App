@@ -107,7 +107,7 @@ export default function Portfolio() {
       setRedeemPreview(preview);
       setRedeemStep('preview');
     } catch (err) {
-      setRedeemMessage({ type: 'error', text: err.message || 'Failed to load redemption preview.' });
+      setRedeemMessage({ type: 'error', text: (err as any).message || 'Failed to load redemption preview.' });
     } finally {
       setRedeemSubmitting(false);
     }
@@ -124,7 +124,7 @@ export default function Portfolio() {
         resetRedeemModal();
       }, 2000);
     } catch (err) {
-      setRedeemMessage({ type: 'error', text: err.message || 'Failed to submit redemption request.' });
+      setRedeemMessage({ type: 'error', text: (err as any).message || 'Failed to submit redemption request.' });
     } finally {
       setRedeemSubmitting(false);
     }

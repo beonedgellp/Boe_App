@@ -138,7 +138,7 @@ export default function StartSipSheet() {
         navigate(`/app/payment/${order.paymentId}`);
       }
     } catch (e) {
-      const message = e?.message || e?.code || "Couldn't create SIP. Try again.";
+      const message = (e as any)?.message || (e as any)?.code || "Couldn't create SIP. Try again.";
       setErr(message);
       setSubmitting(false);
     }

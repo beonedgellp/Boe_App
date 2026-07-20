@@ -53,7 +53,7 @@ export default function MandateDetail() {
           <div className="apk-mandate-head">
             <div className="apk-fund-name">{order?.type === 'sip' ? `SIP · ${fmtMoney(order.amount)}/mo` : 'Mandate'}</div>
             <span className={'be-badge ' + (mandate.status === 'active' ? 'be-badge-active' : 'be-badge-paused')}>
-              <span className="be-badge-dot" />{mandate.status.replace('_', ' ')}
+              <span className="be-badge-dot" />{(mandate as any).status.replace('_', ' ')}
             </span>
           </div>
           <div className="apk-sheet-summary-row"><span>Max per cycle</span><strong className="be-money">{fmtMoney(mandate.maxAmount)}</strong></div>
@@ -86,8 +86,8 @@ export default function MandateDetail() {
                   <div className="apk-list-l">{r.requestType.replace('_', ' ')}{r.requestedValue ? ` → ${fmtMoney(r.requestedValue)}` : ''}</div>
                   <div className="apk-list-meta">{fmtDate(r.createdAt, { withTime: true })}</div>
                 </div>
-                <span className={'be-badge ' + (r.status === 'completed' ? 'be-badge-active' : r.status === 'rejected' ? 'be-badge-failed' : 'be-badge-paused')}>
-                  <span className="be-badge-dot" />{r.status}
+                <span className={'be-badge ' + (r.status === 'completed' ? 'be-badge-active' : (r as any).status === 'rejected' ? 'be-badge-failed' : 'be-badge-paused')}>
+                  <span className="be-badge-dot" />{(r as any).status}
                 </span>
               </div>
             ))}
@@ -112,7 +112,7 @@ export default function MandateDetail() {
                 <label>New monthly amount</label>
                 <div className="apk-amount-row">
                   <span className="apk-amount-prefix">₹</span>
-                  <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={order?.amount ? Math.round(order.amount * 0.5) : 0} step="500" value={newAmount} onChange={(e) => setNewAmount(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))} placeholder="0" />
+                  <input className="apk-amount-input be-money" type="number" inputMode="numeric" min={order?.amount ? Math.round(order.amount * 0.5) : 0} step="500" value={newAmount} onChange={(e) => setNewAmount(e.target.value === '' ? '' : String(Math.max(0, Math.floor(Number(e.target.value)))))} placeholder="0" />
                 </div>
                 {newAmount !== '' && Number(newAmount) < (order?.amount ? Math.round(order.amount * 0.5) : 0) && (
                   <div className="be-field-error apk-mt-1">Minimum is {fmtMoney(order?.amount ? Math.round(order.amount * 0.5) : 0)}.</div>

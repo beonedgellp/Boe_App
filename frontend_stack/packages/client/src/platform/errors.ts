@@ -11,6 +11,6 @@ export const PlatformError = {
 
 export function platformError(code, message) {
   const err = new Error(message);
-  err.code = code;
+  (err as any).code = code;
   return err;
 }

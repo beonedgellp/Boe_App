@@ -42,7 +42,7 @@ function KycReviewPanel({ row, onClose, onDecision, busy }: any) {
       await onDecision(row, action, reason.trim());
       onClose();
     } catch (err) {
-      setError(err.message || 'Review action failed.');
+      setError((err as any).message || 'Review action failed.');
     }
   }
 

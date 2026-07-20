@@ -83,7 +83,7 @@ export default function KycDetail() {
       setToast('FATCA declaration saved.');
       setTimeout(() => setToast(''), 3000);
     } catch (error) {
-      setErr(error?.message || 'Could not save FATCA declaration.');
+      setErr((error as any)?.message || 'Could not save FATCA declaration.');
     } finally {
       setSaving(false);
     }
@@ -140,7 +140,7 @@ export default function KycDetail() {
       setToast('Nominees saved.');
       setTimeout(() => setToast(''), 3000);
     } catch (error) {
-      setErr(error?.message || 'Could not save nominees.');
+      setErr((error as any)?.message || 'Could not save nominees.');
     } finally {
       setSaving(false);
     }
@@ -160,7 +160,7 @@ export default function KycDetail() {
       setToast('Re-KYC data saved.');
       setTimeout(() => setToast(''), 3000);
     } catch (error) {
-      setErr(error?.message || 'Could not save Re-KYC data.');
+      setErr((error as any)?.message || 'Could not save Re-KYC data.');
     } finally {
       setSaving(false);
     }

@@ -356,8 +356,8 @@ async function appConfigRequest(path, { method = 'GET', body, auth = false, scop
 
   if (!response.ok || payload?.ok === false) {
     const error = new Error(payload?.error?.message || `Request failed: ${method} ${path}`);
-    error.status = response.status;
-    error.code = payload?.error?.code;
+    (error as any).status = response.status;
+    (error as any).code = payload?.error?.code;
     throw error;
   }
 

@@ -12,16 +12,16 @@ function applyFilter(items, filter) {
   if (filter === 'sip') return items.filter((transaction) => transactionType(transaction) === 'sip');
   if (filter === 'lumpsum') return items.filter((transaction) => transactionType(transaction) === 'lumpsum');
   if (filter === 'pending') {
-    return items.filter((transaction) => transaction.status === 'payment_pending' || transaction.status === 'pending');
+    return items.filter((transaction) => (transaction as any).status === 'payment_pending' || (transaction as any).status === 'pending');
   }
   if (filter === 'failed') {
     return items.filter((transaction) => (
-      transaction.status === 'payment_failed' ||
-      transaction.status === 'approval_rejected' ||
-      transaction.status === 'failed'
+      (transaction as any).status === 'payment_failed' ||
+      (transaction as any).status === 'approval_rejected' ||
+      (transaction as any).status === 'failed'
     ));
   }
-  if (filter === 'approval') return items.filter((transaction) => transaction.status === 'awaiting_approval');
+  if (filter === 'approval') return items.filter((transaction) => (transaction as any).status === 'awaiting_approval');
   return items;
 }
 

@@ -48,7 +48,7 @@ function formToPayload(form) {
 export default function CourseEditorDrawer({ open, course, onClose, onSaved }: any) {
   const isNew = !course?.id;
   const [form, setForm] = useState(courseToForm(course));
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, any>>({});
   const [busy, setBusy] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const { addToast } = useToast();
@@ -71,7 +71,7 @@ export default function CourseEditorDrawer({ open, course, onClose, onSaved }: a
       onSaved();
       if (!keepOpen) onClose();
     } catch (error) {
-      addToast(error?.message || 'Action failed.', 'error');
+      addToast((error as any)?.message || 'Action failed.', 'error');
     } finally {
       setBusy(false);
     }
@@ -117,25 +117,25 @@ export default function CourseEditorDrawer({ open, course, onClose, onSaved }: a
 
   const footer = (
     <>
-      {!isNew && course.status !== 'archived' && (
+      {!isNew && (course as any).status !== 'archived' && (
         <button type="button" className="ash-btn ash-btn-danger ash-btn-sm" onClick={handleArchive} disabled={busy}>
           {confirmArchive ? 'Confirm archive' : 'Archive'}
         </button>
       )}
       <span className="ash-drawer-foot-note">
-        {!isNew && <StatusBadge status={course.status} />}
+        {!isNew && <StatusBadge status={(course as any).status} />}
       </span>
-      {!isNew && course.status === 'draft' && (
+      {!isNew && (course as any).status === 'draft' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('published')} disabled={busy}>
           Publish
         </button>
       )}
-      {!isNew && course.status === 'published' && (
+      {!isNew && (course as any).status === 'published' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('draft')} disabled={busy}>
           Move to draft
         </button>
       )}
-      {!isNew && course.status === 'archived' && (
+      {!isNew && (course as any).status === 'archived' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('draft')} disabled={busy}>
           Restore as draft
         </button>

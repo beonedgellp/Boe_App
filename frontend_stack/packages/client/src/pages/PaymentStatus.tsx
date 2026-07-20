@@ -72,10 +72,10 @@ export default function PaymentStatus() {
 
   if (!payment) return (<><AppBar title="Payment" leftIcon={X} /><div className="apk-screen"><Skeleton variant="rect" height="200px" /></div></>);
 
-  const isSuccess = payment.status === 'success' || payment.status === 'reconciled' || payment.status === 'approved';
-  const isAwaitingApproval = payment.status === 'success' || payment.status === 'reconciled';
-  const isFailed = payment.status === 'failed' || payment.status === 'expired' || payment.status === 'rejected';
-  const isCreated = payment.status === 'created';
+  const isSuccess = (payment as any).status === 'success' || (payment as any).status === 'reconciled' || (payment as any).status === 'approved';
+  const isAwaitingApproval = (payment as any).status === 'success' || (payment as any).status === 'reconciled';
+  const isFailed = (payment as any).status === 'failed' || (payment as any).status === 'expired' || (payment as any).status === 'rejected';
+  const isCreated = (payment as any).status === 'created';
   const Icon = isSuccess ? CheckCircle : isFailed ? XCircle : Loader2;
   const stateLine = isAwaitingApproval
     ? 'Payment received, awaiting admin approval'
@@ -84,7 +84,7 @@ export default function PaymentStatus() {
       : isFailed
         ? "Payment couldn't be confirmed"
         : 'Awaiting payment…';
-  const timelineStatus = payment.status === 'reconciled' ? 'success' : payment.status;
+  const timelineStatus = (payment as any).status === 'reconciled' ? 'success' : (payment as any).status;
   const tlIdx = TIMELINE.findIndex((t) => t.key === timelineStatus);
 
   function onContinue() {
@@ -125,7 +125,7 @@ export default function PaymentStatus() {
           <div className="be-disclosure">Your payment is now with the admin portal for approval. Portfolio and fund pool values update after approval.</div>
         )}
 
-        {payment.status === 'approved' && (
+        {(payment as any).status === 'approved' && (
           <div className="be-disclosure">The approved amount has been posted to your selected fund pool and portfolio.</div>
         )}
 

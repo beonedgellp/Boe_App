@@ -23,7 +23,7 @@ function validateForm(form) {
 export default function FaqEditorDrawer({ open, faq, onClose, onSaved }: any) {
   const isNew = !faq?.id;
   const [form, setForm] = useState(faqToForm(faq));
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, any>>({});
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { addToast } = useToast();
@@ -46,7 +46,7 @@ export default function FaqEditorDrawer({ open, faq, onClose, onSaved }: any) {
       onSaved();
       if (!keepOpen) onClose();
     } catch (error) {
-      addToast(error?.message || 'Action failed.', 'error');
+      addToast((error as any)?.message || 'Action failed.', 'error');
     } finally {
       setBusy(false);
     }
@@ -106,14 +106,14 @@ export default function FaqEditorDrawer({ open, faq, onClose, onSaved }: any) {
         </button>
       )}
       <span className="ash-drawer-foot-note">
-        {!isNew && <StatusBadge status={faq.status} />}
+        {!isNew && <StatusBadge status={(faq as any).status} />}
       </span>
-      {!isNew && faq.status !== 'published' && (
+      {!isNew && (faq as any).status !== 'published' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('published')} disabled={busy}>
           Publish
         </button>
       )}
-      {!isNew && faq.status === 'published' && (
+      {!isNew && (faq as any).status === 'published' && (
         <button type="button" className="ash-btn ash-btn-secondary" onClick={() => handleStatusChange('draft')} disabled={busy}>
           Move to draft
         </button>

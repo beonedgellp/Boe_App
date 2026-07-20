@@ -39,7 +39,7 @@ function ToastItem({ toast, onDismiss }: any) {
   return (
     <div className={`adm-toast ${tone}`} role="status">
       <I icon={Icon} size={16} />
-      <span className="adm-toast-msg">{toast.message}</span>
+      <span className="adm-toast-msg">{(toast as any).message}</span>
       <button type="button" className="adm-toast-close" onClick={() => onDismiss?.(toast.id)} aria-label="Dismiss notification">
         <I icon={X} size={14} />
       </button>

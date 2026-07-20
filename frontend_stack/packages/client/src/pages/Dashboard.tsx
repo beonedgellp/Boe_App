@@ -38,7 +38,7 @@ export default function Dashboard() {
   const [portfolio, setPortfolio] = useState(null);
   const [orders, setOrders] = useState([]);
   const [research, setResearch] = useState([]);
-  const [fundsById, setFundsById] = useState({});
+  const [fundsById, setFundsById] = useState<Record<string, any>>({});
 
   useEffect(() => {
     portfolioApi.getPortfolio().then(setPortfolio).catch(() => setPortfolio(null));

@@ -2,10 +2,10 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import * as authApi from '../services/authApi';
 
 const AdminSessionContext = createContext({
-  user: null,
+  user: null as any,
   isLoading: true,
-  login: async () => {},
-  logout: async () => {},
+  login: async (..._args: any[]) => {},
+  logout: async (..._args: any[]) => {},
 });
 
 export function AdminSessionProvider({ children }: any) {

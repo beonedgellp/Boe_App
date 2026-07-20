@@ -61,7 +61,7 @@ function AumAllocationsTab({ funds }: any) {
       setSelectedInvestment('');
       window.location.reload();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to process allocation.' });
+      setMessage({ type: 'error', text: (err as any).message || 'Failed to process allocation.' });
     } finally {
       setSubmitting(false);
     }

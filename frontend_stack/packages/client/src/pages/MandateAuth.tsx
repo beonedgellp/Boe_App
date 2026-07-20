@@ -67,7 +67,7 @@ export default function MandateAuth() {
           {mandate.validTo && <div className="apk-sheet-summary-row"><span>Valid until</span><strong>{fmtDate(mandate.validTo)}</strong></div>}
           <div className="apk-sheet-summary-row"><span>Status</span>
             <span className={'be-badge ' + (mandate.status === 'active' ? 'be-badge-active' : 'be-badge-paused')}>
-              <span className="be-badge-dot" />{mandate.status === 'active' ? 'Active' : mandate.status.replace('_', ' ')}
+              <span className="be-badge-dot" />{(mandate as any).status === 'active' ? 'Active' : (mandate as any).status.replace('_', ' ')}
             </span>
           </div>
           {mandate.provider && (
@@ -81,14 +81,14 @@ export default function MandateAuth() {
             : `We can debit only up to ${fmtMoney(mandate.maxAmount)} per cycle. You can pause or cancel from support.`}
         </div>
 
-        {mandate.status === 'active' && (
+        {(mandate as any).status === 'active' && (
           <div className="be-disclosure">Your UPI AutoPay mandate is active.</div>
         )}
 
         {!isRazorpayPending && (
           <div className="apk-action-bar">
-            <button className="be-btn be-btn-secondary be-btn-lg" onClick={onComplete} disabled={completing || mandate.status === 'active'}>
-              {mandate.status === 'active' ? 'Authorized' : completing ? 'Verifying…' : "I've completed authorization"}
+            <button className="be-btn be-btn-secondary be-btn-lg" onClick={onComplete} disabled={completing || (mandate as any).status === 'active'}>
+              {(mandate as any).status === 'active' ? 'Authorized' : completing ? 'Verifying…' : "I've completed authorization"}
             </button>
             {isMock && (
               <button className="be-btn be-btn-primary be-btn-lg" onClick={onOpenUpi}>Open UPI app</button>

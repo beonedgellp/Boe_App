@@ -103,7 +103,7 @@ export default function LandingContentPage() {
       setReason('');
       addToast(`Version ${result?.version} is live on the landing page.`, 'success');
     } catch (publishError) {
-      addToast(publishError?.message || 'Publish failed.', 'error');
+      addToast((publishError as any)?.message || 'Publish failed.', 'error');
     }
   }
 
@@ -166,7 +166,7 @@ export default function LandingContentPage() {
         <div className="ash-publish-warnings" role="status">
           <strong>Review before publishing</strong>
           {warnings.slice(0, 6).map((warning) => (
-            <span key={`${warning.path}-${warning.message}`}>{warning.path}: {warning.message}</span>
+            <span key={`${warning.path}-${(warning as any).message}`}>{warning.path}: {(warning as any).message}</span>
           ))}
           {warnings.length > 6 && <span>{warnings.length - 6} more warnings in other fields.</span>}
         </div>

@@ -137,7 +137,7 @@ function FundShelf() {
               <div className="web-fund-risk"><span className="be-eyebrow web-eyebrow-dark">Risk</span><span>{f.risk}</span></div>
               <div className="web-fund-cagr"><span className="be-eyebrow web-eyebrow-dark">5Y CAGR</span><span className="be-money">{f.cagr}</span></div>
               <div className="web-fund-status">
-                {f.status === 'active'
+                {(f as any).status === 'active'
                   ? <span className="be-badge be-badge-active"><span className="be-badge-dot"/>Open</span>
                   : <span className="be-badge be-badge-gold">Coming soon</span>}
               </div>

@@ -91,7 +91,7 @@ export default function LegacyAdminDataProvider({ children }: any) {
     });
 
     const failures = results
-      .map((result, index) => (result.status === 'rejected' ? `${['overview', 'approvals', 'funds', 'payments', 'mandates', 'audit-logs', 'kyc-review', 'risk-profiles', 'sip-control-requests', 'support-tickets', 'reconciliation-ledger', 'transactions'][index]}: ${result.reason?.message || 'failed'}` : ''))
+      .map((result, index) => (result.status === 'rejected' ? `${['overview', 'approvals', 'funds', 'payments', 'mandates', 'audit-logs', 'kyc-review', 'risk-profiles', 'sip-control-requests', 'support-tickets', 'reconciliation-ledger', 'transactions'][index]}: ${(result.reason as any)?.message || 'failed'}` : ''))
       .filter(Boolean);
     if (failures.length > 0) setLoadNote(`Some admin data could not be loaded: ${failures.join('; ')}`);
     setLoading(false);
@@ -100,7 +100,7 @@ export default function LegacyAdminDataProvider({ children }: any) {
   useEffect(() => {
     let cancelled = false;
     loadAdminData().catch((error) => {
-      if (!cancelled) setLoadNote(`Admin data could not be loaded: ${error.message}`);
+      if (!cancelled) setLoadNote(`Admin data could not be loaded: ${(error as any).message}`);
     });
     return () => { cancelled = true };
   }, []);
@@ -181,8 +181,8 @@ export default function LegacyAdminDataProvider({ children }: any) {
       // Background refetch to reconcile
       await loadAdminData();
     } catch (error) {
-      setReviewError(error?.message || 'Review action failed.');
-      addToast(error?.message || 'Action failed. Please try again.', 'error');
+      setReviewError((error as any)?.message || 'Review action failed.');
+      addToast((error as any)?.message || 'Action failed. Please try again.', 'error');
       // Re-add row on error
       setAdminData((prev) => ({
         ...prev,
@@ -212,7 +212,7 @@ export default function LegacyAdminDataProvider({ children }: any) {
       await loadAdminData();
       return result;
     } catch (error) {
-      const message = error?.message || 'Payment approval failed.';
+      const message = (error as any)?.message || 'Payment approval failed.';
       setPaymentActionError(message);
       addToast(message, 'error');
       throw error;
@@ -235,7 +235,7 @@ export default function LegacyAdminDataProvider({ children }: any) {
       await loadAdminData();
       return result;
     } catch (error) {
-      const message = error?.message || 'Payment rejection failed.';
+      const message = (error as any)?.message || 'Payment rejection failed.';
       setPaymentActionError(message);
       addToast(message, 'error');
       throw error;

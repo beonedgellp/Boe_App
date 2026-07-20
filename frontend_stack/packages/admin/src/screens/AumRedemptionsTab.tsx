@@ -68,7 +68,7 @@ function AumRedemptionsTab({ onUserDetail }: any) {
       setReason('');
       loadRequests();
     } catch (err) {
-      alert(err.message || 'Failed to process request.');
+      alert((err as any).message || 'Failed to process request.');
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +117,7 @@ function AumRedemptionsTab({ onUserDetail }: any) {
                   <td className="adm-cell-meta">{req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : '—'}</td>
                   <td className="adm-cell-actions">
                     <button className="be-btn be-btn-ghost be-btn-sm" onClick={() => onUserDetail?.(req)}>View</button>
-                    {req.status === 'pending' && (
+                    {(req as any).status === 'pending' && (
                       <>
                         <button className="be-btn be-btn-primary be-btn-sm" onClick={() => { setActionRequest(req); setActionType('approved'); }}>Approve</button>
                         <button className="be-btn be-btn-danger be-btn-sm" onClick={() => { setActionRequest(req); setActionType('rejected'); }}>Reject</button>

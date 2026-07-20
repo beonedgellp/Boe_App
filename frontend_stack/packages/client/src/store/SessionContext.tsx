@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import * as authApi from '../services/authApi';
 
-const SessionContext = createContext({ user: null, isLoading: true, login: async () => {}, signup: async () => {}, logout: async () => {} });
+const SessionContext = createContext({ user: null as any, isLoading: true, login: async (..._args: any[]) => {}, signup: async (..._args: any[]) => {}, logout: async (..._args: any[]) => {} });
 
 export function SessionProvider({ children }: any) {
   const [user, setUser] = useState(null);
