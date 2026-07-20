@@ -1,11 +1,11 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SessionProvider } from '@beonedge/client/store/SessionContext.js';
-import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.jsx';
-import PageLoader from './components/PageLoader.jsx';
-import RootErrorBoundary from './components/RootErrorBoundary.jsx';
+import { SessionProvider } from '@beonedge/client/store/SessionContext.tsx';
+import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.tsx';
+import PageLoader from './components/PageLoader.tsx';
+import RootErrorBoundary from './components/RootErrorBoundary.tsx';
 
-const ClientApp = lazy(() => import('@beonedge/client/ClientApp.jsx'));
+const ClientApp = lazy(() => import('@beonedge/client/ClientApp.tsx'));
 
 const Page = ({ children }) => (
   <Suspense fallback={<PageLoader />}>

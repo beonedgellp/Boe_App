@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import * as authApi from '../services/authApi.js';
+import * as authApi from '../services/authApi.ts';
 
 export interface User {
   id: string;

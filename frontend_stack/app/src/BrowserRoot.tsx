@@ -1,13 +1,13 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { SessionProvider } from '@beonedge/client/store/SessionContext.js';
-import { AdminSessionProvider, useAdminSession } from '@beonedge/client/store/AdminSessionContext.js';
-import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.jsx';
-import PageLoader from './components/PageLoader.jsx';
-import RootErrorBoundary from './components/RootErrorBoundary.jsx';
+import { SessionProvider } from '@beonedge/client/store/SessionContext.tsx';
+import { AdminSessionProvider, useAdminSession } from '@beonedge/client/store/AdminSessionContext.tsx';
+import { RouteErrorBoundary } from '@beonedge/shared/components/RouteErrorBoundary.tsx';
+import PageLoader from './components/PageLoader.tsx';
+import RootErrorBoundary from './components/RootErrorBoundary.tsx';
 
-const Admin = lazy(() => import('@beonedge/admin/pages/Admin.jsx'));
-const AdminLogin = lazy(() => import('@beonedge/admin/pages/AdminLogin.jsx'));
+const Admin = lazy(() => import('@beonedge/admin/pages/Admin.tsx'));
+const AdminLogin = lazy(() => import('@beonedge/admin/pages/AdminLogin.tsx'));
 
 function hasRole(user, role) {
   const expected = role.toLowerCase();

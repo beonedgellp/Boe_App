@@ -4,13 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
+    ".": "./src/index.ts",
     "./components/*": "./src/components/*",
     "./assets/*": "./src/assets/*",
-    "./appConfig.js": "./src/appConfig.js",
-    "./appTarget.js": "./src/appTarget.js",
-    "./format.js": "./src/format.js",
-    "./riskMapping.js": "./src/riskMapping.js"
+    "./appConfig.ts": "./src/appConfig.ts",
+    "./appTarget.ts": "./src/appTarget.ts",
+    "./format.ts": "./src/format.ts",
+    "./riskMapping.ts": "./src/riskMapping.ts"
   },
   "dependencies": {
     "gsap": "^3.15.0"

@@ -3,9 +3,9 @@
  * Uses Redux Toolkit under the hood but exposes the same interface.
  */
 import React, { useEffect, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from './hooks.js';
-import { fetchAdminUser, loginAdmin, logoutAdmin, clearAdminUser } from './adminAuthSlice.js';
-import { ReduxProvider } from './ReduxProvider.js';
+import { useAppDispatch, useAppSelector } from './hooks.ts';
+import { fetchAdminUser, loginAdmin, logoutAdmin, clearAdminUser } from './adminAuthSlice.ts';
+import { ReduxProvider } from './ReduxProvider.ts';
 
 export function AdminSessionProvider({ children }: { children: React.ReactNode }) {
   return (

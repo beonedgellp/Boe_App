@@ -1,0 +1,41 @@
+import { apiRequest, clone, delay, listFromPayload, useHttpApi } from './_util.ts';
+
+const faqs = [
+  { q: 'How does a BeOnEdge SIP work?', a: 'Your first payment runs over UPI; recurring debits run via a UPI AutoPay mandate you authorise. Units allocate at the next published NAV.' },
+  { q: 'What if my AutoPay debit fails?', a: 'BeOnEdge does not double-charge. The installment moves to Transactions where you can track its latest payment status.' },
+  { q: 'Can I pause or cancel a SIP?', a: 'Yes. Open a support ticket and BeOnEdge support will help with the request.' },
+  { q: 'When are statements generated?', a: 'Monthly statements are generated on the first of the following month. FY and capital-gains statements are generated after the financial year closes.' },
+  { q: 'Is BeOnEdge licensed?', a: 'Yes. BeOnEdge is licensed to operate this strategy. See Legal & disclosures for details.' },
+];
+
+let tickets = [];
+let nextTkt = 1;
+
+export async function listFaqs() {
+  if (useHttpApi()) return listFromPayload(await apiRequest('/v1/client/support/faqs'));
+
+  await delay();
+  return clone(faqs);
+}
+
+export async function listTickets() {
+  if (useHttpApi()) return listFromPayload(await apiRequest('/v1/client/support/tickets'));
+
+  await delay();
+  return clone(tickets);
+}
+
+export async function createTicket({ subject, body, category }) {
+  if (useHttpApi()) {
+    return apiRequest('/v1/client/support/tickets', {
+      method: 'POST',
+      body: { subject, body, category },
+    });
+  }
+
+  await delay(220);
+  const id = `tkt_${String(nextTkt++).padStart(3, '0')}`;
+  const t = { id, subject, status: 'open', updatedAt: new Date().toISOString() };
+  tickets = [t, ...tickets];
+  return clone(t);
+}

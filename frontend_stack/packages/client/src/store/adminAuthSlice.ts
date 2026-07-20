@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import * as authApi from '../services/authApi.js';
-import type { User } from './authSlice.js';
+import * as authApi from '../services/authApi.ts';
+import type { User } from './authSlice.ts';
 
 interface AdminAuthState {
   user: User | null;

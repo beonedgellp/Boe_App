@@ -4,9 +4,9 @@
  * as the original React Context so existing UI components don't change.
  */
 import React, { useEffect, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from './hooks.js';
-import { fetchCurrentUser, loginUser, signupUser, logoutUser, clearUser } from './authSlice.js';
-import { ReduxProvider } from './ReduxProvider.js';
+import { useAppDispatch, useAppSelector } from './hooks.ts';
+import { fetchCurrentUser, loginUser, signupUser, logoutUser, clearUser } from './authSlice.ts';
+import { ReduxProvider } from './ReduxProvider.ts';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   return (
